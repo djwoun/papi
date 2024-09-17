@@ -6059,8 +6059,7 @@ if eval test \"x\$"$as_ac_File"\" = x"yes" && [ "$perf_events" != "no" ]; then
   perf_events="yes"
 fi
 
-
-  fi
+fi
 
   fi
   if test "$perf_events" = "yes"; then
