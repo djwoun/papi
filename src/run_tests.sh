@@ -129,92 +129,96 @@ else
 fi
 export LIBPATH
 
-echo ""
-echo "Running Event Validation Tests";
-echo ""
 
-for i in $VTESTS;
-do
-  for xtest in $EXCLUDE;
+if [ "$PERF_EVENT_ACTIVE" == "perf_event" ]; then
+  
+  echo ""
+  echo "Running Event Validation Tests";
+  echo ""
+  
+  for i in $VTESTS;
   do
-    if [ "$i" = "$xtest" ]; then
-      MATCH=1
-      break
+    for xtest in $EXCLUDE;
+    do
+      if [ "$i" = "$xtest" ]; then
+        MATCH=1
+        break
+      fi;
+    done
+    if [ $MATCH -ne 1 ]; then
+      if [ -x $i ]; then
+        RAN="$i $RAN"
+        printf "Running %-50s %s" $i:
+        $VALGRIND ./$i $TESTS_QUIET
+        
+        #delete output folder for high-level tests
+        case "$i" in
+          *"_hl"*) rm -r papi_hl_output ;;
+        esac
+  
+      fi;
     fi;
+    MATCH=0
   done
-  if [ $MATCH -ne 1 ]; then
-    if [ -x $i ]; then
-      RAN="$i $RAN"
-      printf "Running %-50s %s" $i:
-      $VALGRIND ./$i $TESTS_QUIET
-      
-      #delete output folder for high-level tests
-      case "$i" in
-        *"_hl"*) rm -r papi_hl_output ;;
-      esac
-
-    fi;
-  fi;
-  MATCH=0
-done
-
-echo ""
-echo "Running C Tests";
-echo ""
-
-for i in $CTESTS;
-do
-  for xtest in $EXCLUDE;
+  
+  echo ""
+  echo "Running C Tests";
+  echo ""
+  
+  for i in $CTESTS;
   do
-    if [ "$i" = "$xtest" ]; then
-      MATCH=1
-      break
+    for xtest in $EXCLUDE;
+    do
+      if [ "$i" = "$xtest" ]; then
+        MATCH=1
+        break
+      fi;
+    done
+    if [ $MATCH -ne 1 ]; then
+      if [ -x $i ]; then
+        RAN="$i $RAN"
+        printf "Running %-50s %s" $i:
+        $VALGRIND ./$i $TESTS_QUIET
+  
+        #delete output folder for high-level tests
+        case "$i" in
+          *"_hl"*) rm -r papi_hl_output ;;
+        esac
+  
+      fi;
     fi;
+    MATCH=0
   done
-  if [ $MATCH -ne 1 ]; then
-    if [ -x $i ]; then
-      RAN="$i $RAN"
-      printf "Running %-50s %s" $i:
-      $VALGRIND ./$i $TESTS_QUIET
-
-      #delete output folder for high-level tests
-      case "$i" in
-        *"_hl"*) rm -r papi_hl_output ;;
-      esac
-
-    fi;
-  fi;
-  MATCH=0
-done
-
-echo ""
-echo "Running Fortran Tests";
-echo ""
-
-for i in $FTESTS;
-do
-  for xtest in $EXCLUDE;
+  
+  echo ""
+  echo "Running Fortran Tests";
+  echo ""
+  
+  for i in $FTESTS;
   do
-    if [ "$i" = "$xtest" ]; then
-      MATCH=1
-      break
+    for xtest in $EXCLUDE;
+    do
+      if [ "$i" = "$xtest" ]; then
+        MATCH=1
+        break
+      fi;
+    done
+    if [ $MATCH -ne 1 ]; then
+      if [ -x $i ]; then
+        RAN="$i $RAN"
+        printf "Running $i:\n"
+        $VALGRIND ./$i $TESTS_QUIET
+  
+        #delete output folder for high-level tests
+        case "$i" in
+          *"_hl"*) rm -r papi_hl_output ;;
+        esac
+  
+      fi;
     fi;
+    MATCH=0
   done
-  if [ $MATCH -ne 1 ]; then
-    if [ -x $i ]; then
-      RAN="$i $RAN"
-      printf "Running $i:\n"
-      $VALGRIND ./$i $TESTS_QUIET
-
-      #delete output folder for high-level tests
-      case "$i" in
-        *"_hl"*) rm -r papi_hl_output ;;
-      esac
-
-    fi;
-  fi;
-  MATCH=0
-done
+fi
 
 echo "";
 echo "Running Component Tests";
