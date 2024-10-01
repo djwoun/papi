@@ -39,9 +39,9 @@ if [ "x$VALGRIND" != "x" ]; then
 fi
 
 # Check for active 'perf_event' component
-PERF_EVENT_ACTIVE=$(utils/papi_component_avail | awk '/Active components:/{flag=1; next} flag' | grep "perf_event")
+PERF_EVENT_ACTIVE=$(utils/papi_component_avail | awk '/Active components:/{flag=1; next} flag' | grep -q "perf_event" && echo "true" || echo "false")
 
-if [ "$PERF_EVENT_ACTIVE" == "perf_event" ]; then
+if [ "$PERF_EVENT_ACTIVE" == "true" ]; then
     VTESTS=`find validation_tests/* -prune -perm -u+x -type f ! -name "*.[c|h]"`;
     CTESTS=`find ctests/* -prune -perm -u+x -type f ! -name "*.[c|h]"`;
     #CTESTS=`find ctests -maxdepth 1 -perm -u+x -type f`;
