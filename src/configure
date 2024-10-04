@@ -5959,7 +5959,7 @@ if test "x$enable_cpu" = "xno"; then :
         gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
     }
     print
-  }' " Makefile.inc > Makefile.inc
+  }'  Makefile.inc > Makefile.inc
  
   # Check if the change was applied
   grep '.PHONY' Makefile.inc
