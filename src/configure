@@ -5950,30 +5950,35 @@ if test "x$enable_cpu" = "xno"; then :
   force_perf_events=no
   perf_events_uncore=no
   
-  Makefile = "Makefile.inc"
+  # Define the file path
+FILE_PATH="Makefile.inc"
 
-  # Use sed to modify the file
-  awk '{
+# Temporary file path
+TEMP_FILE="temp_$FILE_PATH"
+
+# Use awk to modify the file
+awk '{
     if ($0 ~ /^\.PHONY :/) {
         gsub(/ctests|ftests|validation_tests/, "");
         gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
         gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
-    }
-    print
-  }'  "$Makefile" > "TempMake"
+  }
+  print
+}' "$FILE_PATH" > "$TEMP_FILE"
 
-  # Replace the original file with the temporary file
-  mv "TempMake" "$Makefile"
-  
-  echo "$Makefile"
+# Replace the original file with the temporary file
+mv "$TEMP_FILE" "$FILE_PATH"
 
+awk '
+    /^\s*validation_tests:/ { skip = 2 }
+    /^\s*ctests:/ { skip = 2 }
+    /^\s*ftests:/ { skip = 2 }
+    skip {skip--; next}
+    {print}
+'  "$FILE_PATH" > "$TEMP_FILE"
 
-  echo "ASDF"
-  echo "ASDF"echo "ASDF"
-  echo "ASDF"echo "ASDF"
-  echo "ASDF"echo "ASDF"
-  echo "ASDF"echo "ASDF"
-  echo "ASDF"
+# Move the temporary file to the original file
+mv "$TEMP_FILE" "$FILE_PATH" 
 
 
 fi
