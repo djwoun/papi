@@ -5946,9 +5946,31 @@ fi
 
 if test "x$enable_cpu" = "xno"; then :
 
-	perf_events=no
+  perf_events=no
   force_perf_events=no
   perf_events_uncore=no
+
+  # Use sed to modify the file
+  # -i.bak creates a backup with .bak extension before modifying
+  awk '{
+    if ($0 ~ /^\.PHONY :/) {
+        gsub(/ctests|ftests|validation_tests/, "");
+        gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
+        gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
+    }
+    print
+  }' " Makefile.inc > Makefile.inc
+ 
+  # Check if the change was applied
+  grep '.PHONY' Makefile.inc
+
+  echo "ASDF"
+  echo "ASDF"echo "ASDF"
+  echo "ASDF"echo "ASDF"
+  echo "ASDF"echo "ASDF"
+  echo "ASDF"echo "ASDF"
+  echo "ASDF"
+
 
 fi
 
