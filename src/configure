@@ -741,6 +741,7 @@ docdir
 oldincludedir
 includedir
 localstatedir
+runstatedir
 sharedstatedir
 sysconfdir
 datadir
