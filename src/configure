@@ -740,8 +740,8 @@ infodir
 docdir
 oldincludedir
 includedir
-localstatedir
 runstatedir
+localstatedir
 sharedstatedir
 sysconfdir
 datadir
