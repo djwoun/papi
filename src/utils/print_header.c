@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/utsname.h>
+#include <string.h>
 
 #include "papi.h"
 
