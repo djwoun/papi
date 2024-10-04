@@ -1114,6 +1114,7 @@ do
   | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
   | --run=* | --ru=* | --r=*)
     runstatedir=$ac_optarg ;;
+  
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
