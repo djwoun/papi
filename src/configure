@@ -740,7 +740,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -795,12 +794,12 @@ with_pfm_root
 with_pfm_prefix
 with_pfm_incdir
 with_pfm_libdir
+enable_cpu
+enable_perf_event
+enable_perf_event_uncore
 with_perf_events
 enable_perfevent_rdpmc
 with_pe_incdir
-enable_perf_event_uncore
-enable_perf_event
-enable_cpu
 with_components
 enable_fortran
 '
@@ -853,7 +852,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1106,15 +1104,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1252,7 +1241,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1405,7 +1394,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1436,12 +1424,13 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-warnings       Enable build with -Wall -Wextra (default: disabled)
+  --disable-cpu           Disable cpu component
+  --disable-perf-event    Disable perf_event component
+  --disable-perf-event-uncore
+                          Disable perf_event_uncore component
   --enable-perfevent-rdpmc
                           Enable userspace rdpmc instruction on perf_event,
                           default: yes
-  --disable-perf-event-uncore Disable perf_event_uncore component
-  --disable-perf-event    Disable perf_event component
-  --disable-cpu           Disable perf_event and perf_event_uncore component                          
   --disable-fortran       Whether to disable fortran bindings
 
 Optional Packages:
@@ -4458,7 +4447,8 @@ rm -f core conftest.err conftest.$ac_objext \
 $as_echo "found" >&6; }
                         LRT="-lrt -lpthread"
                 else
-			as_fn_error $? "cannot find timer_create and timer_*ettime symbols neither in the base system libraries nor in -lrt, nor in -lrt -lpthread" "$LINENO" 5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: cannot find timer_create and timer_*ettime symbols neither in the base system libraries nor in -lrt, nor in -lrt -lpthread" >&5
+$as_echo "cannot find timer_create and timer_*ettime symbols neither in the base system libraries nor in -lrt, nor in -lrt -lpthread" >&6; }
 		fi
 	fi
 fi
@@ -5948,36 +5938,46 @@ perf_events=yes
 force_perf_events=no
 perf_events_uncore=yes
 
-
 # Check whether --enable-cpu was given.
-if test "${enable_cpu+set}" = set; then
+if test "${enable_cpu+set}" = set; then :
   enableval=$enable_cpu;
 fi
 
-if test "x$enable_cpu" = "xno"; then
-  perf_events="no"
-  force_perf_events="no"
-  perf_events_uncore="no"
+
+if test "x$enable_cpu" = "xno"; then :
+
+	perf_events=no
+  force_perf_events=no
+  perf_events_uncore=no
+
 fi
 
 # Check whether --enable-perf_event was given.
-if test "${enable_perf_event+set}" = set; then
+if test "${enable_perf_event+set}" = set; then :
   enableval=$enable_perf_event;
 fi
 
-if test "x$enable_perf_event" = "xno"; then
-  perf_events="no"
-  force_perf_events="no"
+
+if test "x$enable_perf_event" = "xno"; then :
+
+	perf_events=no
+  force_perf_events=no
+
 fi
 
 # Check whether --enable-perf_event_uncore was given.
-if test "${enable_perf_event_uncore+set}" = set; then
+if test "${enable_perf_event_uncore+set}" = set; then :
   enableval=$enable_perf_event_uncore;
 fi
 
-if test "x$enable_perf_event_uncore" = "xno"; then
-  perf_events_uncore="no"
+
+if test "x$enable_perf_event_uncore" = "xno"; then :
+
+	perf_events_uncore=no
+
 fi
+
+
 
 # Check whether --with-perf_events was given.
 if test "${with_perf_events+set}" = set; then :
@@ -6015,6 +6015,7 @@ else
   pe_incdir=$pfm_incdir/perfmon
 fi
 
+
 # Check for perf_event.h
   if test "$force_perf_events" = "yes"; then
 	perf_events="yes"
@@ -6038,7 +6039,7 @@ $as_echo "$ac_cv_file__proc_sys_kernel_perf_event_paranoid" >&6; }
 if test "x$ac_cv_file__proc_sys_kernel_perf_event_paranoid" = xyes; then :
 
 	  have_paranoid=yes
-	  as_ac_File=`$as_echo "ac_cv_file_$pe_incdir/perf_event.h" | $as_tr_sh`
+    as_ac_File=`$as_echo "ac_cv_file_$pe_incdir/perf_event.h" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $pe_incdir/perf_event.h" >&5
 $as_echo_n "checking for $pe_incdir/perf_event.h... " >&6; }
 if eval \${$as_ac_File+:} false; then :
@@ -6055,9 +6056,14 @@ fi
 eval ac_res=\$$as_ac_File
 	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
 $as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes" && [ "$perf_events" != "no" ]; then
-  perf_events="yes"
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+
+      if test "$perf_events" != "no"; then
+        perf_events="yes"
+      fi
+
 fi
+
 
 fi
 
@@ -6625,13 +6631,13 @@ elif test "$MAKEVER" = "linux-pe"; then
     else
         components="$components perf_event"
     fi
-    
+
     if test "$perf_events_uncore" = "no"; then
        components="$components"
     else
        components="$components perf_event_uncore"
     fi
-    
+
 elif test "$MAKEVER" = "nec-nec"; then
     FILENAME=Rules.perfnec
     CPUCOMPONENT_NAME=perfnec
@@ -6817,7 +6823,8 @@ fi
 
 
 # always enable sysdetect
-components="$components sysdetect"
+# components="$components sysdetect"
+
 
 PAPI_NUM_COMP=0
 for comp in $components; do
