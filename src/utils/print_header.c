@@ -77,7 +77,7 @@ papi_print_header( char *prompt, const PAPI_hw_info_t ** hwinfo )
 	for (int cid = 0; cid < numcmp; cid++ ) {
 	  const PAPI_component_info_t* cmpinfo = PAPI_get_component_info( cid );
 	  if (cmpinfo->disabled) continue;
-    if (cmpinfo->name == "perf_event") perf_event = 1;
+    if (strcmp(cmpinfo->name, "perf_event")== 0) perf_event = 1;
 	}
   
 	if ( cnt >= 0 ) {
