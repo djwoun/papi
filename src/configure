@@ -5945,6 +5945,8 @@ if test "x$mic" = "xno"; then
        perf_events=no
 fi
 
+sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
+
 perf_events=yes
 force_perf_events=no
 perf_events_uncore=yes
