@@ -5974,20 +5974,6 @@ if test "x$enable_cpu" = "xno"; then :
   '  "$FILE_PATH" > "$TEMP_FILE"
   mv "$TEMP_FILE" "$FILE_PATH" 
 
-elif test "x$enable_cpu" = "xyes"; then : 
-  sed '/$(MAKE) -C utils/a \\
-\
-validation_tests:       $(LIBS) testlib\\
-\t$(SETPATH) $(MAKE) -C validation_tests\\
-\
-ctests: $(LIBS) testlib validation_tests\\
-\t$(SETPATH) $(MAKE) -C ctests\\
-\
-ftests: $(LIBS) testlib\\
-\t$(SETPATH) $(MAKE) -C ftests
-' Makefile.inc > temp_Makefile.inc && mv temp_Makefile.inc Makefile.inc
-
-
 fi
 
 # Check whether --enable-perf_event was given.
