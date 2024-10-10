@@ -5980,16 +5980,6 @@ awk '{
 # Replace the original file with the temporary file
 mv "$TEMP_FILE" "$FILE_PATH"
 
-awk '
-    /^\s*validation_tests:/ { skip = 2 }
-    /^\s*ctests:/ { skip = 2 }
-    /^\s*ftests:/ { skip = 2 }
-    skip {skip--; next}
-    {print}
-'  "$FILE_PATH" > "$TEMP_FILE"
-
-# Move the temporary file to the original file
-mv "$TEMP_FILE" "$FILE_PATH" 
 
 
 fi
