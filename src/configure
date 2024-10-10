@@ -5964,19 +5964,16 @@ if test "x$enable_cpu" = "xno"; then :
 
   FILE_PATH="Makefile.inc"
   TEMP_FILE="temp_$FILE_PATH"
-  awk '{
-      if ($0 ~ /^\.PHONY :/) {
-          gsub(/ctests|ftests|validation_tests/, "");
-          gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
-          gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
-    }
-    print
-  }' "$FILE_PATH" > "$TEMP_FILE"
-  mv "$TEMP_FILE" "$FILE_PATH"
+  
+  awk '
+    /^\s*validation_tests:/ { skip = 2 }
+    /^\s*ctests:/ { skip = 2 }
+    /^\s*ftests:/ { skip = 2 }
+    skip {skip--; next}
+    {print}
+  '  "$FILE_PATH" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE_PATH" 
 
-else
-
-  sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
 
 fi
 
@@ -5993,19 +5990,14 @@ if test "x$enable_perf_event" = "xno"; then :
   
   FILE_PATH="Makefile.inc"
   TEMP_FILE="temp_$FILE_PATH"
-  awk '{
-      if ($0 ~ /^\.PHONY :/) {
-          gsub(/ctests|ftests|validation_tests/, "");
-          gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
-          gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
-    }
-    print
-  }' "$FILE_PATH" > "$TEMP_FILE"
-  mv "$TEMP_FILE" "$FILE_PATH"
-  
-else
-
-  sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
+  awk '
+    /^\s*validation_tests:/ { skip = 2 }
+    /^\s*ctests:/ { skip = 2 }
+    /^\s*ftests:/ { skip = 2 }
+    skip {skip--; next}
+    {print}
+  '  "$FILE_PATH" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE_PATH"  
 
 
 fi
@@ -6022,19 +6014,14 @@ if test "x$enable_perf_event_uncore" = "xno"; then :
  
   FILE_PATH="Makefile.inc"
   TEMP_FILE="temp_$FILE_PATH"
-  awk '{
-      if ($0 ~ /^\.PHONY :/) {
-          gsub(/ctests|ftests|validation_tests/, "");
-          gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
-          gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
-    }
-    print
-  }' "$FILE_PATH" > "$TEMP_FILE"
-  mv "$TEMP_FILE" "$FILE_PATH"
- 
-else
-
-  sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
+  awk '
+    /^\s*validation_tests:/ { skip = 2 }
+    /^\s*ctests:/ { skip = 2 }
+    /^\s*ftests:/ { skip = 2 }
+    skip {skip--; next}
+    {print}
+  '  "$FILE_PATH" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE_PATH" 
 
 fi
 
