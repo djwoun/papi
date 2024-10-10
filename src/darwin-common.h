@@ -11,7 +11,10 @@
 static inline pid_t
 mygettid( void )
 {
-  return pthread_self();
+    pthread_t ptid = pthread_self();
+    pid_t thread_id = 0;
+    memcpy(&thread_id, &ptid, sizeof(pid_t) < sizeof(pthread_t) ? sizeof(pid_t) : sizeof(pthread_t));
+    return thread_id;
 }
 
 long long _darwin_get_real_cycles( void );
