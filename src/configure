@@ -5945,8 +5945,6 @@ if test "x$mic" = "xno"; then
        perf_events=no
 fi
 
-sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
-
 perf_events=yes
 force_perf_events=no
 perf_events_uncore=yes
@@ -5955,7 +5953,7 @@ perf_events_uncore=yes
 if test "${enable_cpu+set}" = set; then :
   enableval=$enable_cpu;
 fi
-
+ 
 
 if test "x$enable_cpu" = "xno"; then :
 
@@ -5963,26 +5961,22 @@ if test "x$enable_cpu" = "xno"; then :
   force_perf_events=no
   perf_events_uncore=no
   
-  # Define the file path
-FILE_PATH="Makefile.inc"
 
-# Temporary file path
-TEMP_FILE="temp_$FILE_PATH"
+  FILE_PATH="Makefile.inc"
+  TEMP_FILE="temp_$FILE_PATH"
+  awk '{
+      if ($0 ~ /^\.PHONY :/) {
+          gsub(/ctests|ftests|validation_tests/, "");
+          gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
+          gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
+    }
+    print
+  }' "$FILE_PATH" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE_PATH"
 
-# Use awk to modify the file
-awk '{
-    if ($0 ~ /^\.PHONY :/) {
-        gsub(/ctests|ftests|validation_tests/, "");
-        gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
-        gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
-  }
-  print
-}' "$FILE_PATH" > "$TEMP_FILE"
+else
 
-# Replace the original file with the temporary file
-mv "$TEMP_FILE" "$FILE_PATH"
-
-
+  sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
 
 fi
 
@@ -5996,6 +5990,23 @@ if test "x$enable_perf_event" = "xno"; then :
 
 	perf_events=no
   force_perf_events=no
+  
+  FILE_PATH="Makefile.inc"
+  TEMP_FILE="temp_$FILE_PATH"
+  awk '{
+      if ($0 ~ /^\.PHONY :/) {
+          gsub(/ctests|ftests|validation_tests/, "");
+          gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
+          gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
+    }
+    print
+  }' "$FILE_PATH" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE_PATH"
+  
+else
+
+  sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
+
 
 fi
 
@@ -6008,6 +6019,22 @@ fi
 if test "x$enable_perf_event_uncore" = "xno"; then :
 
 	perf_events_uncore=no
+ 
+  FILE_PATH="Makefile.inc"
+  TEMP_FILE="temp_$FILE_PATH"
+  awk '{
+      if ($0 ~ /^\.PHONY :/) {
+          gsub(/ctests|ftests|validation_tests/, "");
+          gsub(/[[:blank:]]+/, " ");   # Normalize spaces where targets were removed
+          gsub(/[[:blank:]]+$/, "");   # Remove trailing spaces
+    }
+    print
+  }' "$FILE_PATH" > "$TEMP_FILE"
+  mv "$TEMP_FILE" "$FILE_PATH"
+ 
+else
+
+  sed 's/.PHONY : all test fulltest tests testlib utils comp_tests null/.PHONY : all test fulltest tests testlib utils ctests ftests comp_tests validation_tests null/' "Makefile.inc" > "make_temp" && mv "make_temp" "Makefile.inc"
 
 fi
 
