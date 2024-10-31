@@ -2442,6 +2442,40 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
     return papi_errno;
 }
 
+/* Helper function to restructure the event name */
+void restructure_event_name(char *input, char *output) {
+    char *part1, *part2, *part3;
+    char *token;
+    char s[2] = ".";
+    int segment_count = 0;
+
+    // Use strtok to split the string by periods
+    token = strtok(input, s);
+    part1 = token;   // First part (Base1)
+    segment_count++;
+
+    token = strtok(NULL, s);
+    if (token != NULL) {
+        part2 = token;   // Second part (could be stat or Base2)
+        segment_count++;
+
+        token = strtok(NULL, s);
+        if (token != NULL) {
+            part3 = token;   // Third part (Base2)
+            segment_count++;
+        }
+    }
+
+    // Check the segment count and format accordingly
+    if (segment_count == 3) {
+        // Reformat to Base1.Base2.stat
+        sprintf(output, "%s.%s.%s", part1, part3, part2);
+    } else {
+        // Leave as is if not exactly three parts
+        sprintf(output, "%s.%s", part1, part2);
+    }
+}
+
 /** @class cuptip_evt_code_to_info
   * @brief Takes a Cuda native event code and collects info such as Cuda native 
   *        event name, Cuda native event description, and number of devices. 
@@ -2457,6 +2491,9 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     int papi_errno, len, gpu_id;
     event_info_t inf;
     char description[PAPI_HUGE_STR_LEN];
+    char new_name_format[PAPI_HUGE_STR_LEN];
+    
+    
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -2473,8 +2510,11 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     switch (inf.flags) {
         case (0):
+            restructure_event_name(cuptiu_table_p->events[inf.nameid].name, new_name_format);
+             
+             
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].name );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", new_name_format );
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
             /* cuda native event long description */
@@ -2491,8 +2531,10 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             }
             *(devices + strlen(devices) - 1) = 0;
 
+             restructure_event_name(cuptiu_table_p->events[inf.nameid].name, new_name_format);
+            
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, inf.device );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", new_name_format, inf.device );
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
                      cuptiu_table_p->events[inf.nameid].desc, devices );
