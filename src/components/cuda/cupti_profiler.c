@@ -289,27 +289,15 @@ static int unload_cupti_perf_sym(void)
     return PAPI_OK;
 }
 
-
-/**@class load_nvpw_sym
- * @brief Search for libnvperf_host.so. Order of search is outlined below.
- *
- * 1. If a user sets PAPI_CUDA_PERFWORKS, this will take precedent over
- *    the options listed below to be searched.
- * 2. If we fail to collect libnvperf_host.so from PAPI_CUDA_PERFWORKS or it is not set,
- *    we will search the path defined with PAPI_CUDA_ROOT; as this is supposed to always be set.
- * 3. If we fail to collect libnvperf_host.so from steps 1 and 2, then we will search the linux
- *    default directories listed by /etc/ld.so.conf. As a note, updating the LD_LIBRARY_PATH is
- *    advised for this option.
- * 4. We use dlopen to search for libnvperf_host.so.
- *    If this fails, then we failed to find libnvperf_host.so.
- */
+/** @class load_nvpw_sym
+  * @brief Load nvperf functions and assign to function pointers.
+*/
 static int load_nvpw_sym(void)
 {
     COMPDBG("Entering.\n");
     char dlname[] = "libnvperf_host.so";
     char lookup_path[PATH_MAX];
 
-    /* search PAPI_CUDA_PERFWORKS for libnvperf_host.so (takes precedent over PAPI_CUDA_ROOT) */
     char *papi_cuda_perfworks = getenv("PAPI_CUDA_PERFWORKS");
     if (papi_cuda_perfworks) {
         sprintf(lookup_path, "%s/%s", papi_cuda_perfworks, dlname);
@@ -322,18 +310,15 @@ static int load_nvpw_sym(void)
         NULL,
     };
 
-    /* search PAPI_CUDA_ROOT for libnvperf_host.so */
+    if (linked_cudart_path && !dl_nvpw) {
+        dl_nvpw = cuptic_load_dynamic_syms(linked_cudart_path, dlname, standard_paths);
+    }
+
     char *papi_cuda_root = getenv("PAPI_CUDA_ROOT");
     if (papi_cuda_root && !dl_nvpw) {
         dl_nvpw = cuptic_load_dynamic_syms(papi_cuda_root, dlname, standard_paths);
     }
 
-    /* search linux default directories for libnvperf_host.so */
-    if (linked_cudart_path && !dl_nvpw) {
-        dl_nvpw = cuptic_load_dynamic_syms(linked_cudart_path, dlname, standard_paths);
-    }
-
-    /* last ditch effort to find libcupti.so */
     if (!dl_nvpw) {
         dl_nvpw = dlopen(dlname, RTLD_NOW | RTLD_GLOBAL);
         if (!dl_nvpw) {
@@ -2549,7 +2534,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     return papi_errno;
 }
-
+ 
 /** @class evt_name_to_basename
   * @brief Convert a Cuda native event name with a device qualifer appended to 
   *        it, back to the base Cuda native event name provided by NVIDIA.
@@ -2588,11 +2573,9 @@ static int evt_name_to_basename(const char *name, char *base, int len)
 static int evt_name_to_device(const char *name, int *device)
 {
     char *p = strstr(name, ":device=");
-    if (p) {
-        *device = (int) strtol(p + strlen(":device="), NULL, 10);
+    if (!p) {
+        return PAPI_ENOEVNT;
     }
-    else {
-        *device = 0;
-    }
+    *device = (int) strtol(p + strlen(":device="), NULL, 10);
     return PAPI_OK;
 }
