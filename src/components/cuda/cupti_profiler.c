@@ -2480,7 +2480,7 @@ void restructure_event_name(char *input, char *output) {
 
     // Format as Base1.stat.Base2 if stat is found
     if (stat_found) {
-        sprintf(output, "%s.%s.%s", base1, stat, base2);
+        sprintf(output, "%s.%s.%s", base1, base2, stat );
     } else {
         // Leave as is if stat not found
         strcpy(output, input);
