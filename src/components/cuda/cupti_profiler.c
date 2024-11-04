@@ -2429,7 +2429,7 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
 
 /* Helper function to restructure the event name */
 void restructure_event_name(char *input, char *output) {
-    char *part1, *part2, *part3;
+    char *part1, *part2, *part3, *part4;
     char *token;
     char s[2] = ".";
     int segment_count = 0;
@@ -2446,20 +2446,30 @@ void restructure_event_name(char *input, char *output) {
 
         token = strtok(NULL, s);
         if (token != NULL) {
-            part3 = token;   // Third part (Base2)
+            part3 = token;   // Third part (stat or Base2)
             segment_count++;
+
+            token = strtok(NULL, s);
+            if (token != NULL) {
+                part4 = token;   // Fourth part (Base3)
+                segment_count++;
+            }
         }
     }
 
     // Check the segment count and format accordingly
-    if (segment_count == 3) {
+    if (segment_count == 4) {
+        // Reformat to Base1.stat.Base3 (ignoring Base2 for format Base1.Base2.stat.Base3)
+        sprintf(output, "%s.%s.%s", part1, part3, part4);
+    } else if (segment_count == 3) {
         // Reformat to Base1.Base2.stat
         sprintf(output, "%s.%s.%s", part1, part3, part2);
     } else {
-        // Leave as is if not exactly three parts
+        // Leave as is if not exactly three or four parts
         sprintf(output, "%s.%s", part1, part2);
     }
 }
+
 
 /** @class cuptip_evt_code_to_info
   * @brief Takes a Cuda native event code and collects info such as Cuda native 
