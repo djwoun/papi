@@ -2427,7 +2427,20 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
     return papi_errno;
 }
 
-/* Helper function to restructure the event name */
+
+// Helper function to check if a string matches known statistical terms
+int is_stat_term(char *str) {
+    const char *stat_terms[] = {"sum", "max_rate", "max", "avg", "ratio", "min", "pct"};
+    int num_terms = sizeof(stat_terms) / sizeof(stat_terms[0]);
+
+    for (int i = 0; i < num_terms; i++) {
+        if (strcmp(str, stat_terms[i]) == 0) {
+            return 1; // Match found
+        }
+    }
+    return 0; // No match found
+}
+
 void restructure_event_name(char *input, char *output) {
     char *part1, *part2, *part3, *part4;
     char *token;
@@ -2446,29 +2459,35 @@ void restructure_event_name(char *input, char *output) {
 
         token = strtok(NULL, s);
         if (token != NULL) {
-            part3 = token;   // Third part (stat or Base2)
+            part3 = token;   // Third part (could be Base2 or stat)
             segment_count++;
 
             token = strtok(NULL, s);
             if (token != NULL) {
-                part4 = token;   // Fourth part (Base3)
-                segment_count++;
+                part4 = token;   // Fourth part (stat or Base3)
+                segment_count++; 
             }
         }
     }
 
     // Check the segment count and format accordingly
     if (segment_count == 4) {
-        // Reformat to Base1.stat.Base3 (ignoring Base2 for format Base1.Base2.stat.Base3)
-        sprintf(output, "%s.%s.%s", part1, part3, part4);
+        // Case: base1.base2.stat.base3 => base1.base2.base3.stat
+        sprintf(output, "%s.%s.%s.%s", part1, part2, part4, part3);
     } else if (segment_count == 3) {
-        // Reformat to Base1.Base2.stat
-        sprintf(output, "%s.%s.%s", part1, part3, part2);
+        // Case: base1.stat.base2 => base1.base2.stat
+        // or leave as base1.base2.stat if it already follows the desired format
+        if (is_stat_term(part2)) {
+            sprintf(output, "%s.%s.%s", part1, part3, part2);
+        } else {
+            sprintf(output, "%s.%s.%s", part1, part2, part3);
+        }
     } else {
         // Leave as is if not exactly three or four parts
         sprintf(output, "%s.%s", part1, part2);
     }
 }
+
 
 
 /** @class cuptip_evt_code_to_info
