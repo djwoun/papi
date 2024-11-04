@@ -2428,65 +2428,66 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
 }
 
 
-// Helper function to check if a string matches known statistical terms
-int is_stat_term(char *str) {
-    const char *stat_terms[] = {"sum", "max_rate", "max", "avg", "ratio", "min", "pct"};
-    int num_terms = sizeof(stat_terms) / sizeof(stat_terms[0]);
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 
-    for (int i = 0; i < num_terms; i++) {
-        if (strcmp(str, stat_terms[i]) == 0) {
-            return 1; // Match found
-        }
-    }
-    return 0; // No match found
+/* Helper function to check if a token is a statistical keyword */
+bool is_stat(const char *token) {
+    return (strcmp(token, "avg") == 0 || strcmp(token, "sum") == 0 ||
+            strcmp(token, "min") == 0 || strcmp(token, "max") == 0 ||
+            strcmp(token, "max_rate") == 0 || strcmp(token, "pct") == 0 ||
+            strcmp(token, "ratio") == 0);
 }
 
+/* Helper function to restructure the event name */
 void restructure_event_name(char *input, char *output) {
-    char *part1, *part2, *part3, *part4;
+    char *base1 = NULL, *stat = NULL, *base2 = NULL;
     char *token;
     char s[2] = ".";
-    int segment_count = 0;
+    char temp[256] = "";  // Temporary string to hold the concatenated base1
+    bool stat_found = false;
 
     // Use strtok to split the string by periods
     token = strtok(input, s);
-    part1 = token;   // First part (Base1)
-    segment_count++;
 
-    token = strtok(NULL, s);
-    if (token != NULL) {
-        part2 = token;   // Second part (could be stat or Base2)
-        segment_count++;
-
-        token = strtok(NULL, s);
-        if (token != NULL) {
-            part3 = token;   // Third part (could be Base2 or stat)
-            segment_count++;
-
-            token = strtok(NULL, s);
-            if (token != NULL) {
-                part4 = token;   // Fourth part (stat or Base3)
-                segment_count++; 
+    // Iterate over tokens and find the stat keyword
+    while (token != NULL) {
+        if (!stat_found && is_stat(token)) {
+            stat = token;       // Found the stat part
+            stat_found = true;  // Mark that stat has been found
+        } else if (stat_found) {
+            // After finding stat, everything goes to base2
+            if (base2 == NULL) {
+                base2 = token;
+            } else { 
+                strcat(base2, ".");
+                strcat(base2, token);
+            }
+        } else {
+            // Before finding stat, everything goes to base1
+            if (base1 == NULL) {
+                strcpy(temp, token);
+                base1 = temp;
+            } else {
+                strcat(temp, ".");
+                strcat(temp, token);
             }
         }
+
+        token = strtok(NULL, s);
     }
 
-    // Check the segment count and format accordingly
-    if (segment_count == 4) {
-        // Case: base1.base2.stat.base3 => base1.base2.base3.stat
-        sprintf(output, "%s.%s.%s.%s", part1, part2, part4, part3);
-    } else if (segment_count == 3) {
-        // Case: base1.stat.base2 => base1.base2.stat
-        // or leave as base1.base2.stat if it already follows the desired format
-        if (is_stat_term(part2)) {
-            sprintf(output, "%s.%s.%s", part1, part3, part2);
-        } else {
-            sprintf(output, "%s.%s.%s", part1, part2, part3);
-        }
+    // Format as Base1.stat.Base2 if stat is found
+    if (stat_found) {
+        sprintf(output, "%s.%s.%s", base1, stat, base2);
     } else {
-        // Leave as is if not exactly three or four parts
-        sprintf(output, "%s.%s", part1, part2);
+        // Leave as is if stat not found
+        strcpy(output, input);
     }
 }
+
+
 
 
 
