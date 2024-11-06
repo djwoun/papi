@@ -2432,7 +2432,7 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
 #include <string.h>
 #include <stdbool.h>
 
-/* Helper function to check if a token is a statistical keyword */
+/* Helper function to determine if a token represents a statistical operation */
 bool is_stat(const char *token) {
     return (strcmp(token, "avg") == 0 || strcmp(token, "sum") == 0 ||
             strcmp(token, "min") == 0 || strcmp(token, "max") == 0 ||
@@ -2442,45 +2442,45 @@ bool is_stat(const char *token) {
 
 /* Helper function to restructure the event name */
 void restructure_event_name(char *input, char *output) {
-    char *tokens[256];  // Array to hold split tokens
-    int token_count = 0;
+    char *parts[5] = {0};  // Support up to five parts
     char *token;
     char s[2] = ".";
-    bool stat_found = false;
+    int segment_count = 0;
     int stat_index = -1;
 
-    // Split the input string by periods and store tokens in an array
+    // Use strtok to split the string by periods
     token = strtok(input, s);
-    while (token != NULL) {
-        tokens[token_count++] = token;
-
-        // Check if the token is a stat
-        if (is_stat(token) && stat_index == -1) {
-            stat_index = token_count - 1;
-            stat_found = true;
+    while (token != NULL && segment_count < 5) {
+        if (is_stat(token)) {
+            stat_index = segment_count;  // Identify the position of the statistical segment
         }
-
+        parts[segment_count++] = token;
         token = strtok(NULL, s);
     }
 
-    // Check if the last token is a stat; if not and a stat was found, rearrange
-    if (stat_found && stat_index != token_count - 1) {
-        // Swap stat with the element immediately after it until it's at the end
-        for (int i = stat_index; i < token_count - 1; i++) {
-            char *temp = tokens[i];
-            tokens[i] = tokens[i + 1];
-            tokens[i + 1] = temp;
+    // Construct output based on the identified positions and segment count
+    if (stat_index != -1) {
+        // Place the stat part at the end
+        int output_index = 0;
+        for (int i = 0; i < segment_count; i++) {
+            if (i != stat_index) {  // Append non-stat parts first
+                if (output_index > 0) {
+                    strcat(output, ".");
+                }
+                strcat(output, parts[i]);
+                output_index++;
+            }
         }
-    }
-
-    // Rebuild the output string
-    strcpy(output, tokens[0]);
-    for (int i = 1; i < token_count; i++) {
-        strcat(output, ".");
-        strcat(output, tokens[i]);
+        // Append the stat part last
+        if (output_index > 0) {
+            strcat(output, ".");
+        }
+        strcat(output, parts[stat_index]);
+    } else {
+        // If no stat part found, output as is or handle error if needed
+        strcpy(output, input);
     }
 }
-
 
 
 
