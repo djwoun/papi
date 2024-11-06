@@ -2441,42 +2441,45 @@ bool is_stat(const char *token) {
 }
 
 /* Helper function to restructure the event name */
-void restructure_event_name(char *input, char *output) {
-    char *parts[10] = {0};  // Supports up to ten parts for safety
+void restructure_event_name(const char *input, char *output) {
+    char input_copy[256];
+    strncpy(input_copy, input, sizeof(input_copy) - 1);
+    input_copy[sizeof(input_copy) - 1] = '\0'; // Ensure null termination
+
+    char *parts[10] = {0};  // Supports up to ten parts
     char *token;
     char delimiter[2] = ".";
     int segment_count = 0;
     int stat_index = -1;
 
     // Use strtok to split the string by periods
-    token = strtok(input, delimiter);
+    token = strtok(input_copy, delimiter);
     while (token != NULL) {
-        if (is_stat(token) && stat_index == -1) {  // Only recognize the first stat part encountered
+        parts[segment_count] = token;  // Store each token
+        if (is_stat(token)) {  // Check if the token is a stat
             stat_index = segment_count;
         }
-        parts[segment_count++] = token;
+        segment_count++;
         token = strtok(NULL, delimiter);
     }
 
-    output[0] = '\0';  // Initialize output to an empty string
+    // If no stat found or stat is already at the end, output the original input
     if (stat_index == -1 || stat_index == segment_count - 1) {
-        // If no stat part or it's already at the end, just return the original input
         strcpy(output, input);
-    } else {
-        // Otherwise, reconstruct output to place the stat at the end
-        for (int i = 0; i < segment_count; i++) {
-            if (i == stat_index) continue;  // Skip the stat part in the initial output sequence
-            if (i > 0 && parts[i - 1] != NULL) strcat(output, ".");
-            strcat(output, parts[i]);
-        }
-        // Now add the stat part at the end
-        strcat(output, ".");
-        strcat(output, parts[stat_index]);
+        return;
     }
-    // Append a newline character at the end of the output
-    //strcat(output, "\n");
-}
 
+    // Construct the output without the statistical part
+    *output = '\0'; // Start with an empty string
+    for (int i = 0; i < segment_count; i++) {
+        if (i == stat_index) continue;  // Skip the stat part
+        if (*output != '\0') strcat(output, ".");  // Add period before all but the first segment
+        strcat(output, parts[i]);
+    }
+    // Append the stat part at the end
+    strcat(output, ".");
+    strcat(output, parts[stat_index]);
+}
 
 /** @class cuptip_evt_code_to_info
   * @brief Takes a Cuda native event code and collects info such as Cuda native 
