@@ -2442,46 +2442,40 @@ bool is_stat(const char *token) {
 
 /* Helper function to restructure the event name */
 void restructure_event_name(char *input, char *output) {
-    char *parts[5] = {0};  // Support up to five parts
+    char *parts[10] = {0};  // Supports up to ten parts for safety
     char *token;
-    char s[2] = ".";
+    char delimiter[2] = ".";
     int segment_count = 0;
     int stat_index = -1;
 
     // Use strtok to split the string by periods
-    token = strtok(input, s);
-    while (token != NULL && segment_count < 5) {
-        if (is_stat(token)) {
-            stat_index = segment_count;  // Identify the position of the statistical segment
+    token = strtok(input, delimiter);
+    while (token != NULL) {
+        if (is_stat(token) && stat_index == -1) {  // Only recognize the first stat part encountered
+            stat_index = segment_count;
         }
         parts[segment_count++] = token;
-        token = strtok(NULL, s);
+        token = strtok(NULL, delimiter);
     }
 
-    // Construct output based on the identified positions and segment count
-    if (stat_index != -1) {
-        // Place the stat part at the end
-        int output_index = 0;
-        for (int i = 0; i < segment_count; i++) {
-            if (i != stat_index) {  // Append non-stat parts first
-                if (output_index > 0) {
-                    strcat(output, ".");
-                }
-                strcat(output, parts[i]);
-                output_index++;
-            }
-        }
-        // Append the stat part last
-        if (output_index > 0) {
-            strcat(output, ".");
-        }
-        strcat(output, parts[stat_index]);
-    } else {
-        // If no stat part found, output as is or handle error if needed
+    output[0] = '\0';  // Initialize output to an empty string
+    if (stat_index == -1 || stat_index == segment_count - 1) {
+        // If no stat part or it's already at the end, just return the original input
         strcpy(output, input);
+    } else {
+        // Otherwise, reconstruct output to place the stat at the end
+        for (int i = 0; i < segment_count; i++) {
+            if (i == stat_index) continue;  // Skip the stat part in the initial output sequence
+            if (i > 0 && parts[i - 1] != NULL) strcat(output, ".");
+            strcat(output, parts[i]);
+        }
+        // Now add the stat part at the end
+        strcat(output, ".");
+        strcat(output, parts[stat_index]);
     }
+    // Append a newline character at the end of the output
+    //strcat(output, "\n");
 }
-
 
 
 /** @class cuptip_evt_code_to_info
