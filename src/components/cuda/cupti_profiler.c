@@ -2442,51 +2442,44 @@ bool is_stat(const char *token) {
 
 /* Helper function to restructure the event name */
 void restructure_event_name(char *input, char *output) {
-    char *base1 = NULL, *stat = NULL, *base2 = NULL;
+    char *tokens[256];  // Array to hold split tokens
+    int token_count = 0;
     char *token;
     char s[2] = ".";
-    char temp[256] = "";  // Temporary string to hold the concatenated base1
     bool stat_found = false;
+    int stat_index = -1;
 
-    // Use strtok to split the string by periods
+    // Split the input string by periods and store tokens in an array
     token = strtok(input, s);
-
-    // Iterate over tokens and find the stat keyword
     while (token != NULL) {
-        if (!stat_found && is_stat(token)) {
-            stat = token;       // Found the stat part
-            stat_found = true;  // Mark that stat has been found
-        } else if (stat_found) {
-            // After finding stat, everything goes to base2
-            if (base2 == NULL) {
-                base2 = token;
-            } else { 
-                strcat(base2, ".");
-                strcat(base2, token);
-            }
-        } else {
-            // Before finding stat, everything goes to base1
-            if (base1 == NULL) {
-                strcpy(temp, token);
-                base1 = temp;
-            } else {
-                strcat(temp, ".");
-                strcat(temp, token);
-            }
+        tokens[token_count++] = token;
+
+        // Check if the token is a stat
+        if (is_stat(token) && stat_index == -1) {
+            stat_index = token_count - 1;
+            stat_found = true;
         }
 
         token = strtok(NULL, s);
     }
 
-    // Format as Base1.stat.Base2 if stat is found
-    if (stat_found) {
-        sprintf(output, "%s.%s.%s", base1, base2, stat );
-    } else {
-        // Leave as is if stat not found
-        strcpy(output, input);
+    // Check if the last token is a stat; if not and a stat was found, rearrange
+    if (stat_found && stat_index != token_count - 1) {
+        // Swap stat with the element immediately after it until it's at the end
+        for (int i = stat_index; i < token_count - 1; i++) {
+            char *temp = tokens[i];
+            tokens[i] = tokens[i + 1];
+            tokens[i + 1] = temp;
+        }
+    }
+
+    // Rebuild the output string
+    strcpy(output, tokens[0]);
+    for (int i = 1; i < token_count; i++) {
+        strcat(output, ".");
+        strcat(output, tokens[i]);
     }
 }
-
 
 
 
