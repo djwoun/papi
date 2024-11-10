@@ -18,7 +18,14 @@ typedef struct event_record_s {
     char name[PAPI_2MAX_STR_LEN];
     char desc[PAPI_HUGE_STR_LEN];
     cuptiu_bitmap_t device_map;
+    int stat_indx;
 } cuptiu_event_t;
+
+typedef struct {
+    char **data;   // Array of string pointers
+    size_t size;   // Number of strings currently in the vector
+    size_t capacity; // Allocated capacity of the vector
+} StringVector;
 
 typedef struct event_table_s {
     unsigned int count;
@@ -27,11 +34,17 @@ typedef struct event_table_s {
     int added_cuda_dev[30];
     cuptiu_event_t *events;
     void *htable;
+    void *htableBaseStat;
 } cuptiu_event_table_t;
 
 /* These functions form a simple API to handle dynamic list of strings */
 int cuptiu_event_table_create_init_capacity(int capacity, int sizeof_rec, cuptiu_event_table_t **pevt_table);
 void cuptiu_event_table_destroy(cuptiu_event_table_t **pevt_table);
+
+
+void init_vector(StringVector *vec);
+void push_back(StringVector *vec, const char *str);
+const char* get(const StringVector *vec, size_t index);
 
 /* Utility to locate a file in a given path */
 #define CUPTIU_MAX_FILES 100

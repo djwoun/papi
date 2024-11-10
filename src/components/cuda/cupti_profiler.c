@@ -1979,6 +1979,60 @@ int init_event_table(void)
 
 }
 
+#include <stdbool.h>
+/* Helper function to determine if a token represents a statistical operation */
+bool is_stat(const char *token) {
+    return (strcmp(token, "avg") == 0 || strcmp(token, "sum") == 0 ||
+            strcmp(token, "min") == 0 || strcmp(token, "max") == 0 ||
+            strcmp(token, "max_rate") == 0 || strcmp(token, "pct") == 0 ||
+            strcmp(token, "ratio") == 0);
+}
+
+/* Helper function to restructure the event name */
+void restructure_event_name(const char *input, char *output, char *base, char *stat, int *stat_idx) {
+    char input_copy[256];
+    strncpy(input_copy, input, sizeof(input_copy) - 1);
+    input_copy[sizeof(input_copy) - 1] = '\0'; // Ensure null termination
+
+    char *parts[10] = {0};  // Supports up to ten parts
+    char *token;
+    char delimiter[2] = ".";
+    int segment_count = 0;
+    int stat_index = -1;
+
+    // Use strtok to split the string by periods
+    token = strtok(input_copy, delimiter);
+    while (token != NULL) {
+        parts[segment_count] = token;  // Store each token
+        if (is_stat(token)) {  // Check if the token is a stat
+            stat_index = segment_count;
+        }
+        segment_count++;
+        token = strtok(NULL, delimiter);
+    }
+
+    // If no stat found or stat is already at the end, output the original input
+    if (stat_index == -1 || stat_index == segment_count - 1) {
+        strcpy(output, input);
+        return;
+    }
+    
+    *stat_idx = stat_index;
+    
+    // Construct the output without the statistical part
+    *output = '\0'; // Start with an empty string
+    for (int i = 0; i < segment_count; i++) {
+        if (i == stat_index) continue;  // Skip the stat part
+        if (*output != '\0') strcat(output, ".");  // Add period before all but the first segment
+        strcat(output, parts[i]);
+        strcat(base, parts[i]);
+    }
+    // Append the stat part at the end
+    strcat(output, ".");
+    strcat(output, parts[stat_index]);
+    strcat(stat, parts[stat_index]);
+}
+
 /** @class get_ntv_events
   * @brief Add the event name, event code, and event position to the hash table.
   *
@@ -1994,8 +2048,9 @@ int init_event_table(void)
 */
 static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name, unsigned int evt_code, int evt_pos, int gpu_id) 
 {
-    int papi_errno;
+    int papi_errno, stat_index;
     char description[256];
+    char name_restruct[PAPI_HUGE_STR_LEN], base_name[PAPI_HUGE_STR_LEN], stat[PAPI_HUGE_STR_LEN];
     int *count = &evt_table->count;
     cuptiu_event_t *events = cuptiu_table.events;
     
@@ -2010,20 +2065,37 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
         return PAPI_ENOMEM;
     }
 
+    restructure_event_name(evt_name, name_restruct, base_name, stat, &stat_index);
+
     cuptiu_event_t *event;
     /* check to make sure event entry has not already been added */
-    if ( htable_find(evt_table->htable, evt_name, (void **) &event) != HTABLE_SUCCESS ) {
+    if ( htable_find(evt_table->htable, name_restruct, (void **) &event) != HTABLE_SUCCESS ) {
         event = &events[*count];
         /* increment count */
         (*count)++;
 
         /* store event info */
-        strcpy(event->name, evt_name);
-
+        strcpy(event->name, name_restruct);
+        
+        event->stat_indx = stat_index;
+        
         /* insert event info into htable */
-        if ( htable_insert(evt_table->htable, evt_name, event) != HTABLE_SUCCESS ) {
+        if ( htable_insert(evt_table->htable, name_restruct, event) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
         }
+    }
+    
+    StringVector *stat_vec;
+    if ( htable_find(evt_table->htableBaseStat, base_name, (void **) &stat_vec) != HTABLE_SUCCESS ) {
+        init_vector(stat_vec);
+        push_back(stat_vec, stat);
+        
+        /* insert stat vector info into htable */
+        if ( htable_insert(evt_table->htableBaseStat, base_name, stat_vec) != HTABLE_SUCCESS ) {
+            return PAPI_ESYS;
+        }
+    } else {
+        push_back(stat_vec, stat);
     }
 
     cuptiu_dev_set(&event->device_map, gpu_id);
@@ -2456,7 +2528,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     int papi_errno, len, gpu_id;
     event_info_t inf;
-    char description[PAPI_HUGE_STR_LEN];
+    char description[PAPI_HUGE_STR_LEN], *last_dot, base[PAPI_HUGE_STR_LEN], stat[PAPI_HUGE_STR_LEN];
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -2470,7 +2542,17 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             return papi_errno;
         }
     }
-
+    
+    last_dot = strrchr(cuptiu_table_p->events[inf.nameid].name, '.');
+    strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot-cuptiu_table_p->events[inf.nameid].name);
+    //before_stat[before_length] = '\0'; 
+    strcpy(stat, last_dot);
+    
+     if (htable_find(cuptiu_table_p->htableBaseStat, name, (void **) &p) != HTABLE_SUCCESS) {
+     
+     
+     }
+    
     switch (inf.flags) {
         case (0):
             /* cuda native event name */
