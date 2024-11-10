@@ -289,27 +289,15 @@ static int unload_cupti_perf_sym(void)
     return PAPI_OK;
 }
 
-
-/**@class load_nvpw_sym
- * @brief Search for libnvperf_host.so. Order of search is outlined below.
- *
- * 1. If a user sets PAPI_CUDA_PERFWORKS, this will take precedent over
- *    the options listed below to be searched.
- * 2. If we fail to collect libnvperf_host.so from PAPI_CUDA_PERFWORKS or it is not set,
- *    we will search the path defined with PAPI_CUDA_ROOT; as this is supposed to always be set.
- * 3. If we fail to collect libnvperf_host.so from steps 1 and 2, then we will search the linux
- *    default directories listed by /etc/ld.so.conf. As a note, updating the LD_LIBRARY_PATH is
- *    advised for this option.
- * 4. We use dlopen to search for libnvperf_host.so.
- *    If this fails, then we failed to find libnvperf_host.so.
- */
+/** @class load_nvpw_sym
+  * @brief Load nvperf functions and assign to function pointers.
+*/
 static int load_nvpw_sym(void)
 {
     COMPDBG("Entering.\n");
     char dlname[] = "libnvperf_host.so";
     char lookup_path[PATH_MAX];
 
-    /* search PAPI_CUDA_PERFWORKS for libnvperf_host.so (takes precedent over PAPI_CUDA_ROOT) */
     char *papi_cuda_perfworks = getenv("PAPI_CUDA_PERFWORKS");
     if (papi_cuda_perfworks) {
         sprintf(lookup_path, "%s/%s", papi_cuda_perfworks, dlname);
@@ -322,18 +310,15 @@ static int load_nvpw_sym(void)
         NULL,
     };
 
-    /* search PAPI_CUDA_ROOT for libnvperf_host.so */
+    if (linked_cudart_path && !dl_nvpw) {
+        dl_nvpw = cuptic_load_dynamic_syms(linked_cudart_path, dlname, standard_paths);
+    }
+
     char *papi_cuda_root = getenv("PAPI_CUDA_ROOT");
     if (papi_cuda_root && !dl_nvpw) {
         dl_nvpw = cuptic_load_dynamic_syms(papi_cuda_root, dlname, standard_paths);
     }
 
-    /* search linux default directories for libnvperf_host.so */
-    if (linked_cudart_path && !dl_nvpw) {
-        dl_nvpw = cuptic_load_dynamic_syms(linked_cudart_path, dlname, standard_paths);
-    }
-
-    /* last ditch effort to find libcupti.so */
     if (!dl_nvpw) {
         dl_nvpw = dlopen(dlname, RTLD_NOW | RTLD_GLOBAL);
         if (!dl_nvpw) {
@@ -2442,6 +2427,60 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
     return papi_errno;
 }
 
+
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+
+/* Helper function to determine if a token represents a statistical operation */
+bool is_stat(const char *token) {
+    return (strcmp(token, "avg") == 0 || strcmp(token, "sum") == 0 ||
+            strcmp(token, "min") == 0 || strcmp(token, "max") == 0 ||
+            strcmp(token, "max_rate") == 0 || strcmp(token, "pct") == 0 ||
+            strcmp(token, "ratio") == 0);
+}
+
+/* Helper function to restructure the event name */
+void restructure_event_name(const char *input, char *output) {
+    char input_copy[256];
+    strncpy(input_copy, input, sizeof(input_copy) - 1);
+    input_copy[sizeof(input_copy) - 1] = '\0'; // Ensure null termination
+
+    char *parts[10] = {0};  // Supports up to ten parts
+    char *token;
+    char delimiter[2] = ".";
+    int segment_count = 0;
+    int stat_index = -1;
+
+    // Use strtok to split the string by periods
+    token = strtok(input_copy, delimiter);
+    while (token != NULL) {
+        parts[segment_count] = token;  // Store each token
+        if (is_stat(token)) {  // Check if the token is a stat
+            stat_index = segment_count;
+        }
+        segment_count++;
+        token = strtok(NULL, delimiter);
+    }
+
+    // If no stat found or stat is already at the end, output the original input
+    if (stat_index == -1 || stat_index == segment_count - 1) {
+        strcpy(output, input);
+        return;
+    }
+
+    // Construct the output without the statistical part
+    *output = '\0'; // Start with an empty string
+    for (int i = 0; i < segment_count; i++) {
+        if (i == stat_index) continue;  // Skip the stat part
+        if (*output != '\0') strcat(output, ".");  // Add period before all but the first segment
+        strcat(output, parts[i]);
+    }
+    // Append the stat part at the end
+    strcat(output, ".");
+    strcat(output, parts[stat_index]);
+}
+
 /** @class cuptip_evt_code_to_info
   * @brief Takes a Cuda native event code and collects info such as Cuda native 
   *        event name, Cuda native event description, and number of devices. 
@@ -2457,6 +2496,9 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     int papi_errno, len, gpu_id;
     event_info_t inf;
     char description[PAPI_HUGE_STR_LEN];
+    char new_name_format[PAPI_HUGE_STR_LEN];
+    
+    
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -2473,8 +2515,11 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     switch (inf.flags) {
         case (0):
+            restructure_event_name(cuptiu_table_p->events[inf.nameid].name, new_name_format);
+             
+             
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].name );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", new_name_format );
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
             /* cuda native event long description */
@@ -2491,8 +2536,10 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             }
             *(devices + strlen(devices) - 1) = 0;
 
+             restructure_event_name(cuptiu_table_p->events[inf.nameid].name, new_name_format);
+            
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, inf.device );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", new_name_format, inf.device );
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
                      cuptiu_table_p->events[inf.nameid].desc, devices );
@@ -2507,7 +2554,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     return papi_errno;
 }
-
+ 
 /** @class evt_name_to_basename
   * @brief Convert a Cuda native event name with a device qualifer appended to 
   *        it, back to the base Cuda native event name provided by NVIDIA.
@@ -2546,11 +2593,9 @@ static int evt_name_to_basename(const char *name, char *base, int len)
 static int evt_name_to_device(const char *name, int *device)
 {
     char *p = strstr(name, ":device=");
-    if (p) {
-        *device = (int) strtol(p + strlen(":device="), NULL, 10);
+    if (!p) {
+        return PAPI_ENOEVNT;
     }
-    else {
-        *device = 0;
-    }
+    *device = (int) strtol(p + strlen(":device="), NULL, 10);
     return PAPI_OK;
 }
