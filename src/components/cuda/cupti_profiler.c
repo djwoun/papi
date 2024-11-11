@@ -2000,6 +2000,10 @@ void restructure_event_name(const char *input, char *output, char *base, char *s
     int segment_count = 0;
     int stat_index = -1;
 
+    *output = '\0';
+    *base = '\0';
+    *stat = '\0';
+
     // Use strtok to split the string by periods
     token = strtok(input_copy, delimiter);
     while (token != NULL) {
@@ -2020,12 +2024,13 @@ void restructure_event_name(const char *input, char *output, char *base, char *s
     *stat_idx = stat_index;
     
     // Construct the output without the statistical part
-    *output = '\0'; // Start with an empty string
     for (int i = 0; i < segment_count; i++) {
-        if (i == stat_index) continue;  // Skip the stat part
-        if (*output != '\0') strcat(output, ".");  // Add period before all but the first segment
-        strcat(output, parts[i]);
-        strcat(base, parts[i]);
+        if (i != stat_index) {
+          if (*output != '\0') strcat(output, ".");  // Add period before all but the first segment
+          if (*base != '\0') strcat(base, ".");
+          strcat(output, parts[i]);
+          strcat(base, parts[i]);
+        }
     }
     // Append the stat part at the end
     strcat(output, ".");
@@ -2046,6 +2051,7 @@ void restructure_event_name(const char *input, char *output, char *base, char *s
   * @param evt_pos
   *   Position within the hash table. 
 */
+
 static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name, unsigned int evt_code, int evt_pos, int gpu_id) 
 {
     int papi_errno, stat_index;
@@ -2054,32 +2060,30 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
     int *count = &evt_table->count;
     cuptiu_event_t *events = cuptiu_table.events;
     
-    /* check to see if evt_name argument has been provided */
+    
     if (evt_name == NULL) {
         return PAPI_EINVAL;
     }
 
-    /* check to see if capacity has been correctly allocated */
+    
     if (evt_table->count >= evt_table->capacity) {
         printf("Table count is larger than allocated capacity.\n");
         return PAPI_ENOMEM;
     }
 
     restructure_event_name(evt_name, name_restruct, base_name, stat, &stat_index);
-
+    
     cuptiu_event_t *event;
-    /* check to make sure event entry has not already been added */
+   
     if ( htable_find(evt_table->htable, name_restruct, (void **) &event) != HTABLE_SUCCESS ) {
         event = &events[*count];
-        /* increment count */
+        
         (*count)++;
-
-        /* store event info */
+       
         strcpy(event->name, name_restruct);
         
         event->stat_indx = stat_index;
         
-        /* insert event info into htable */
         if ( htable_insert(evt_table->htable, name_restruct, event) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
         }
@@ -2087,10 +2091,13 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
     
     StringVector *stat_vec;
     if ( htable_find(evt_table->htableBaseStat, base_name, (void **) &stat_vec) != HTABLE_SUCCESS ) {
+        stat_vec = malloc(sizeof(StringVector));
+        if (stat_vec == NULL) {
+            return PAPI_ESYS;
+        }
         init_vector(stat_vec);
         push_back(stat_vec, stat);
         
-        /* insert stat vector info into htable */
         if ( htable_insert(evt_table->htableBaseStat, base_name, stat_vec) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
         }
@@ -2528,12 +2535,13 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     int papi_errno, len, gpu_id;
     event_info_t inf;
-    char description[PAPI_HUGE_STR_LEN], *last_dot, base[PAPI_HUGE_STR_LEN], stat[PAPI_HUGE_STR_LEN];
+    char description[PAPI_HUGE_STR_LEN], *last_dot, base[PAPI_HUGE_STR_LEN], stat[PAPI_HUGE_STR_LEN], all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN];
+    StringVector *stat_vec;
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
-
+    
     /* collect the description and calculated numpass for a specific nameid */
     if (cuptiu_table_p->events[inf.nameid].desc[0] == 0) {
         papi_errno = retrieve_metric_descr( avail_events[0].pmetricsContextCreateParams->pMetricsContext,
@@ -2543,15 +2551,46 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
         }
     }
     
-    last_dot = strrchr(cuptiu_table_p->events[inf.nameid].name, '.');
-    strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot-cuptiu_table_p->events[inf.nameid].name);
-    //before_stat[before_length] = '\0'; 
-    strcpy(stat, last_dot);
     
-     if (htable_find(cuptiu_table_p->htableBaseStat, name, (void **) &p) != HTABLE_SUCCESS) {
+    last_dot = strrchr(cuptiu_table_p->events[inf.nameid].name, '.');
+if (last_dot != NULL) {
+    // Copy the part before the last dot
+    strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot - cuptiu_table_p->events[inf.nameid].name);
+    base[last_dot - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
+
+    // Copy the part after the last dot, skipping the dot itself
+    strcpy(stat, last_dot + 1);
+}
+   
+    all_stat[0]= 'A';
+
+    
+    if (htable_find(cuptiu_table_p->htableBaseStat, base, (void **)&stat_vec) == HTABLE_SUCCESS && stat_vec != NULL) {
+    size_t current_len = strlen(all_stat);  // Start with the current length of all_stat
+    strcat(all_stat, "BB");
+    for (size_t i = 0; i < stat_vec->size; i++) {
+        size_t remaining_space = PAPI_HUGE_STR_LEN - current_len - 1;  // Calculate remaining space
+        
+        // Ensure there's enough space for the string before concatenating
+        if (remaining_space > 0) {
+            strncat(all_stat, stat_vec->data[i], remaining_space);
+            current_len += strlen(stat_vec->data[i]);
+        }
+
+        // Add a comma only if there is space and it is not the last element
+        if (i < stat_vec->size - 1 && remaining_space > 2) {
+            strncat(all_stat, ", ", remaining_space - 2);
+            current_len += 2;  // Account for the added comma and space
+        }
+    }
+  }
+
+    
+     //char name_restruct[PAPI_HUGE_STR_LEN], base_name[PAPI_HUGE_STR_LEN], stats[PAPI_HUGE_STR_LEN]; 
+     //int stat_index;
+     //restructure_event_name(cuptiu_table_p->events[inf.nameid].name, name_restruct, base_name, stats, &stat_index);
      
      
-     }
     
     switch (inf.flags) {
         case (0):
@@ -2574,13 +2613,22 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             *(devices + strlen(devices) - 1) = 0;
 
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, inf.device );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, stat );
+            
             /* cuda native event short description */
-            snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
-                     cuptiu_table_p->events[inf.nameid].desc, devices );
+            //snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
+            //         cuptiu_table_p->events[inf.nameid].desc, devices );
             /* cuda native event long description */
-            snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
-                      cuptiu_table_p->events[inf.nameid].desc, devices );
+            //snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
+            //          cuptiu_table_p->events[inf.nameid].desc, devices );
+
+  
+            /* cuda native event short description */
+            snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
+                     cuptiu_table_p->events[inf.nameid].desc, all_stat );
+            /* cuda native event long description */
+            snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
+                      cuptiu_table_p->events[inf.nameid].desc, all_stat );
             break;
         }
         default:
