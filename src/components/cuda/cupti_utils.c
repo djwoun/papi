@@ -27,6 +27,12 @@ int cuptiu_event_table_create_init_capacity(int capacity, int sizeof_rec, cuptiu
         cuptiu_event_table_destroy(&evt_table);
         goto fn_fail;
     }
+    
+    if (htable_init(&(evt_table->htableBaseStat)) != HTABLE_SUCCESS) {
+        cuptiu_event_table_destroy(&evt_table);
+        goto fn_fail;
+    }
+    
     *pevt_table = evt_table;
     return 0;
 fn_fail:
@@ -44,6 +50,12 @@ void cuptiu_event_table_destroy(cuptiu_event_table_t **pevt_table)
         htable_shutdown(evt_table->htable);
         evt_table->htable = NULL;
     }
+    
+    if (evt_table->htableBaseStat) {
+        htable_shutdown(evt_table->htableBaseStat);
+        evt_table->htableBaseStat = NULL;
+    }
+    
     papi_free(evt_table);
     *pevt_table = NULL;
 }
@@ -85,7 +97,7 @@ void init_vector(StringVector *vec) {
     vec->capacity = 0;   // No allocated memory
 }
 
-// Add a string to the vector
+// Add a string to the vector 
 void push_back(StringVector *vec, const char *str) {
     // Resize if necessary
     if (vec->size == vec->capacity) {
