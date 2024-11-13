@@ -16,6 +16,7 @@ typedef int (*cuptiu_dev_get_map_cb)(uint64_t event_id, int *dev_id);
 
 typedef struct event_record_s {
     char name[PAPI_2MAX_STR_LEN];
+    char basename[PAPI_2MAX_STR_LEN];
     char desc[PAPI_HUGE_STR_LEN];
     cuptiu_bitmap_t device_map;
     int stat_indx;
