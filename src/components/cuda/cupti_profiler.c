@@ -2081,24 +2081,24 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
     
     cuptiu_event_t *event;
     
-    if ( htable_find(evt_table->htable, evt_name, (void **) &event) != HTABLE_SUCCESS ) {
+    if ( htable_find(evt_table->htable, name_restruct, (void **) &event) != HTABLE_SUCCESS ) {
         event = &events[*count];
         
         (*count)++;
        
-        strcpy(event->name, evt_name);
-        strcpy(event->basename, base_name);
+        strcpy(event->name, name_restruct);
+        strcpy(event->basename, evt_name);
         
         event->stat_indx = stat_index;
         
-        if ( htable_insert(evt_table->htable, evt_name, event) != HTABLE_SUCCESS ) {
+        if ( htable_insert(evt_table->htable, name_restruct, event) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
         }
     }
     
     
     StringVector *stat_vec;
-    if ( htable_find(evt_table->htableBaseStat, event->basename, (void **) &stat_vec) != HTABLE_SUCCESS ) {
+    if ( htable_find(evt_table->htableBaseStat, base_name, (void **) &stat_vec) != HTABLE_SUCCESS ) {
         stat_vec = malloc(sizeof(StringVector));
         if (stat_vec == NULL) {
             return PAPI_ESYS;
@@ -2106,7 +2106,7 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
         init_vector(stat_vec);
         push_back(stat_vec, stat);
         //(*countstrVector)++;
-        if ( htable_insert(evt_table->htableBaseStat, event->basename, stat_vec) != HTABLE_SUCCESS ) {
+        if ( htable_insert(evt_table->htableBaseStat, base_name, stat_vec) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
         }
     } else {
@@ -2511,14 +2511,14 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
 
     switch (info.flags) {
         case (DEVICE_FLAG):
-            str_len = snprintf(name, len, "%s:device=%i", cuptiu_table_p->events[info.nameid].basename, info.device);
+            str_len = snprintf(name, len, "%s:device=%i", cuptiu_table_p->events[info.nameid].name, info.device);
             if (str_len > len) {
                 ERRDBG("String formatting exceeded max string length.\n");
                 return PAPI_ENOMEM;
             }
             break;
         default:
-            str_len = snprintf(name, len, "%s", cuptiu_table_p->events[info.nameid].basename);
+            str_len = snprintf(name, len, "%s", cuptiu_table_p->events[info.nameid].name);
             if (str_len > len) {
                 ERRDBG("String formatting exceeded max string length.\n");
                 return PAPI_ENOMEM;
@@ -2553,7 +2553,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     /* collect the description and calculated numpass for a specific nameid */
     if (cuptiu_table_p->events[inf.nameid].desc[0] == 0) {
         papi_errno = retrieve_metric_descr( avail_events[0].pmetricsContextCreateParams->pMetricsContext,
-                                            cuptiu_table_p->events[inf.nameid].name, cuptiu_table_p->events[inf.nameid].desc, 0 );
+                                            cuptiu_table_p->events[inf.nameid].basename, cuptiu_table_p->events[inf.nameid].desc, 0 );
         if (papi_errno != PAPI_OK) {
             return papi_errno;
         }
@@ -2561,18 +2561,18 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     
     
     last_dot = strrchr(cuptiu_table_p->events[inf.nameid].name, '.');
-if (last_dot != NULL) {
-    // Copy the part before the last dot
-    strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot - cuptiu_table_p->events[inf.nameid].name);
-    base[last_dot - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
-
-    // Copy the part after the last dot, skipping the dot itself
-    strcpy(stat, last_dot + 1);
-}
+    if (last_dot != NULL) {
+        // Copy the part before the last dot
+        strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot - cuptiu_table_p->events[inf.nameid].name);
+        base[last_dot - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
+    
+        // Copy the part after the last dot, skipping the dot itself
+        strcpy(stat, last_dot + 1);
+    }
    
     all_stat[0]= '\0'; 
     
-    if (htable_find(cuptiu_table_p->htableBaseStat, cuptiu_table_p->events[inf.nameid].basename, (void **)&stat_vec) == HTABLE_SUCCESS ) {
+    if (htable_find(cuptiu_table_p->htableBaseStat, base, (void **)&stat_vec) == HTABLE_SUCCESS ) {
     size_t current_len = strlen(all_stat);  // Start with the current length of all_stat
     //strcat(all_stat, "BB");
     for (size_t i = 0; i < stat_vec->size; i++) {
@@ -2620,7 +2620,7 @@ if (last_dot != NULL) {
             *(devices + strlen(devices) - 1) = 0;
 
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].basename, stat );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, stat );
             
             /* cuda native event short description */
             //snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
