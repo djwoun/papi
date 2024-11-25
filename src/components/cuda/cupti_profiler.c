@@ -2564,7 +2564,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     if (last_dot != NULL) {
         // Copy the part before the last dot
         strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot - cuptiu_table_p->events[inf.nameid].name);
-        base[last_dot - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
+        //base[last_dot - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
     
         // Copy the part after the last dot, skipping the dot itself
         strcpy(stat, last_dot + 1);
@@ -2602,7 +2602,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     switch (inf.flags) {
         case (0):
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].name );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", base );
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
             /* cuda native event long description */
@@ -2620,7 +2620,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             *(devices + strlen(devices) - 1) = 0;
 
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, stat );
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", base, stat ); 
             
             /* cuda native event short description */
             //snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
@@ -2632,10 +2632,10 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
   
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
-                     cuptiu_table_p->events[inf.nameid].desc, all_stat);
+                     cuptiu_table_p->events[inf.nameid].desc, all_stat, inf.flags);
             /* cuda native event long description */
             snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
-                      cuptiu_table_p->events[inf.nameid].desc, all_stat );
+                      cuptiu_table_p->events[inf.nameid].desc, all_stat, inf.flags );
             break;
         }
         default:
