@@ -2541,7 +2541,7 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
 int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 {
 
-    int papi_errno, len, gpu_id;
+    int papi_errno, len, gpu_id, print=0;
     event_info_t inf;
     char description[PAPI_HUGE_STR_LEN]="", *last_dot, base[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="", all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN]="";
     StringVector *stat_vec;
@@ -2574,8 +2574,13 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     
     if (htable_find(cuptiu_table_p->htableBaseStat, base, (void **)&stat_vec) == HTABLE_SUCCESS ) {
     size_t current_len = strlen(all_stat);  // Start with the current length of all_stat
-    //strcat(all_stat, "BB");
+    
+    
+    if (strcmp(stat, stat_vec->data[0]) == 0) {
+      print = 1;
+    }
     for (size_t i = 0; i < stat_vec->size; i++) {
+    
         size_t remaining_space = PAPI_HUGE_STR_LEN - current_len - 1;  // Calculate remaining space
         
         // Ensure there's enough space for the string before concatenating
@@ -2620,7 +2625,9 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             *(devices + strlen(devices) - 1) = 0;
 
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", base, stat ); 
+            if (print != 0) {
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", base, stat ); }
+            else {snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s::::stat=%s", base, stat );}
             
             /* cuda native event short description */
             //snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
