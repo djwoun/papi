@@ -411,11 +411,12 @@ main( int argc, char **argv )
 	int num_events;
 	int num_cmp_events = 0;
 	int retval;
-	PAPI_event_info_t info;
+	PAPI_event_info_t info, temp_info;
 	const PAPI_hw_info_t *hwinfo = NULL;
 	command_flags_t flags;
 	int enum_modifier;
 	int numcmp, cid;
+  int skip_event, temp;
 
 	/* Initialize before parsing the input arguments */
 	retval = PAPI_library_init( PAPI_VER_CURRENT );
@@ -597,6 +598,7 @@ no_sdes:
 
         if (retval==PAPI_OK) {
 			do {
+        skip_event = 0;
 				memset( &info, 0, sizeof ( info ) );
 				retval = PAPI_get_event_info( i, &info );
 
@@ -609,14 +611,37 @@ no_sdes:
 				/* Bail if event name does contain exclude string */
 				if ( flags.xclude && strstr( info.symbol, flags.xstr ) ) continue;
 
-				// if not the first event in this component, put out a divider
-				if (num_cmp_events) {
-					printf( "--------------------------------------------------------------------------------\n" );
-				}
-
+				
 				/* count only events that are actually processed */
 				num_events++;
 				num_cmp_events++;
+        
+        
+        temp_info = info;
+        temp = cid;
+        if (flags.qualifiers || flags.check){
+					k = i;
+					if ( PAPI_enum_cmp_event( &k, PAPI_NTV_ENUM_UMASKS, temp ) == PAPI_OK ) {
+						do {
+							retval = PAPI_get_event_info( k, &temp_info );
+              // Cuda: Skip if repeated 
+              //printf( "%s\n", temp_info.symbol );
+              if (strstr(temp_info.symbol, "::::") != NULL) {
+                skip_event = 1;
+                continue;  // Break out of the inner do-while loop
+              }
+						} while ( PAPI_enum_cmp_event( &k, PAPI_NTV_ENUM_UMASKS, temp ) == PAPI_OK );
+					}
+				}
+        
+        if (skip_event) {
+            continue;  // This will break out of the outer event processing loop
+        }
+        
+        // if not the first event in this component, put out a divider
+				if (num_cmp_events) {
+					printf( "--------------------------------------------------------------------------------\n" );
+				}
 
 				if (flags.check){
 					check_event(&info);
@@ -658,6 +683,11 @@ no_sdes:
 
 						do {
 							retval = PAPI_get_event_info( k, &info );
+              // Cuda: Skip if repeated 
+              if (strstr(info.symbol, "::::") != NULL) {
+                skip_event = 1;
+                continue;  // Break out of the inner do-while loop
+            }
 							if ( retval == PAPI_OK ) {
 								// if first event mask string not set yet, set it now
 								if (strlen(first_event_mask_string) == 0) {
@@ -674,6 +704,9 @@ no_sdes:
 								}
 							}
 						} while ( PAPI_enum_cmp_event( &k, PAPI_NTV_ENUM_UMASKS, cid ) == PAPI_OK );
+                    
+                    
+            
 						// if we are validating events and the event_available flag is not set yet, try a few more combinations
 						if (flags.check  && (event_available == 0)) {
 							// try using the event with the first mask defined for the event and the cpu mask
