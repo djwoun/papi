@@ -616,7 +616,12 @@ no_sdes:
 				num_events++;
 				num_cmp_events++;
         
-        
+        if (strstr(info.symbol, "::::") != NULL) {
+                skip_event = 1;
+                continue;  // Break out of the do-while loop
+        }
+              
+        /*
         temp_info = info;
         temp = cid;
         if (flags.qualifiers || flags.check){
@@ -636,7 +641,7 @@ no_sdes:
         
         if (skip_event) {
             continue;  // This will break out of the outer event processing loop
-        }
+        }*/
         
         // if not the first event in this component, put out a divider
 				if (num_cmp_events) {
@@ -683,11 +688,6 @@ no_sdes:
 
 						do {
 							retval = PAPI_get_event_info( k, &info );
-              // Cuda: Skip if repeated 
-              if (strstr(info.symbol, "::::") != NULL) {
-                skip_event = 1;
-                continue;  // Break out of the inner do-while loop
-            }
 							if ( retval == PAPI_OK ) {
 								// if first event mask string not set yet, set it now
 								if (strlen(first_event_mask_string) == 0) {

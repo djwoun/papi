@@ -33,16 +33,20 @@
  * nameid    : 21: bits (roughly > 2 million event names)
  */
 #define EVENTS_WIDTH (sizeof(uint64_t) * 8)
+#define STAT_WIDTH   ( 7)
 #define DEVICE_WIDTH ( 7)
 #define QLMASK_WIDTH ( 2) 
 #define NAMEID_WIDTH (21)
-#define UNUSED_WIDTH (EVENTS_WIDTH - DEVICE_WIDTH - QLMASK_WIDTH - NAMEID_WIDTH)
-#define DEVICE_SHIFT (EVENTS_WIDTH - UNUSED_WIDTH - DEVICE_WIDTH)
+#define UNUSED_WIDTH (EVENTS_WIDTH - DEVICE_WIDTH - QLMASK_WIDTH - NAMEID_WIDTH - STAT_WIDTH)
+#define STAT_SHIFT   (EVENTS_WIDTH - UNUSED_WIDTH - STAT_WIDTH)
+#define DEVICE_SHIFT (EVENTS_WIDTH - UNUSED_WIDTH - STAT_WIDTH - DEVICE_WIDTH)
 #define QLMASK_SHIFT (DEVICE_SHIFT - QLMASK_WIDTH)
 #define NAMEID_SHIFT (QLMASK_SHIFT - NAMEID_WIDTH)
+#define STAT_MASK    ((0xFFFFFFFFFFFFFFFF >> (EVENTS_WIDTH - STAT_WIDTH)) << STAT_SHIFT)
 #define DEVICE_MASK  ((0xFFFFFFFFFFFFFFFF >> (EVENTS_WIDTH - DEVICE_WIDTH)) << DEVICE_SHIFT)
 #define QLMASK_MASK  ((0xFFFFFFFFFFFFFFFF >> (EVENTS_WIDTH - QLMASK_WIDTH)) << QLMASK_SHIFT)
 #define NAMEID_MASK  ((0xFFFFFFFFFFFFFFFF >> (EVENTS_WIDTH - NAMEID_WIDTH)) << NAMEID_SHIFT)
+#define STAT_FLAG    (0x2)
 #define DEVICE_FLAG  (0x1)
 
 typedef struct byte_array_s         byte_array_t;
@@ -52,6 +56,7 @@ typedef struct NVPA_MetricsContext  NVPA_MetricsContext;
 typedef NVPW_CUDA_MetricsContext_Create_Params MCCP_t;
 
 typedef struct {
+    int stat;
     int device;
     int flags;
     int nameid;
@@ -1882,6 +1887,7 @@ int cuptip_shutdown(void)
 */
 int evt_id_create(event_info_t *info, uint64_t *event_id)
 {
+    *event_id  = (uint64_t)(info->stat     << STAT_SHIFT);
     *event_id  = (uint64_t)(info->device   << DEVICE_SHIFT);
     *event_id |= (uint64_t)(info->flags    << QLMASK_SHIFT);
     *event_id |= (uint64_t)(info->nameid   << NAMEID_SHIFT);
@@ -1898,9 +1904,14 @@ int evt_id_create(event_info_t *info, uint64_t *event_id)
 */
 int evt_id_to_info(uint64_t event_id, event_info_t *info)
 {
+    info->stat   = (int)((event_id & STAT_MASK) >> STAT_SHIFT);
     info->device   = (int)((event_id & DEVICE_MASK) >> DEVICE_SHIFT);
     info->flags    = (int)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
     info->nameid   = (int)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
+
+    if (info->stat >= 5) {
+        return PAPI_ENOEVNT;
+    }
 
     if (info->device >= num_gpus) {
         return PAPI_ENOEVNT;
@@ -2353,6 +2364,7 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
                 papi_errno = PAPI_ENOEVNT;
                 break;
             }
+            info.stat = 0;
             info.device = 0;
             info.flags = 0;
             info.nameid = 0;
@@ -2364,6 +2376,7 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
                 break;
             }
             if (cuptiu_table_p->count > info.nameid + 1) {
+                info.stat = 0;
                 info.device = 0;
                 info.flags = 0;
                 info.nameid++;
@@ -2378,11 +2391,21 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
                 break;
             }
             if (info.flags == 0){
+                info.stat = 0;
                 info.device = 0;
                 info.flags = DEVICE_FLAG;
                 papi_errno = evt_id_create(&info, event_code);
                 break;
             }
+            
+            if (info.flags == DEVICE_FLAG){
+                info.stat = 0;
+                info.device = 0;
+                info.flags = STAT_FLAG;
+                papi_errno = evt_id_create(&info, event_code);
+                break;
+            }
+            
             papi_errno = PAPI_END;
             break;
         default:
@@ -2607,12 +2630,14 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     switch (inf.flags) {
         case (0):
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", base );
+            if (print != 0) {
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", base );}
+            else {snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s::::", base );}
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
             /* cuda native event long description */
             snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
-            break;
+            break;   
         case DEVICE_FLAG:
         {
             int i;
@@ -2623,24 +2648,26 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
                 }
             }
             *(devices + strlen(devices) - 1) = 0;
-
-            /* cuda native event name */
-            if (print != 0) {
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", base, stat ); }
-            else {snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s::::stat=%s", base, stat );}
             
+            /* cuda native event name */
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, inf.device ); 
             /* cuda native event short description */
-            //snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
-            //         cuptiu_table_p->events[inf.nameid].desc, devices );
+            snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
+                     cuptiu_table_p->events[inf.nameid].desc, devices );
             /* cuda native event long description */
-            //snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
-            //          cuptiu_table_p->events[inf.nameid].desc, devices );
+            snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
+                      cuptiu_table_p->events[inf.nameid].desc, devices );
 
-  
-            /* cuda native event short description */
+            break;
+        }
+        
+        case STAT_FLAG:
+        {     
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", base, stat );
+            
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
                      cuptiu_table_p->events[inf.nameid].desc, all_stat, inf.flags);
-            /* cuda native event long description */
+            
             snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
                       cuptiu_table_p->events[inf.nameid].desc, all_stat, inf.flags );
             break;
