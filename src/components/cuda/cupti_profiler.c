@@ -2393,15 +2393,15 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
             if (info.flags == 0){
                 info.stat = 0;
                 info.device = 0;
-                info.flags = DEVICE_FLAG;
+                info.flags = STAT_FLAG;
                 papi_errno = evt_id_create(&info, event_code);
                 break;
             }
             
-            if (info.flags == DEVICE_FLAG){
+            if (info.flags == STAT_FLAG){
                 info.stat = 0;
                 info.device = 0;
-                info.flags = STAT_FLAG;
+                info.flags = DEVICE_FLAG;
                 papi_errno = evt_id_create(&info, event_code);
                 break;
             }
