@@ -411,12 +411,12 @@ main( int argc, char **argv )
 	int num_events;
 	int num_cmp_events = 0;
 	int retval;
-	PAPI_event_info_t info, temp_info;
+	PAPI_event_info_t info;
 	const PAPI_hw_info_t *hwinfo = NULL;
 	command_flags_t flags;
 	int enum_modifier;
 	int numcmp, cid;
-  int skip_event, temp;
+  int skip_event;
 
 	/* Initialize before parsing the input arguments */
 	retval = PAPI_library_init( PAPI_VER_CURRENT );
@@ -610,7 +610,6 @@ no_sdes:
 
 				/* Bail if event name does contain exclude string */
 				if ( flags.xclude && strstr( info.symbol, flags.xstr ) ) continue;
-
 				
 				/* count only events that are actually processed */
 				num_events++;
@@ -621,28 +620,6 @@ no_sdes:
                 continue;  // Break out of the do-while loop
         }
               
-        /*
-        temp_info = info;
-        temp = cid;
-        if (flags.qualifiers || flags.check){
-					k = i;
-					if ( PAPI_enum_cmp_event( &k, PAPI_NTV_ENUM_UMASKS, temp ) == PAPI_OK ) {
-						do {
-							retval = PAPI_get_event_info( k, &temp_info );
-              // Cuda: Skip if repeated 
-              //printf( "%s\n", temp_info.symbol );
-              if (strstr(temp_info.symbol, "::::") != NULL) {
-                skip_event = 1;
-                continue;  // Break out of the inner do-while loop
-              }
-						} while ( PAPI_enum_cmp_event( &k, PAPI_NTV_ENUM_UMASKS, temp ) == PAPI_OK );
-					}
-				}
-        
-        if (skip_event) {
-            continue;  // This will break out of the outer event processing loop
-        }*/
-        
         // if not the first event in this component, put out a divider
 				if (num_cmp_events) {
 					printf( "--------------------------------------------------------------------------------\n" );
@@ -704,9 +681,6 @@ no_sdes:
 								}
 							}
 						} while ( PAPI_enum_cmp_event( &k, PAPI_NTV_ENUM_UMASKS, cid ) == PAPI_OK );
-                    
-                    
-            
 						// if we are validating events and the event_available flag is not set yet, try a few more combinations
 						if (flags.check  && (event_available == 0)) {
 							// try using the event with the first mask defined for the event and the cpu mask
