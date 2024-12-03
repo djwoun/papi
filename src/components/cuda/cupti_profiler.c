@@ -2650,7 +2650,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
             *(devices + strlen(devices) - 1) = 0;
             
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, inf.device ); 
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", base, inf.device ); 
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
                      cuptiu_table_p->events[inf.nameid].desc, devices );
