@@ -416,7 +416,6 @@ main( int argc, char **argv )
 	command_flags_t flags;
 	int enum_modifier;
 	int numcmp, cid;
-  int skip_event;
 
 	/* Initialize before parsing the input arguments */
 	retval = PAPI_library_init( PAPI_VER_CURRENT );
@@ -598,7 +597,6 @@ no_sdes:
 
         if (retval==PAPI_OK) {
 			do {
-        skip_event = 0;
 				memset( &info, 0, sizeof ( info ) );
 				retval = PAPI_get_event_info( i, &info );
 
@@ -610,13 +608,11 @@ no_sdes:
 
 				/* Bail if event name does contain exclude string */
 				if ( flags.xclude && strstr( info.symbol, flags.xstr ) ) continue;
-				
 				/* count only events that are actually processed */
 				num_events++;
 				num_cmp_events++;
         
         if (strstr(info.symbol, "::::") != NULL) {
-                skip_event = 1;
                 continue;  // Break out of the do-while loop
         }
               
