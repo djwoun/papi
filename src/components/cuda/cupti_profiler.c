@@ -2051,7 +2051,7 @@ void restructure_event_name(const char *input, char *output, char *base, char *s
 
     // Build output (base + stat at end)
     strcpy(output, base);  // First copy base
-    strcat(output, ".");   // Add delimiter
+    strcat(output, ":");   // Add delimiter
     strcat(output, stat);  // Add stat at end
 }
 
@@ -2566,7 +2566,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     int papi_errno, len, gpu_id, print=0;
     event_info_t inf;
-    char description[PAPI_HUGE_STR_LEN]="", *last_dot, base[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="", all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN]="";
+    char description[PAPI_HUGE_STR_LEN]="", *colon, base[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="", all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN]="";
     StringVector *stat_vec;
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
@@ -2583,14 +2583,14 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     }
     
     
-    last_dot = strrchr(cuptiu_table_p->events[inf.nameid].name, '.');
-    if (last_dot != NULL) {
-        // Copy the part before the last dot
-        strncpy(base, cuptiu_table_p->events[inf.nameid].name, last_dot - cuptiu_table_p->events[inf.nameid].name);
-        //base[last_dot - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
+    colon = strrchr(cuptiu_table_p->events[inf.nameid].name, ':');
+    if (colon != NULL) {
+        // Copy the part before the colon
+        strncpy(base, cuptiu_table_p->events[inf.nameid].name, colon - cuptiu_table_p->events[inf.nameid].name);
+        //base[colon - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
     
         // Copy the part after the last dot, skipping the dot itself
-        strcpy(stat, last_dot + 1);
+        strcpy(stat, colon + 1);
     }
    
     all_stat[0]= '\0'; 
