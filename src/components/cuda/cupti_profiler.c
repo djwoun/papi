@@ -1909,9 +1909,9 @@ int evt_id_to_info(uint64_t event_id, event_info_t *info)
     info->flags    = (int)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
     info->nameid   = (int)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
 
-    if (info->stat >= 5) {
+    /*if (info->stat >= 5) {
         return PAPI_ENOEVNT;
-    }
+    }*/
 
     if (info->device >= num_gpus) {
         return PAPI_ENOEVNT;
