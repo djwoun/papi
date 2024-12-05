@@ -608,15 +608,18 @@ no_sdes:
 
 				/* Bail if event name does contain exclude string */
 				if ( flags.xclude && strstr( info.symbol, flags.xstr ) ) continue;
-
-				// if not the first event in this component, put out a divider
-				if (num_cmp_events) {
-					printf( "--------------------------------------------------------------------------------\n" );
-				}
-
 				/* count only events that are actually processed */
 				num_events++;
 				num_cmp_events++;
+        
+        if (strstr(info.symbol, "::::") != NULL) {
+                continue;  // Break out of the do-while loop
+        }
+              
+        // if not the first event in this component, put out a divider
+				if (num_cmp_events) {
+					printf( "--------------------------------------------------------------------------------\n" );
+				}
 
 				if (flags.check){
 					check_event(&info);
