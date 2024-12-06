@@ -1888,7 +1888,7 @@ int cuptip_shutdown(void)
 int evt_id_create(event_info_t *info, uint64_t *event_id)
 {
     *event_id  = (uint64_t)(info->stat     << STAT_SHIFT);
-    *event_id  = (uint64_t)(info->device   << DEVICE_SHIFT);
+    *event_id |= (uint64_t)(info->device   << DEVICE_SHIFT);
     *event_id |= (uint64_t)(info->flags    << QLMASK_SHIFT);
     *event_id |= (uint64_t)(info->nameid   << NAMEID_SHIFT);
     return PAPI_OK;
@@ -2484,7 +2484,7 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
     }
 
     nameid = (int) (event - cuptiu_table_p->events);
-    event_info_t info = { device, flags, nameid };
+    event_info_t info = { 0, device, flags, nameid };
     papi_errno = evt_id_create(&info, event_code);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
@@ -2631,7 +2631,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
         case (0):
             /* cuda native event name */
             if (print != 0) {
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", base );}
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s %d", base, inf.stat );}
             else {snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s::::", base );}
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
