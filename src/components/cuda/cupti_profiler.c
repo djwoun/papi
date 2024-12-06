@@ -2475,9 +2475,11 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
         goto fn_exit;
     }
 
+    //int flags = (event->instances > 1) ? (DEVICE_FLAG | INSTAN_FLAG) : DEVICE_FLAG;
+
     /* flags = DEVICE_FLAG will need to be updated if more qualifiers are added,
        see implemtation in rocm (roc_profiler.c) */
-    flags = (device >= 0) ? DEVICE_FLAG:0;
+    flags = (device >= 0) ? (DEVICE_FLAG | STAT_FLAG):0;
     if (flags == 0){
         papi_errno = PAPI_EINVAL;
         goto fn_exit;
@@ -2692,6 +2694,11 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 static int evt_name_to_basename(const char *name, char *base, int len)
 {
     char *p = strstr(name, ":");
+    
+    if (p && strncmp(p, ":stat", 5) == 0) {
+        p = strstr(p + 1, ":");
+    }
+    
     if (p) {
         if (len < (int)(p - name)) {
             return PAPI_EBUF;
