@@ -2361,7 +2361,7 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
     switch(modifier) {
         case PAPI_ENUM_FIRST:
             if(cuptiu_table_p->count == 0) {
-                papi_errno = PAPI_ENOEVNT;
+                papi_errno = -1;
                 break;
             }
             info.stat = 0;
@@ -2464,11 +2464,18 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
         goto fn_exit;
     }
 
+    
+    
     papi_errno = evt_name_to_basename(name, base, PAPI_MAX_STR_LEN);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
-
+    
+    printf("ASDF %s.\n", base);
+    fflush(stdout);
+    printf("BSDF %s.\n", name);
+    fflush(stdout);
+    
     htable_errno = htable_find(cuptiu_table_p->htable, base, (void **) &event);
     if (htable_errno != HTABLE_SUCCESS) {
         papi_errno = (htable_errno == HTABLE_ENOVAL) ? PAPI_ENOEVNT : PAPI_ECMP;
