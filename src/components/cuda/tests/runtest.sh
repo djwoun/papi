@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PAPI_CUDA_TEST_QUIET=1    # Comment this line to see standard output from tests
+#export PAPI_CUDA_TEST_QUIET=1    # Comment this line to see standard output from tests
 
 evt_names=("cuda:::dram__bytes_read:stat=sum:device=0" \
            "cuda:::sm__cycles_active:stat=sum:device=0" \
@@ -12,8 +12,8 @@ multi_gpu_evt_names=("cuda:::dram__bytes_read:stat=sum" \
 
 multi_pass_evt_name="cuda:::gpu__compute_memory_access_throughput_internal_activity.pct_of_peak_sustained_elapsed:stat=max:device=0"
 
-concurrent_evt_names=("cuda:::sm__cycles_active.:stat=sum:device=" \
-                      "cuda:::sm__cycles_elapsed.:stat=max:device=")
+concurrent_evt_names=("cuda:::sm__cycles_active:stat=sum:device=" \
+                      "cuda:::sm__cycles_elapsed:stat=max:device=")
 
 make test_multipass_event_fail
 echo -e "Running: \e[36m./test_multipass_event_fail\e[0m" "${evt_names[@]}" $multi_pass_evt_name

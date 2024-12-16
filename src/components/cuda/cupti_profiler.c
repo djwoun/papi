@@ -2051,7 +2051,7 @@ void restructure_event_name(const char *input, char *output, char *base, char *s
 
     // Build output (base + stat at end)
     strcpy(output, base);  // First copy base
-    strcat(output, ":");   // Add delimiter
+    strcat(output, ":stat=");   // Add 
     strcat(output, stat);  // Add stat at end
 }
 
@@ -2473,27 +2473,28 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
     
     printf("ASDF %s.\n", base);
     fflush(stdout);
-    printf("BSDF %s.\n", name);
-    fflush(stdout);
     
     htable_errno = htable_find(cuptiu_table_p->htable, base, (void **) &event);
     if (htable_errno != HTABLE_SUCCESS) {
         papi_errno = (htable_errno == HTABLE_ENOVAL) ? PAPI_ENOEVNT : PAPI_ECMP;
         goto fn_exit;
     }
-
+    printf("BSDF %s.\n", name);
+    fflush(stdout);
+    
     //int flags = (event->instances > 1) ? (DEVICE_FLAG | INSTAN_FLAG) : DEVICE_FLAG;
 
     /* flags = DEVICE_FLAG will need to be updated if more qualifiers are added,
        see implemtation in rocm (roc_profiler.c) */
-    flags = (device >= 0) ? (DEVICE_FLAG | STAT_FLAG):0;
+    flags = DEVICE_FLAG;
+    //flags = (device >= 0) ? (DEVICE_FLAG | STAT_FLAG):0;
     if (flags == 0){
         papi_errno = PAPI_EINVAL;
         goto fn_exit;
     }
 
     nameid = (int) (event - cuptiu_table_p->events);
-    event_info_t info = { 0, device, flags, nameid };
+    event_info_t info = { 0, device, 0, nameid };
     papi_errno = evt_id_create(&info, event_code);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
@@ -2575,7 +2576,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
 
     int papi_errno, len, gpu_id, print=0;
     event_info_t inf;
-    char description[PAPI_HUGE_STR_LEN]="", *colon, base[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="", all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN]="";
+    char description[PAPI_HUGE_STR_LEN]="", *colon, *equal, base[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="", all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN]="";
     StringVector *stat_vec;
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
@@ -2593,13 +2594,14 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     
     
     colon = strrchr(cuptiu_table_p->events[inf.nameid].name, ':');
+    equal = strrchr(cuptiu_table_p->events[inf.nameid].name, '=');
     if (colon != NULL) {
         // Copy the part before the colon
         strncpy(base, cuptiu_table_p->events[inf.nameid].name, colon - cuptiu_table_p->events[inf.nameid].name);
         //base[colon - cuptiu_table_p->events[inf.nameid].name] = '\0'; // Null-terminate base
     
         // Copy the part after the last dot, skipping the dot itself
-        strcpy(stat, colon + 1);
+        strcpy(stat, equal + 1);
     }
    
     all_stat[0]= '\0'; 
@@ -2640,7 +2642,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
         case (0):
             /* cuda native event name */
             if (print != 0) {
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s %d", base, inf.stat );}
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s %d", base, event_code );}
             else {snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s::::", base );}
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
