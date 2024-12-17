@@ -2151,7 +2151,7 @@ static int shutdown_event_table(void)
   *   Structure providing context for evt_name. 
   * @param *evt_name
   *   Cuda native event name.
-  * @param *descriptionctc__rx_bytes.pct_of_peak_sustained_regi
+  * @param *description
   *   Corresponding description for provided Cuda native event name.
   * @param gpu_id
   *   Device number, e.g. 0, 1, 2, ... ,etc.
@@ -2494,7 +2494,7 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
     }
 
     nameid = (int) (event - cuptiu_table_p->events);
-    event_info_t info = { 0, device, 0, nameid };
+    event_info_t info = { 0, device, flags, nameid };
     papi_errno = evt_id_create(&info, event_code);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
