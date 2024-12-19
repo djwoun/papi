@@ -27,6 +27,12 @@ int cuptiu_event_table_create_init_capacity(int capacity, int sizeof_rec, cuptiu
         cuptiu_event_table_destroy(&evt_table);
         goto fn_fail;
     }
+    
+    if (htable_init(&(evt_table->htableBaseStat)) != HTABLE_SUCCESS) {
+        cuptiu_event_table_destroy(&evt_table);
+        goto fn_fail;
+    }
+    
     *pevt_table = evt_table;
     return 0;
 fn_fail:
@@ -44,6 +50,12 @@ void cuptiu_event_table_destroy(cuptiu_event_table_t **pevt_table)
         htable_shutdown(evt_table->htable);
         evt_table->htable = NULL;
     }
+    
+    if (evt_table->htableBaseStat) {
+        htable_shutdown(evt_table->htableBaseStat);
+        evt_table->htableBaseStat = NULL;
+    }
+    
     papi_free(evt_table);
     *pevt_table = NULL;
 }
@@ -76,4 +88,54 @@ int cuptiu_files_search_in_path(const char *file_name, const char *search_path, 
         ERRDBG("%s not found in path PAPI_CUDA_ROOT.\n", file_name);
     }
     return count;
+}
+
+// Initialize the vector
+void init_vector(StringVector *vec) {
+    vec->data = NULL;    // Initially no strings
+    vec->size = 0;       // No elements yet
+    vec->capacity = 0;   // No allocated memory
+}
+
+// Add a string to the vector 
+void push_back(StringVector *vec, const char *str) {
+    // Resize if necessary
+    if (vec->size == vec->capacity) {
+        size_t new_capacity = (vec->capacity == 0) ? 1 : vec->capacity * 2;
+        char **new_data = realloc(vec->data, new_capacity * sizeof(char*));
+        if (new_data == NULL) {
+            fprintf(stderr, "Memory allocation failed\n");
+            exit(1); // Exit if memory allocation fails
+        }
+        vec->data = new_data;
+        vec->capacity = new_capacity;
+    }
+
+    // Allocate memory for the new string and copy it
+    vec->data[vec->size] = malloc(strlen(str) + 1); // +1 for null terminator
+    if (vec->data[vec->size] == NULL) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+    strcpy(vec->data[vec->size], str); // Copy string to the vector
+    vec->size++; // Increase the size
+}
+
+// Get a string from the vector
+const char* get(const StringVector *vec, size_t index) {
+    if (index < vec->size) {
+        return vec->data[index];
+    }
+    return NULL; // Return NULL if out of bounds
+}
+
+// Free the memory used by the vector
+void free_vector(StringVector *vec) {
+    for (size_t i = 0; i < vec->size; i++) {
+        free(vec->data[i]); // Free each string
+    }
+    free(vec->data); // Free the array of string pointers
+    vec->data = NULL;
+    vec->size = 0;
+    vec->capacity = 0;
 }
