@@ -10,7 +10,7 @@ multi_gpu_evt_names=("cuda:::dram__bytes_read:stat=avg" \
                      "cuda:::sm__cycles_active:stat=avg" \
                      "cuda:::smsp__warps_launched:stat=avg")
 
-multi_pass_evt_name="cuda:::gpu__compute_memory_access_throughput_internal_activity.pct_of_peak_sustained_elapsed:stat=avg:device=0"
+multi_pass_evt_name="cuda:::gpu__compute_memory_access_throughput_internal_activity.pct_of_peak_sustained_elapsed:stat=max:device=0"
 
 concurrent_evt_names=("cuda:::sm__cycles_active:stat=avg:device=" \
                       "cuda:::sm__cycles_elapsed:stat=avg:device=")
