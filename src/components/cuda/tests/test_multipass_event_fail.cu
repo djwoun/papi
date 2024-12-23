@@ -40,6 +40,7 @@ int test_PAPI_add_event(int *EventSet, int numEvents, char **EventName) {
 
     for (i=0; i<numEvents; i++) {
         papi_errno = PAPI_event_name_to_code(EventName[i], &event);
+        PRINT(quiet, "add event %s %d\n", EventName[i], event);
         if (papi_errno == PAPI_ENOEVNT) {
             fprintf(stderr, "Event name %s does not exist.\n", EventName[i]);
             return FAIL;
@@ -50,7 +51,7 @@ int test_PAPI_add_event(int *EventSet, int numEvents, char **EventName) {
         }
         papi_errno = PAPI_add_event(*EventSet, event);
         if (papi_errno != PAPI_OK) {
-            PRINT(quiet, "Error %d: Failed to add event %s\n", papi_errno, EventName[i]);
+            PRINT(quiet, "Error %d: Failed to add event %s %d\n", papi_errno, EventName[i], event);
         }
     }
     if (papi_errno == PAPI_EMULPASS)
