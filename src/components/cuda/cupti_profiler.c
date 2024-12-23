@@ -1904,14 +1904,32 @@ int evt_id_create(event_info_t *info, uint64_t *event_id)
 */
 int evt_id_to_info(uint64_t event_id, event_info_t *info)
 {
-    info->stat   = (int)((event_id & STAT_MASK) >> STAT_SHIFT);
+    info->stat = 0;
+    //printf("INFOSTAT %d.\n", info->stat);
+    //printf(" %d.\n", (event_id & STAT_MASK));
+    //printf(" %d.\n", (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT));
+    //info->stat     = (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT);
     info->device   = (int)((event_id & DEVICE_MASK) >> DEVICE_SHIFT);
     info->flags    = (int)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
     info->nameid   = (int)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
-
-    /*if (info->stat >= 5) {
+    uint64_t masked_value = event_id & STAT_MASK;
+    printf("Masked value: %llu\n", masked_value);  
+    printf("Masked value: %llu\n", event_id); 
+    printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  
+    //printf("INFOSTAT %d.\n", info->stat);
+    //printf("event_code %d.\n", event_id);
+    /*printf("INFODEVICE %d.\n", info->device);
+    printf("INFOFLAGS %d.\n", info->flags);
+    printf("INFONAMEID %d.\n", info->nameid);
+    printf("event_code %d.\n", event_id);
+    printf("STATMASK %lld.\n", STAT_MASK);
+    printf("DEVICEMASK %d.\n", DEVICE_MASK);
+    printf("QLMASK %d.\n", QLMASK_MASK);
+    printf("NAMEMASK %d.\n", NAMEID_MASK);
+    printf("STATSHIFT %lld.\n", STAT_SHIFT);*/
+    if (info->stat > 7) {
         return PAPI_ENOEVNT;
-    }*/
+    }
 
     if (info->device >= num_gpus) {
         return PAPI_ENOEVNT;
