@@ -518,6 +518,7 @@ static int get_event_names_rmr(cuptip_gpu_state_t *gpu_ctl)
                          gpu_ctl->event_names->added_cuda_evts[i], &num_dep, 
                          &collect_rmr
                      );
+                     
         /* why is PAPI_ENOEVNT hard coded? */
         if (papi_errno != PAPI_OK) {
             papi_errno = PAPI_ENOEVNT;
@@ -1457,13 +1458,13 @@ int verify_events(uint64_t *events_id, int num_events,
         if (papi_errno != PAPI_OK) {
             break;
         }
-        sprintf(name, "%s", cuptiu_table_p->events[info.nameid].name);
-        strcpy((*targeted_event_names)->added_cuda_evts[i], name);
         (*targeted_event_names)->added_cuda_dev[i] = info.device;
-        void *p;
+        cuptiu_event_t *p;
         if (htable_find(cuptiu_table_p->htable, name, (void **) &p) != HTABLE_SUCCESS) {
             htable_insert((*targeted_event_names)->htable, name, (void **) &p );
         }
+        sprintf(name, "%s", cuptiu_table_p->events[info.nameid].name);
+        strcpy((*targeted_event_names)->added_cuda_evts[i], cuptiu_table_p->events[info.nameid].basename);
         (*targeted_event_names)->count++;
     }
 
@@ -2490,16 +2491,11 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
         goto fn_exit;
     }
     
-    printf("ASDF %s.\n", base);
-    fflush(stdout);
-    
     htable_errno = htable_find(cuptiu_table_p->htable, base, (void **) &event);
     if (htable_errno != HTABLE_SUCCESS) {
         papi_errno = (htable_errno == HTABLE_ENOVAL) ? PAPI_ENOEVNT : PAPI_ECMP;
         goto fn_exit;
     }
-    printf("BSDF %s.\n", name);
-    fflush(stdout);
     
     //int flags = (event->instances > 1) ? (DEVICE_FLAG | INSTAN_FLAG) : DEVICE_FLAG;
 
@@ -2518,7 +2514,6 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
-    printf("CSDF %llu.\n", *event_code);
 
     papi_errno = evt_id_to_info(*event_code, &info);
 
