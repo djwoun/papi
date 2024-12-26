@@ -523,6 +523,7 @@ static int get_event_names_rmr(cuptip_gpu_state_t *gpu_ctl)
             papi_errno = PAPI_ENOEVNT;
             goto fn_exit;
         }
+        
         all_rmr = (NVPA_RawMetricRequest *) papi_realloc(all_rmr, (count_raw_metrics + num_dep) * sizeof(NVPA_RawMetricRequest));
         if (all_rmr == NULL) {
             papi_errno = PAPI_ENOMEM;
@@ -1846,16 +1847,16 @@ int cuptip_ctx_destroy(cuptip_control_t *pstate)
 int get_event_collection_method(const char *evt_name)
 {
 
-    if (strstr(evt_name, ".avg") != NULL) {
+    if (strstr(evt_name, "avg") != NULL) {
         return CUDA_AVG;
     }
-    else if (strstr(evt_name, ".max") != NULL) {
+    else if (strstr(evt_name, "max") != NULL) {
         return CUDA_MAX;
     }
-    else if (strstr(evt_name, ".min") != NULL) {
+    else if (strstr(evt_name, "min") != NULL) {
         return CUDA_MIN;
     }
-    else if (strstr(evt_name, ".sum") != NULL) {
+    else if (strstr(evt_name, "sum") != NULL) {
         return CUDA_SUM;
     }
     else {
@@ -1909,13 +1910,13 @@ int evt_id_to_info(uint64_t event_id, event_info_t *info)
     //printf(" %d.\n", (event_id & STAT_MASK));
     //printf(" %d.\n", (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT));
     //info->stat     = (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT);
-    info->device   = (int)((event_id & DEVICE_MASK) >> DEVICE_SHIFT);
-    info->flags    = (int)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
-    info->nameid   = (int)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
-    uint64_t masked_value = event_id & STAT_MASK;
+    info->device   = (uint64_t)((event_id & DEVICE_MASK) >> DEVICE_SHIFT);
+    info->flags    = (uint64_t)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
+    info->nameid   = (uint64_t)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
+    /*uint64_t masked_value = event_id & STAT_MASK;
     printf("Masked value: %llu\n", masked_value);  
     printf("Masked value: %llu\n", event_id); 
-    printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  
+    printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  */
     //printf("INFOSTAT %d.\n", info->stat);
     //printf("event_code %d.\n", event_id);
     /*printf("INFODEVICE %d.\n", info->device);
@@ -2517,6 +2518,7 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
+    printf("CSDF %llu.\n", *event_code);
 
     papi_errno = evt_id_to_info(*event_code, &info);
 
