@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#export PAPI_CUDA_TEST_QUIET=1    # Comment this line to see standard output from tests
+export PAPI_CUDA_TEST_QUIET=1    # Comment this line to see standard output from tests
 
 evt_names=("cuda:::dram__bytes_read:stat=avg:device=0" \
            "cuda:::sm__cycles_active:stat=avg:device=0" \
