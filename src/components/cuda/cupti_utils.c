@@ -121,14 +121,6 @@ void push_back(StringVector *vec, const char *str) {
     vec->size++; // Increase the size
 }
 
-// Get a string from the vector
-const char* get(const StringVector *vec, size_t index) {
-    if (index < vec->size) {
-        return vec->data[index];
-    }
-    return NULL; // Return NULL if out of bounds
-}
-
 // Free the memory used by the vector
 void free_vector(StringVector *vec) {
     for (size_t i = 0; i < vec->size; i++) {

@@ -2095,7 +2095,7 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
     int papi_errno, stat_index;
     char description[256];
     char name_restruct[PAPI_HUGE_STR_LEN]="", base_name[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="";
-    int *count = &evt_table->count;//, *countstrVector = &evt_table->countstrVector;
+    int *count = &evt_table->count;
     cuptiu_event_t *events = cuptiu_table.events;
     
     /* check to see if evt_name argument has been provided */
@@ -2137,7 +2137,6 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
         }
         init_vector(stat_vec);
         push_back(stat_vec, stat);
-        //(*countstrVector)++;
         if ( htable_insert(evt_table->htableBaseStat, base_name, stat_vec) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
         }

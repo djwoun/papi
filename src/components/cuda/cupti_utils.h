@@ -45,7 +45,6 @@ void cuptiu_event_table_destroy(cuptiu_event_table_t **pevt_table);
 
 void init_vector(StringVector *vec);
 void push_back(StringVector *vec, const char *str);
-const char* get(const StringVector *vec, size_t index);
 
 /* Utility to locate a file in a given path */
 #define CUPTIU_MAX_FILES 100
