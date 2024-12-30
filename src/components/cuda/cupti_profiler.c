@@ -20,6 +20,8 @@
 #include "cupti_config.h"
 #include "lcuda_debug.h"
 #include "htable.h"
+#include <stdbool.h>
+
 
 /**
  * Event identifier encoding format:
@@ -518,13 +520,11 @@ static int get_event_names_rmr(cuptip_gpu_state_t *gpu_ctl)
                          gpu_ctl->event_names->added_cuda_evts[i], &num_dep, 
                          &collect_rmr
                      );
-                     
         /* why is PAPI_ENOEVNT hard coded? */
         if (papi_errno != PAPI_OK) {
             papi_errno = PAPI_ENOEVNT;
             goto fn_exit;
         }
-        
         all_rmr = (NVPA_RawMetricRequest *) papi_realloc(all_rmr, (count_raw_metrics + num_dep) * sizeof(NVPA_RawMetricRequest));
         if (all_rmr == NULL) {
             papi_errno = PAPI_ENOMEM;
@@ -1907,15 +1907,16 @@ int evt_id_create(event_info_t *info, uint64_t *event_id)
 */
 int evt_id_to_info(uint64_t event_id, event_info_t *info)
 {
-    info->stat = 0;
-    //printf("INFOSTAT %d.\n", info->stat);
-    //printf(" %d.\n", (event_id & STAT_MASK));
-    //printf(" %d.\n", (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT));
-    //info->stat     = (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT);
+   
+
+    info->stat     = (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT);
     info->device   = (uint64_t)((event_id & DEVICE_MASK) >> DEVICE_SHIFT);
     info->flags    = (uint64_t)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
     info->nameid   = (uint64_t)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
     /*uint64_t masked_value = event_id & STAT_MASK;
+    //printf("INFOSTAT %d.\n", info->stat);
+    //printf(" %d.\n", (event_id & STAT_MASK));
+    //printf(" %d.\n", (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT));
     printf("Masked value: %llu\n", masked_value);  
     printf("Masked value: %llu\n", event_id); 
     printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  */
@@ -1930,9 +1931,9 @@ int evt_id_to_info(uint64_t event_id, event_info_t *info)
     printf("QLMASK %d.\n", QLMASK_MASK);
     printf("NAMEMASK %d.\n", NAMEID_MASK);
     printf("STATSHIFT %lld.\n", STAT_SHIFT);*/
-    if (info->stat > 7) {
+    /*if (info->stat > 7) {
         return PAPI_ENOEVNT;
-    }
+    }*/
 
     if (info->device >= num_gpus) {
         return PAPI_ENOEVNT;
@@ -2012,7 +2013,6 @@ int init_event_table(void)
 
 }
 
-#include <stdbool.h>
 /* Helper function to determine if a token represents a statistical operation */
 bool is_stat(const char *token) {
     return (strcmp(token, "avg") == 0 || strcmp(token, "sum") == 0 ||
@@ -2658,7 +2658,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
         case (0):
             /* cuda native event name */
             if (print != 0) {
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s %d", base, event_code );}
+            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", base, event_code );}
             else {snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s::::", base );}
             /* cuda native event short description */
             snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
