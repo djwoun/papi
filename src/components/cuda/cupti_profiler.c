@@ -22,7 +22,6 @@
 #include "htable.h"
 #include <stdbool.h>
 
-
 /**
  * Event identifier encoding format:
  * +---------------------------------+-------+----+------------+
