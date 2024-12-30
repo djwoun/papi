@@ -1461,7 +1461,8 @@ int verify_events(uint64_t *events_id, int num_events,
         (*targeted_event_names)->added_cuda_dev[i] = info.device;
         cuptiu_event_t *p;
         if (htable_find(cuptiu_table_p->htable, name, (void **) &p) != HTABLE_SUCCESS) {
-            htable_insert((*targeted_event_names)->htable, name, (void **) &p );
+            // IF IT FAILS AT THIS STAGE ADDING THE EVENT SHOULD FAIL?
+            //htable_insert((*targeted_event_names)->htable, name, (void **) &p );
         }
         sprintf(name, "%s", cuptiu_table_p->events[info.nameid].name);
         strcpy((*targeted_event_names)->added_cuda_evts[i], cuptiu_table_p->events[info.nameid].basename);
@@ -1848,16 +1849,16 @@ int cuptip_ctx_destroy(cuptip_control_t *pstate)
 int get_event_collection_method(const char *evt_name)
 {
 
-    if (strstr(evt_name, "avg") != NULL) {
+    if (strstr(evt_name, ".avg") != NULL) {
         return CUDA_AVG;
     }
-    else if (strstr(evt_name, "max") != NULL) {
+    else if (strstr(evt_name, ".max") != NULL) {
         return CUDA_MAX;
     }
-    else if (strstr(evt_name, "min") != NULL) {
+    else if (strstr(evt_name, ".min") != NULL) {
         return CUDA_MIN;
     }
-    else if (strstr(evt_name, "sum") != NULL) {
+    else if (strstr(evt_name, ".sum") != NULL) {
         return CUDA_SUM;
     }
     else {
