@@ -2098,12 +2098,12 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
     int *count = &evt_table->count;//, *countstrVector = &evt_table->countstrVector;
     cuptiu_event_t *events = cuptiu_table.events;
     
-     
+    /* check to see if evt_name argument has been provided */
     if (evt_name == NULL) {
         return PAPI_EINVAL;
     }
 
-    
+    /* check to see if capacity has been correctly allocated */
     if (evt_table->count >= evt_table->capacity) {
         printf("Table count is larger than allocated capacity.\n");
         return PAPI_ENOMEM;
@@ -2115,7 +2115,7 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
     
     if ( htable_find(evt_table->htable, name_restruct, (void **) &event) != HTABLE_SUCCESS ) {
         event = &events[*count];
-        
+        /* increment count */
         (*count)++;
        
         strcpy(event->name, name_restruct);
