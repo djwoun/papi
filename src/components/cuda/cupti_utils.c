@@ -99,6 +99,13 @@ void init_vector(StringVector *vec) {
 
 // Add a string to the vector 
 void push_back(StringVector *vec, const char *str) {
+
+    for (size_t i = 0; i < vec->size; i++) {
+      if (strcmp(vec->data[i], str) == 0) {
+          return; // String found
+      }
+    }
+
     // Resize if necessary
     if (vec->size == vec->capacity) {
         size_t new_capacity = (vec->capacity == 0) ? 1 : vec->capacity * 2;

@@ -2380,7 +2380,7 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
     switch(modifier) {
         case PAPI_ENUM_FIRST:
             if(cuptiu_table_p->count == 0) {
-                papi_errno = -1;
+                papi_errno = PAPI_ENOEVNT;
                 break;
             }
             info.stat = 0;
