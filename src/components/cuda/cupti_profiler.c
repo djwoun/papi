@@ -2737,6 +2737,7 @@ static int evt_name_to_basename(const char *name, char *base, int len)
         }
         strncpy(base, name, (size_t) len);
     }
+     
     return PAPI_OK;
 }
 
@@ -2790,7 +2791,7 @@ static int evt_name_to_stat(const char *name, int *stat)
       } 
     }
     else {
-        *stat = 0;
+        return PAPI_ENOSUPP;
     }
     return PAPI_OK;
 }
