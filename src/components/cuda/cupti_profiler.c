@@ -156,7 +156,7 @@ static int verify_events(uint64_t *events_id, int num_events, cuptiu_event_table
 static int evt_id_to_info(uint64_t event_id, event_info_t *info);
 static int evt_id_create(event_info_t *info, uint64_t *event_id);
 static int evt_code_to_name(uint64_t event_code, char *name, int len);
-static int evt_name_to_basename(const char *name, char *base, int len);
+static int evt_name_to_basename(const char *name, char *base, int len, int *stat);
 static int evt_name_to_device(const char *name, int *device);
 static int evt_name_to_stat(const char *name, int *stat);
 static int retrieve_metric_descr( NVPA_MetricsContext *pMetricsContext, const char *evt_name,
@@ -2489,7 +2489,7 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
         goto fn_exit;
     }
     
-    papi_errno = evt_name_to_basename(name, base, PAPI_MAX_STR_LEN);
+    papi_errno = evt_name_to_basename(name, base, PAPI_MAX_STR_LEN, &stat);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
@@ -2717,8 +2717,10 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
   *   Base Cuda native event name (excludes device qualifier).
   * @param len
   *   Maximum alloted characters for base Cuda native event name. 
+  * @param stat
+  *   stat collected.
 */
-static int evt_name_to_basename(const char *name, char *base, int len)
+static int evt_name_to_basename(const char *name, char *base, int len, int *stat)
 {
     char *p = strstr(name, ":");
     
@@ -2737,7 +2739,26 @@ static int evt_name_to_basename(const char *name, char *base, int len)
         }
         strncpy(base, name, (size_t) len);
     }
-     
+    
+    if (!(strstr(base, ":stat"))) {
+        StringVector *stat_vec;
+        if (htable_find(cuptiu_table_p->htableBaseStat, base, (void **)&stat_vec) == HTABLE_SUCCESS ) {
+            const char *default_stat_qual = ":stat=";
+            size_t default_stat_qual_len = strlen(default_stat_qual) + strlen(stat_vec->data[0]);
+            size_t current_len = strlen(base);
+            
+            if (len < current_len + default_stat_qual_len + 1) {
+                return PAPI_EBUF;
+            }
+            strncat(base, default_stat_qual, len - current_len - 1);
+            strncat(base, stat_vec->data[0], len - current_len - strlen(default_stat_qual) - 1);
+                        
+            if (strcmp(stat_vec->data[0], "avg") == 0) *stat = 0;
+            else if (strcmp(stat_vec->data[0], "max_rate") == 0) *stat = 4;
+
+        }
+    }
+        
     return PAPI_OK;
 }
 
@@ -2788,10 +2809,11 @@ static int evt_name_to_stat(const char *name, int *stat)
           *stat = 5;
       } else if (strncmp(p, "ratio", 5) == 0) {
           *stat = 6;
-      } 
-    }
-    else {
-        return PAPI_ENOSUPP;
+      } else {
+        *stat =0;
+      }
+    } else {
+        *stat = 0;
     }
     return PAPI_OK;
 }
