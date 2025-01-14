@@ -158,6 +158,7 @@ static int evt_id_create(event_info_t *info, uint64_t *event_id);
 static int evt_code_to_name(uint64_t event_code, char *name, int len);
 static int evt_name_to_basename(const char *name, char *base, int len);
 static int evt_name_to_device(const char *name, int *device);
+static int evt_name_to_stat(const char *name, int *stat);
 static int retrieve_metric_descr( NVPA_MetricsContext *pMetricsContext, const char *evt_name,
                                   char *description, int gpu_id );
 static int retrieve_metric_rmr( NVPA_MetricsContext *pMetricsContext, const char *evt_name,
@@ -2473,7 +2474,7 @@ int cuptip_evt_code_to_descr(uint64_t event_code, char *descr, int len)
 int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
 {
 
-    int htable_errno, device, flags, nameid, papi_errno = PAPI_OK;
+    int htable_errno, device, stat, flags, nameid, papi_errno = PAPI_OK;
     cuptiu_event_t *event;
     char base[PAPI_MAX_STR_LEN] = { 0 };
     SUBDBG("ENTER: name: %s, event_code: %p\n", name, event_code);
@@ -2483,12 +2484,16 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
         goto fn_exit;
     }
 
-    
+    papi_errno = evt_name_to_stat(name, &stat);
+    if (papi_errno != PAPI_OK) {
+        goto fn_exit;
+    }
     
     papi_errno = evt_name_to_basename(name, base, PAPI_MAX_STR_LEN);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
+    
     
     htable_errno = htable_find(cuptiu_table_p->htable, base, (void **) &event);
     if (htable_errno != HTABLE_SUCCESS) {
@@ -2500,15 +2505,14 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
 
     /* flags = DEVICE_FLAG will need to be updated if more qualifiers are added,
        see implemtation in rocm (roc_profiler.c) */
-    flags = DEVICE_FLAG;
-    //flags = (device >= 0) ? (DEVICE_FLAG | STAT_FLAG):0;
+    flags = (device >= 0) ? DEVICE_FLAG:STAT_FLAG;
     if (flags == 0){
         papi_errno = PAPI_EINVAL;
         goto fn_exit;
     }
 
     nameid = (int) (event - cuptiu_table_p->events);
-    event_info_t info = { 0, device, flags, nameid };
+    event_info_t info = { stat, device, flags, nameid };
     papi_errno = evt_id_create(&info, event_code);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
@@ -2752,6 +2756,41 @@ static int evt_name_to_device(const char *name, int *device)
     }
     else {
         *device = 0;
+    }
+    return PAPI_OK;
+}
+
+/** @class evt_name_to_stat
+  * @brief Take a Cuda native event name with a stat qualifer appended to 
+  *        it and collect the stat .
+  * @param *name
+  *   Cuda native event name with a stat qualifier appended.
+  * @param *stat
+  *   Stat collected.
+*/
+static int evt_name_to_stat(const char *name, int *stat)
+{
+    char *p = strstr(name, ":stat=");
+    if (p) {    
+      p += 6; // Move past ":stat="
+      if (strncmp(p, "avg", 3) == 0) {
+          *stat = 0;
+      } else if (strncmp(p, "sum", 3) == 0) {
+          *stat = 1;
+      } else if (strncmp(p, "min", 3) == 0) {
+          *stat = 2;
+      } else if (strncmp(p, "max", 3) == 0 && p[3] == '\0') {
+          *stat = 3;
+      } else if (strncmp(p, "max_rate", 8) == 0) {
+          *stat = 4;
+      } else if (strncmp(p, "pct", 3) == 0) {
+          *stat = 5;
+      } else if (strncmp(p, "ratio", 5) == 0) {
+          *stat = 6;
+      } 
+    }
+    else {
+        *stat = 0;
     }
     return PAPI_OK;
 }
