@@ -1454,6 +1454,7 @@ int verify_events(uint64_t *events_id, int num_events,
 
     for (i = 0; i < num_events; i++) {
         event_info_t info;
+        printf("A\n");
         papi_errno = evt_id_to_info(events_id[i], &info);
         if (papi_errno != PAPI_OK) {
             break;
@@ -1913,13 +1914,13 @@ int evt_id_to_info(uint64_t event_id, event_info_t *info)
     info->device   = (uint64_t)((event_id & DEVICE_MASK) >> DEVICE_SHIFT);
     info->flags    = (uint64_t)((event_id & QLMASK_MASK) >> QLMASK_SHIFT);
     info->nameid   = (uint64_t)((event_id & NAMEID_MASK) >> NAMEID_SHIFT);
-    /*uint64_t masked_value = event_id & STAT_MASK;
+    uint64_t masked_value = event_id & STAT_MASK;
     //printf("INFOSTAT %d.\n", info->stat);
     //printf(" %d.\n", (event_id & STAT_MASK));
     //printf(" %d.\n", (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT));
     printf("Masked value: %llu\n", masked_value);  
     printf("Masked value: %llu\n", event_id); 
-    printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  */
+    printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  
     //printf("INFOSTAT %d.\n", info->stat);
     //printf("event_code %d.\n", event_id);
     /*printf("INFODEVICE %d.\n", info->device);
@@ -2388,9 +2389,11 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
             info.device = 0;
             info.flags = 0;
             info.nameid = 0;
+            *event_code = 0;
             papi_errno = evt_id_create(&info, event_code);
             break;
         case PAPI_ENUM_EVENTS:
+            printf("B\n");
             papi_errno = evt_id_to_info(*event_code, &info);
             if (papi_errno != PAPI_OK) {
                 break;
@@ -2400,12 +2403,14 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
                 info.device = 0;
                 info.flags = 0;
                 info.nameid++;
+                *event_code = 0;
                 papi_errno = evt_id_create(&info, event_code);
                 break;
             }
             papi_errno = PAPI_END;
             break;
         case PAPI_NTV_ENUM_UMASKS:
+            printf("C\n");
             papi_errno = evt_id_to_info(*event_code, &info);
             if (papi_errno != PAPI_OK) {
                 break;
@@ -2414,6 +2419,7 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
                 info.stat = 0;
                 info.device = 0;
                 info.flags = STAT_FLAG;
+                *event_code = 0;
                 papi_errno = evt_id_create(&info, event_code);
                 break;
             }
@@ -2422,6 +2428,7 @@ int cuptip_evt_enum(uint64_t *event_code, int modifier)
                 info.stat = 0;
                 info.device = 0;
                 info.flags = DEVICE_FLAG;
+                *event_code = 0;
                 papi_errno = evt_id_create(&info, event_code);
                 break;
             }
@@ -2449,6 +2456,7 @@ int cuptip_evt_code_to_descr(uint64_t event_code, char *descr, int len)
 {
     int papi_errno, str_len;
     event_info_t info;
+    printf("D\n");
     papi_errno = evt_id_to_info(event_code, &info);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -2517,7 +2525,7 @@ int cuptip_evt_name_to_code(const char *name, uint64_t *event_code)
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
-
+    printf("E\n");
     papi_errno = evt_id_to_info(*event_code, &info);
 
     fn_exit:
@@ -2555,6 +2563,7 @@ static int evt_code_to_name(uint64_t event_code, char *name, int len)
     int papi_errno, str_len;
 
     event_info_t info;
+    printf("F\n");
     papi_errno = evt_id_to_info(event_code, &info);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -2596,6 +2605,7 @@ int cuptip_evt_code_to_info(uint64_t event_code, PAPI_event_info_t *info)
     event_info_t inf;
     char description[PAPI_HUGE_STR_LEN]="", *colon, *equal, base[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="", all_stat[PAPI_HUGE_STR_LEN]="" , temp[PAPI_HUGE_STR_LEN]="";
     StringVector *stat_vec;
+    printf("G\n");
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
