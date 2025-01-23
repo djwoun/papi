@@ -50,7 +50,7 @@ int test_PAPI_add_event(int *EventSet, int numEvents, char **EventName) {
         }
         papi_errno = PAPI_add_event(*EventSet, event);
         if (papi_errno != PAPI_OK) {
-            PRINT(quiet, "Error %d: Failed to add event %s\n", papi_errno, EventName[i]);
+            PRINT(quiet, "Error %d: Failed to add event %s %d\n", papi_errno, EventName[i], event);
         }
     }
     if (papi_errno == PAPI_EMULPASS)
