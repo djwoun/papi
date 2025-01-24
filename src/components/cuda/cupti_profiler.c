@@ -1919,7 +1919,7 @@ int evt_id_to_info(uint64_t event_id, event_info_t *info)
     //printf(" %d.\n", (event_id & STAT_MASK));
     //printf(" %d.\n", (uint64_t)((event_id & STAT_MASK) >> STAT_SHIFT));
     printf("Masked value: %llu\n", masked_value);  
-    printf("Masked value: %llu\n", event_id); 
+    printf("event_id value: %llu\n", event_id); 
     printf("Stat value after shift: %llu\n", masked_value >> STAT_SHIFT);  
     //printf("INFOSTAT %d.\n", info->stat);
     //printf("event_code %d.\n", event_id);
