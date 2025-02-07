@@ -1092,13 +1092,17 @@ get_ntv_events_count(int *count)
             if (status != RSMI_STATUS_SUCCESS) {
                 continue;
             }
+            
             status = rsmi_dev_supported_variant_iterator_open_p(iter, &var_iter);
             if (status == RSMI_STATUS_NO_DATA) {
+                    printf("Before get_ntv_events_count handle1 %d\n",events_count);
                 if (handle_derived_events_count(v_name.name, dev, -1, -1, &events_count) == ROCS_EVENT_TYPE__NATIVE) {
+                    printf("After get_ntv_events_count handle1 %d\n",events_count);
                     char *name = get_event_name(v_name.name, dev, -1, -1);
                     if (name) {
                         /* count known events */
                         ++events_count;
+                        printf("get_ntv_events_count handle1 %d\n",events_count);
                         papi_free(name);
                     }
                 }
@@ -1110,12 +1114,15 @@ get_ntv_events_count(int *count)
                     }
                     status = rsmi_dev_supported_variant_iterator_open_p(var_iter, &subvar_iter);
                     if (status == RSMI_STATUS_NO_DATA) {
+                        printf("Before get_ntv_events_count handle2 %d\n",events_count);
                         if (handle_derived_events_count(v_name.name, dev, v_variant.id, -1, &events_count) == ROCS_EVENT_TYPE__NATIVE) {
+                        printf("After get_ntv_events_count handle2 %d\n",events_count);
                             char *name = get_event_name(v_name.name, dev, v_variant.id, -1);
                             if (name) {
                                 /* count known events */
                                 ++events_count;
                                 papi_free(name);
+                                printf("get_ntv_events_count handle2 %d\n",events_count);
                             }
                         }
                     } else {
@@ -1124,12 +1131,15 @@ get_ntv_events_count(int *count)
                             if (status != RSMI_STATUS_SUCCESS) {
                                 continue;
                             }
+                            printf("Before get_ntv_events_count handle3 %d\n",events_count);
                             if (handle_derived_events_count(v_name.name, dev, v_variant.id, v_subvariant.id, &events_count) == ROCS_EVENT_TYPE__NATIVE) {
+                            printf("AFter get_ntv_events_count handle3 %d\n",events_count);
                                 char *name = get_event_name(v_name.name, dev, v_variant.id, v_subvariant.id);
                                 if (name) {
                                     /* count known events */
                                     ++events_count;
                                     papi_free(name);
+                                    printf("get_ntv_events_count handle3 %d\n",events_count);
                                 }
                             }
                             status = rsmi_func_iter_next_p(subvar_iter);
@@ -1158,10 +1168,10 @@ get_ntv_events_count(int *count)
             papi_errno = PAPI_EMISC;
             goto fn_fail;
         }
-
+        printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
         handle_xgmi_events_count(dev, &events_count);
     }
-
+    printf("get_ntv_events_count %d\n",events_count);
     *count = events_count;
 
   fn_exit:
@@ -1248,6 +1258,8 @@ get_ntv_events(ntv_event_t *events, int count, int *real_count)
                         events[events_count].access_func_p = get_access_func(v_name.name);
                         htable_insert(htable, events[events_count].name, &events[events_count]);
                         ++events_count;
+                        printf("events_count handle_derived_events: %d\n",events_count);
+
                     }
                 }
             } else {
@@ -1276,6 +1288,7 @@ get_ntv_events(ntv_event_t *events, int count, int *real_count)
                                 events[events_count].access_func_p = get_access_func(v_name.name);
                                 htable_insert(htable, events[events_count].name, &events[events_count]);
                                 ++events_count;
+                                printf("events_count handle_derived_events: %d\n",events_count);
                             }
                         }
                     } else {
@@ -1302,6 +1315,7 @@ get_ntv_events(ntv_event_t *events, int count, int *real_count)
                                     events[events_count].access_func_p = get_access_func(v_name.name);
                                     htable_insert(htable, events[events_count].name, &events[events_count]);
                                     ++events_count;
+                                    printf("events_count handle_derived_events: %d\n",events_count);
                                 }
                             }
                             status = rsmi_func_iter_next_p(subvar_iter);
@@ -1330,9 +1344,10 @@ get_ntv_events(ntv_event_t *events, int count, int *real_count)
             papi_errno = PAPI_EMISC;
             goto fn_fail;
         }
-
+        printf("event_counts2 handle_xgmi_events: %d\n",events_count);
         handle_xgmi_events(dev, &events_count, events);
     }
+    printf("event_counts2 and default: %d %d\n",events_count, count);
 
 //    papi_errno = (events_count - count) ? PAPI_ECMP : PAPI_OK;
 
@@ -1380,7 +1395,7 @@ handle_derived_events_count(const char *v_name, int32_t dev, int64_t v_variant, 
             (*events_count) += ROCS_PCI_BW_VARIANT__CURRENT + 1;
         }
         int i;
-        for (i = 0; i < ROCS_PCI_BW_VARIANT__LANE_IDX - ROCS_PCI_BW_VARIANT__CURRENT + 1; ++i) {
+        for (i = 0; i < ROCS_PCI_BW_VARIANT__LANE_IDX - ROCS_PCI_BW_VARIANT__CURRENT ; ++i) {
             (*events_count) += pcie_table[dev].transfer_rate.num_supported;
         }
 
