@@ -900,14 +900,14 @@ unload_rsmi_sym(void)
 }
 
 static int get_ntv_events_count(int *count);
-static int get_ntv_events(ntv_event_t *, int);
+static int get_ntv_events(ntv_event_t *, int, int *);
 
 int
 init_event_table(void)
 {
     int papi_errno = PAPI_OK;
 
-    int ntv_events_count;
+    int ntv_events_count, new_ntv_event_count;
     papi_errno = get_ntv_events_count(&ntv_events_count);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -919,7 +919,8 @@ init_event_table(void)
         goto fn_fail;
     }
 
-    papi_errno = get_ntv_events(ntv_events, ntv_events_count);
+    papi_errno = get_ntv_events(ntv_events, ntv_events_count, &new_ntv_event_count);
+    ntv_events_count = new_ntv_event_count;
     if (papi_errno != PAPI_OK) {
         goto fn_fail;
     }
@@ -1180,7 +1181,7 @@ static int handle_derived_events(const char *name, int32_t dev, int64_t variant,
 static int handle_xgmi_events(int32_t dev, int *count, ntv_event_t *events);
 
 int
-get_ntv_events(ntv_event_t *events, int count)
+get_ntv_events(ntv_event_t *events, int count, int *real_count)
 {
     int papi_errno = PAPI_OK;
     rsmi_func_id_iter_handle_t iter;
@@ -1333,7 +1334,9 @@ get_ntv_events(ntv_event_t *events, int count)
         handle_xgmi_events(dev, &events_count, events);
     }
 
-    papi_errno = (events_count - count) ? PAPI_ECMP : PAPI_OK;
+//    papi_errno = (events_count - count) ? PAPI_ECMP : PAPI_OK;
+
+  *real_count = events_count;
 
   fn_exit:
     return papi_errno;
