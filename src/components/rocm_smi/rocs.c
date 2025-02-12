@@ -1245,6 +1245,7 @@ get_ntv_events_count(int *count)
         }
         printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
         handle_xgmi_events_count(dev, &events_count);
+        printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
     }
     printf("get_ntv_events_count %d\n",events_count);
     *count = events_count;
@@ -1421,6 +1422,7 @@ get_ntv_events(ntv_event_t *events, int count, int *real_count)
         }
         printf("event_counts2 handle_xgmi_events: %d\n",events_count);
         handle_xgmi_events(dev, &events_count, events);
+        printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
     }
     printf("event_counts2 and default: %d %d\n",events_count, count);
 
@@ -1867,7 +1869,7 @@ handle_xgmi_events(int32_t dev, int *events_count, ntv_event_t *events)
 
     status = rsmi_dev_counter_group_supported_p(dev, RSMI_EVNT_GRP_XGMI);
     if (status == RSMI_STATUS_SUCCESS) {
-        for (i = RSMI_EVNT_XGMI_FIRST; i <= RSMI_EVNT_XGMI_LAST; ++i) {
+        for (i = RSMI_EVNT_XGMI_FIRST; i < RSMI_EVNT_XGMI_LAST; ++i) {
             events[*events_count].id = *events_count;
             events[*events_count].name = get_event_name("rsmi_dev_xgmi_evt_get", dev, i, -1);
             events[*events_count].descr = get_event_descr("rsmi_dev_xgmi_evt_get", i, -1);
@@ -1887,7 +1889,7 @@ handle_xgmi_events(int32_t dev, int *events_count, ntv_event_t *events)
 
     status = rsmi_dev_counter_group_supported_p(dev, RSMI_EVNT_GRP_XGMI_DATA_OUT);
     if (status == RSMI_STATUS_SUCCESS) {
-        for (i = RSMI_EVNT_XGMI_DATA_OUT_FIRST; i <= RSMI_EVNT_XGMI_DATA_OUT_LAST; ++i) {
+        for (i = RSMI_EVNT_XGMI_DATA_OUT_FIRST; i < RSMI_EVNT_XGMI_DATA_OUT_LAST; ++i) {
             events[*events_count].id = *events_count;
             events[*events_count].name = get_event_name("rsmi_dev_xgmi_evt_get", dev, i, -1);
             events[*events_count].descr = get_event_descr("rsmi_dev_xgmi_evt_get", i, -1);
