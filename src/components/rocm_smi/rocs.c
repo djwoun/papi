@@ -991,6 +991,78 @@ release_devices(int32_t *bitmask)
     return PAPI_OK;
 }
 
+void printStatusDescription(rsmi_status_t status) {
+    switch (status) {
+        case RSMI_STATUS_SUCCESS:
+            printf("Status: %d - Operation was successful.\n", status);
+            break;
+        case RSMI_STATUS_INVALID_ARGS:
+            printf("Status: %d - Passed in arguments are not valid.\n", status);
+            break;
+        case RSMI_STATUS_NOT_SUPPORTED:
+            printf("Status: %d - The requested information or action is not available for the given input.\n", status);
+            break;
+        case RSMI_STATUS_FILE_ERROR:
+            printf("Status: %d - Problem accessing a file.\n", status);
+            break;
+        case RSMI_STATUS_PERMISSION:
+            printf("Status: %d - Permission denied/EACCESS file error.\n", status);
+            break;
+        case RSMI_STATUS_OUT_OF_RESOURCES:
+            printf("Status: %d - Unable to acquire memory or other resource.\n", status);
+            break;
+        case RSMI_STATUS_INTERNAL_EXCEPTION:
+            printf("Status: %d - An internal exception was caught.\n", status);
+            break;
+        case RSMI_STATUS_INPUT_OUT_OF_BOUNDS:
+            printf("Status: %d - The provided input is out of allowable or safe range.\n", status);
+            break;
+        case RSMI_STATUS_INIT_ERROR:
+            printf("Status: %d - An error occurred when initializing internal data structures.\n", status);
+            break;
+        case RSMI_STATUS_NOT_YET_IMPLEMENTED:
+            printf("Status: %d - The requested function has not yet been implemented.\n", status);
+            break;
+        case RSMI_STATUS_NOT_FOUND:
+            printf("Status: %d - An item was searched for but not found.\n", status);
+            break;
+        case RSMI_STATUS_INSUFFICIENT_SIZE:
+            printf("Status: %d - Not enough resources were available for the operation.\n", status);
+            break;
+        case RSMI_STATUS_INTERRUPT:
+            printf("Status: %d - An interrupt occurred during execution.\n", status);
+            break;
+        case RSMI_STATUS_UNEXPECTED_SIZE:
+            printf("Status: %d - An unexpected amount of data was read.\n", status);
+            break;
+        case RSMI_STATUS_NO_DATA:
+            printf("Status: %d - No data was found for a given input.\n", status);
+            break;
+        case RSMI_STATUS_UNEXPECTED_DATA:
+            printf("Status: %d - The data read or provided is not what was expected.\n", status);
+            break;
+        case RSMI_STATUS_BUSY:
+            printf("Status: %d - A resource or mutex could not be acquired because it is already in use.\n", status);
+            break;
+        case RSMI_STATUS_REFCOUNT_OVERFLOW:
+            printf("Status: %d - An internal reference counter exceeded INT32_MAX.\n", status);
+            break;
+        case RSMI_STATUS_SETTING_UNAVAILABLE:
+            printf("Status: %d - Requested setting is unavailable for the current device.\n", status);
+            break;
+        case RSMI_STATUS_AMDGPU_RESTART_ERR:
+            printf("Status: %d - Could not successfully restart the amdgpu driver.\n", status);
+            break;
+        case RSMI_STATUS_UNKNOWN_ERROR:
+            printf("Status: %d - An unknown error occurred.\n", status);
+            break;
+        default:
+            printf("Status: %d - Unknown status code.\n", status);
+            break;
+    }
+}
+
+
 int
 init_device_table(void)
 {
@@ -1023,10 +1095,13 @@ init_device_table(void)
 
     for (i = 0; i < device_count; ++i) {
         status = rsmi_dev_pci_bandwidth_get_p(i, &pcie_table[i]);
+        printStatusDescription(status);
+        //RSMI_STATUS_NOT_SUPPORTED
+        /*
         if (status != RSMI_STATUS_SUCCESS && status != RSMI_STATUS_NOT_YET_IMPLEMENTED) {
             papi_errno = PAPI_EMISC;
             goto fn_fail;
-        }
+        }*/
     }
 
   fn_exit:
