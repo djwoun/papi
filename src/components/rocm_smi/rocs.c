@@ -900,14 +900,14 @@ unload_rsmi_sym(void)
 }
 
 static int get_ntv_events_count(int *count);
-static int get_ntv_events(ntv_event_t *, int);
+static int get_ntv_events(ntv_event_t *, int, int *);
 
 int
 init_event_table(void)
 {
     int papi_errno = PAPI_OK;
 
-    int ntv_events_count;
+    int ntv_events_count, new_ntv_event_count;
     papi_errno = get_ntv_events_count(&ntv_events_count);
     if (papi_errno != PAPI_OK) {
         return papi_errno;
@@ -919,7 +919,8 @@ init_event_table(void)
         goto fn_fail;
     }
 
-    papi_errno = get_ntv_events(ntv_events, ntv_events_count);
+    papi_errno = get_ntv_events(ntv_events, ntv_events_count, &new_ntv_event_count);
+    ntv_events_count = new_ntv_event_count;
     if (papi_errno != PAPI_OK) {
         goto fn_fail;
     }
@@ -990,6 +991,78 @@ release_devices(int32_t *bitmask)
     return PAPI_OK;
 }
 
+void printStatusDescription(rsmi_status_t status) {
+    switch (status) {
+        case RSMI_STATUS_SUCCESS:
+            printf("Status: %d - Operation was successful.\n", status);
+            break;
+        case RSMI_STATUS_INVALID_ARGS:
+            printf("Status: %d - Passed in arguments are not valid.\n", status);
+            break;
+        case RSMI_STATUS_NOT_SUPPORTED:
+            printf("Status: %d - The requested information or action is not available for the given input.\n", status);
+            break;
+        case RSMI_STATUS_FILE_ERROR:
+            printf("Status: %d - Problem accessing a file.\n", status);
+            break;
+        case RSMI_STATUS_PERMISSION:
+            printf("Status: %d - Permission denied/EACCESS file error.\n", status);
+            break;
+        case RSMI_STATUS_OUT_OF_RESOURCES:
+            printf("Status: %d - Unable to acquire memory or other resource.\n", status);
+            break;
+        case RSMI_STATUS_INTERNAL_EXCEPTION:
+            printf("Status: %d - An internal exception was caught.\n", status);
+            break;
+        case RSMI_STATUS_INPUT_OUT_OF_BOUNDS:
+            printf("Status: %d - The provided input is out of allowable or safe range.\n", status);
+            break;
+        case RSMI_STATUS_INIT_ERROR:
+            printf("Status: %d - An error occurred when initializing internal data structures.\n", status);
+            break;
+        case RSMI_STATUS_NOT_YET_IMPLEMENTED:
+            printf("Status: %d - The requested function has not yet been implemented.\n", status);
+            break;
+        case RSMI_STATUS_NOT_FOUND:
+            printf("Status: %d - An item was searched for but not found.\n", status);
+            break;
+        case RSMI_STATUS_INSUFFICIENT_SIZE:
+            printf("Status: %d - Not enough resources were available for the operation.\n", status);
+            break;
+        case RSMI_STATUS_INTERRUPT:
+            printf("Status: %d - An interrupt occurred during execution.\n", status);
+            break;
+        case RSMI_STATUS_UNEXPECTED_SIZE:
+            printf("Status: %d - An unexpected amount of data was read.\n", status);
+            break;
+        case RSMI_STATUS_NO_DATA:
+            printf("Status: %d - No data was found for a given input.\n", status);
+            break;
+        case RSMI_STATUS_UNEXPECTED_DATA:
+            printf("Status: %d - The data read or provided is not what was expected.\n", status);
+            break;
+        case RSMI_STATUS_BUSY:
+            printf("Status: %d - A resource or mutex could not be acquired because it is already in use.\n", status);
+            break;
+        case RSMI_STATUS_REFCOUNT_OVERFLOW:
+            printf("Status: %d - An internal reference counter exceeded INT32_MAX.\n", status);
+            break;
+        case RSMI_STATUS_SETTING_UNAVAILABLE:
+            printf("Status: %d - Requested setting is unavailable for the current device.\n", status);
+            break;
+        case RSMI_STATUS_AMDGPU_RESTART_ERR:
+            printf("Status: %d - Could not successfully restart the amdgpu driver.\n", status);
+            break;
+        case RSMI_STATUS_UNKNOWN_ERROR:
+            printf("Status: %d - An unknown error occurred.\n", status);
+            break;
+        default:
+            printf("Status: %d - Unknown status code.\n", status);
+            break;
+    }
+}
+
+
 int
 init_device_table(void)
 {
@@ -1022,10 +1095,13 @@ init_device_table(void)
 
     for (i = 0; i < device_count; ++i) {
         status = rsmi_dev_pci_bandwidth_get_p(i, &pcie_table[i]);
+        printStatusDescription(status);
+        //RSMI_STATUS_NOT_SUPPORTED
+        /*
         if (status != RSMI_STATUS_SUCCESS && status != RSMI_STATUS_NOT_YET_IMPLEMENTED) {
             papi_errno = PAPI_EMISC;
             goto fn_fail;
-        }
+        }*/
     }
 
   fn_exit:
@@ -1091,13 +1167,17 @@ get_ntv_events_count(int *count)
             if (status != RSMI_STATUS_SUCCESS) {
                 continue;
             }
+            
             status = rsmi_dev_supported_variant_iterator_open_p(iter, &var_iter);
             if (status == RSMI_STATUS_NO_DATA) {
+                    printf("Before get_ntv_events_count handle1 %d\n",events_count);
                 if (handle_derived_events_count(v_name.name, dev, -1, -1, &events_count) == ROCS_EVENT_TYPE__NATIVE) {
+                    printf("After get_ntv_events_count handle1 %d\n",events_count);
                     char *name = get_event_name(v_name.name, dev, -1, -1);
                     if (name) {
                         /* count known events */
                         ++events_count;
+                        printf("get_ntv_events_count handle1 %d\n",events_count);
                         papi_free(name);
                     }
                 }
@@ -1109,12 +1189,15 @@ get_ntv_events_count(int *count)
                     }
                     status = rsmi_dev_supported_variant_iterator_open_p(var_iter, &subvar_iter);
                     if (status == RSMI_STATUS_NO_DATA) {
+                        printf("Before get_ntv_events_count handle2 %d\n",events_count);
                         if (handle_derived_events_count(v_name.name, dev, v_variant.id, -1, &events_count) == ROCS_EVENT_TYPE__NATIVE) {
+                        printf("After get_ntv_events_count handle2 %d\n",events_count);
                             char *name = get_event_name(v_name.name, dev, v_variant.id, -1);
                             if (name) {
                                 /* count known events */
                                 ++events_count;
                                 papi_free(name);
+                                printf("get_ntv_events_count handle2 %d\n",events_count);
                             }
                         }
                     } else {
@@ -1123,12 +1206,15 @@ get_ntv_events_count(int *count)
                             if (status != RSMI_STATUS_SUCCESS) {
                                 continue;
                             }
+                            printf("Before get_ntv_events_count handle3 %d\n",events_count);
                             if (handle_derived_events_count(v_name.name, dev, v_variant.id, v_subvariant.id, &events_count) == ROCS_EVENT_TYPE__NATIVE) {
+                            printf("AFter get_ntv_events_count handle3 %d\n",events_count);
                                 char *name = get_event_name(v_name.name, dev, v_variant.id, v_subvariant.id);
                                 if (name) {
                                     /* count known events */
                                     ++events_count;
                                     papi_free(name);
+                                    printf("get_ntv_events_count handle3 %d\n",events_count);
                                 }
                             }
                             status = rsmi_func_iter_next_p(subvar_iter);
@@ -1157,10 +1243,11 @@ get_ntv_events_count(int *count)
             papi_errno = PAPI_EMISC;
             goto fn_fail;
         }
-
+        printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
         handle_xgmi_events_count(dev, &events_count);
+        printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
     }
-
+    printf("get_ntv_events_count %d\n",events_count);
     *count = events_count;
 
   fn_exit:
@@ -1180,7 +1267,7 @@ static int handle_derived_events(const char *name, int32_t dev, int64_t variant,
 static int handle_xgmi_events(int32_t dev, int *count, ntv_event_t *events);
 
 int
-get_ntv_events(ntv_event_t *events, int count)
+get_ntv_events(ntv_event_t *events, int count, int *real_count)
 {
     int papi_errno = PAPI_OK;
     rsmi_func_id_iter_handle_t iter;
@@ -1247,6 +1334,8 @@ get_ntv_events(ntv_event_t *events, int count)
                         events[events_count].access_func_p = get_access_func(v_name.name);
                         htable_insert(htable, events[events_count].name, &events[events_count]);
                         ++events_count;
+                        printf("events_count handle_derived_events: %d\n",events_count);
+
                     }
                 }
             } else {
@@ -1275,6 +1364,7 @@ get_ntv_events(ntv_event_t *events, int count)
                                 events[events_count].access_func_p = get_access_func(v_name.name);
                                 htable_insert(htable, events[events_count].name, &events[events_count]);
                                 ++events_count;
+                                printf("events_count handle_derived_events: %d\n",events_count);
                             }
                         }
                     } else {
@@ -1301,6 +1391,7 @@ get_ntv_events(ntv_event_t *events, int count)
                                     events[events_count].access_func_p = get_access_func(v_name.name);
                                     htable_insert(htable, events[events_count].name, &events[events_count]);
                                     ++events_count;
+                                    printf("events_count handle_derived_events: %d\n",events_count);
                                 }
                             }
                             status = rsmi_func_iter_next_p(subvar_iter);
@@ -1329,11 +1420,15 @@ get_ntv_events(ntv_event_t *events, int count)
             papi_errno = PAPI_EMISC;
             goto fn_fail;
         }
-
+        printf("event_counts2 handle_xgmi_events: %d\n",events_count);
         handle_xgmi_events(dev, &events_count, events);
+        printf("get_ntv_events_count handle_xgmi_events_count %d\n",events_count);
     }
+    printf("event_counts2 and default: %d %d\n",events_count, count);
 
-    papi_errno = (events_count - count) ? PAPI_ECMP : PAPI_OK;
+//    papi_errno = (events_count - count) ? PAPI_ECMP : PAPI_OK;
+
+  *real_count = events_count;
 
   fn_exit:
     return papi_errno;
@@ -1377,7 +1472,7 @@ handle_derived_events_count(const char *v_name, int32_t dev, int64_t v_variant, 
             (*events_count) += ROCS_PCI_BW_VARIANT__CURRENT + 1;
         }
         int i;
-        for (i = 0; i < ROCS_PCI_BW_VARIANT__LANE_IDX - ROCS_PCI_BW_VARIANT__CURRENT + 1; ++i) {
+        for (i = 0; i < ROCS_PCI_BW_VARIANT__LANE_IDX - ROCS_PCI_BW_VARIANT__CURRENT ; ++i) {
             (*events_count) += pcie_table[dev].transfer_rate.num_supported;
         }
 
@@ -1774,7 +1869,7 @@ handle_xgmi_events(int32_t dev, int *events_count, ntv_event_t *events)
 
     status = rsmi_dev_counter_group_supported_p(dev, RSMI_EVNT_GRP_XGMI);
     if (status == RSMI_STATUS_SUCCESS) {
-        for (i = RSMI_EVNT_XGMI_FIRST; i <= RSMI_EVNT_XGMI_LAST; ++i) {
+        for (i = RSMI_EVNT_XGMI_FIRST; i < RSMI_EVNT_XGMI_LAST; ++i) {
             events[*events_count].id = *events_count;
             events[*events_count].name = get_event_name("rsmi_dev_xgmi_evt_get", dev, i, -1);
             events[*events_count].descr = get_event_descr("rsmi_dev_xgmi_evt_get", i, -1);
@@ -1794,7 +1889,7 @@ handle_xgmi_events(int32_t dev, int *events_count, ntv_event_t *events)
 
     status = rsmi_dev_counter_group_supported_p(dev, RSMI_EVNT_GRP_XGMI_DATA_OUT);
     if (status == RSMI_STATUS_SUCCESS) {
-        for (i = RSMI_EVNT_XGMI_DATA_OUT_FIRST; i <= RSMI_EVNT_XGMI_DATA_OUT_LAST; ++i) {
+        for (i = RSMI_EVNT_XGMI_DATA_OUT_FIRST; i < RSMI_EVNT_XGMI_DATA_OUT_LAST; ++i) {
             events[*events_count].id = *events_count;
             events[*events_count].name = get_event_name("rsmi_dev_xgmi_evt_get", dev, i, -1);
             events[*events_count].descr = get_event_descr("rsmi_dev_xgmi_evt_get", i, -1);
