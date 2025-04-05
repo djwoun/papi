@@ -2594,7 +2594,17 @@ int cuptip_evt_name_to_code(const char *name, uint32_t *event_code)
         goto fn_exit;
     }
 
-    flags = (device >= 0) ? (STAT_FLAG | DEVICE_FLAG) : DEVICE_FLAG;
+    
+    /*flags = 0;
+    if (device >= 0) {
+        flags |= DEVICE_FLAG;
+    }
+
+    if ( strstr(name, ":stat=") != NULL) { 
+        flags |= STAT_FLAG;
+    }*/ 
+    flags = (device >= 0) ? DEVICE_FLAG : STAT_FLAG;
+
     if (flags == 0){
         papi_errno = PAPI_EINVAL;
         goto fn_exit;
@@ -2896,17 +2906,19 @@ static int evt_name_to_stat(const char *name, int *stat, const char *base)
           if (strncmp(p, stats[i], token_len) == 0) {
                 *stat = i;
                 return PAPI_OK;
-            }
+          }
         }
     } else {
         htable_errno = htable_find(cuptiu_table_p->htable, base, (void **) &event);
         if (htable_errno != HTABLE_SUCCESS) {
             return PAPI_ENOEVNT;
         }
-        if (strcmp(event->stat->data[0] , stats[0]) == 0) {
-          *stat = 0;
-        } else if (strcmp(event->stat->data[0] , stats[4]) == 0) {
-          *stat = 4;
+        for (int i = 0; i < NUM_STATS_QUALS; i++) {
+          size_t token_len = strlen(stats[i]);
+          if (strncmp(event->stat->data[0], stats[i], token_len) == 0) {
+                *stat = i;
+                return PAPI_OK;
+          }
         }
     }
     return PAPI_OK;
