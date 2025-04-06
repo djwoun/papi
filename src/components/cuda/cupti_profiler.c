@@ -153,7 +153,7 @@ static int evt_id_to_info(uint32_t event_id, event_info_t *info);
 static int evt_id_create(event_info_t *info, uint32_t *event_id);
 static int evt_code_to_name(uint32_t event_code, char *name, int len);
 static int evt_name_to_basename(const char *name, char *base, int len);
-static int evt_name_to_device(const char *name, int *device);
+static int evt_name_to_device(const char *name, int *device, const char *base);
 static int evt_name_to_stat(const char *name, int *stat, const char *base);
 static int retrieve_metric_descr( NVPA_MetricsContext *pMetricsContext, const char *evt_name,
                                   char *description, const char *chip_name );
@@ -1399,13 +1399,13 @@ static int init_main_htable(void)
 
     cuptiu_table_p->event_stats = (StringVector *) papi_calloc(val, sizeof(StringVector));
     if (cuptiu_table_p->event_stats == NULL) {
-        //ERRDBG("Failed to allocate memory for cuptiu_table_p->event_stats")
+        ERRDBG("Failed to allocate memory for cuptiu_table_p->event_stats")
         goto fn_fail;
     }
 
     cuptiu_table_p->avail_gpu_info = (gpu_record_t *) papi_calloc(num_gpus, sizeof(gpu_record_t));
     if (cuptiu_table_p->avail_gpu_info == NULL) {
-        //ERRDBG("Failed to allocate memory for cuptiu_table_p->avail_gpu_info")
+        ERRDBG("Failed to allocate memory for cuptiu_table_p->avail_gpu_info")
         goto fn_fail;
     }
 
@@ -2573,12 +2573,13 @@ int cuptip_evt_name_to_code(const char *name, uint32_t *event_code)
     char base[PAPI_MAX_STR_LEN] = { 0 };
     SUBDBG("ENTER: name: %s, event_code: %p\n", name, event_code);
 
-    papi_errno = evt_name_to_device(name, &device);
+    papi_errno = evt_name_to_basename(name, base, PAPI_MAX_STR_LEN);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
-
-    papi_errno = evt_name_to_basename(name, base, PAPI_MAX_STR_LEN);
+    
+    papi_errno = evt_name_to_device(name, &device, base);
+    printf("%d\n", device);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
@@ -2793,6 +2794,9 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
                 if (remaining_space > 0) {
                     strncat(all_stat, cuptiu_table_p->events[inf.nameid].stat->data[i], remaining_space);
                     current_len += strlen(cuptiu_table_p->events[inf.nameid].stat->data[i]);
+                } else {
+                    ERRDBG("Not enough space for the all_stat string")
+                    return papi_errno;
                 }
 
                 // Add a comma only if there is space and it is not the last element
@@ -2857,11 +2861,11 @@ static int evt_name_to_basename(const char *name, char *base, int len)
   * @param *device
   *   Device number.
 */
-static int evt_name_to_device(const char *name, int *device)
+static int evt_name_to_device(const char *name, int *device, const char *base)
 {
     char *p = strstr(name, ":device=");
     // User did provide :device=# qualifier
-    if (p) {
+    if (p != NULL) {
         *device = (int) strtol(p + strlen(":device="), NULL, 10);
     }
     // User did not provide :device=# qualifier
@@ -2869,16 +2873,15 @@ static int evt_name_to_device(const char *name, int *device)
         int i, htable_errno;
         cuptiu_event_t *event;
 
-        htable_errno = htable_find(cuptiu_table_p->htable, name, (void **) &event);
+        htable_errno = htable_find(cuptiu_table_p->htable, base, (void **) &event);
         if (htable_errno != HTABLE_SUCCESS) {
             return PAPI_EINVAL;
         }
-
         // Search for the first device the event exists for.
         for (i = 0; i < num_gpus; ++i) {
             if (cuptiu_dev_check(event->device_map, i)) {
                 *device = i;
-                break;
+                return PAPI_OK;
             }
         }
     }
@@ -2898,7 +2901,7 @@ static int evt_name_to_stat(const char *name, int *stat, const char *base)
     int htable_errno, papi_errno;
     cuptiu_event_t *event;
     char *p = strstr(name, ":stat=");
-    if (p) {    
+    if (p != NULL) {
       p += 6; // Move past ":stat="
       int i;
       for (i = 0; i < NUM_STATS_QUALS; i++) {
@@ -2913,7 +2916,8 @@ static int evt_name_to_stat(const char *name, int *stat, const char *base)
         if (htable_errno != HTABLE_SUCCESS) {
             return PAPI_ENOEVNT;
         }
-        for (int i = 0; i < NUM_STATS_QUALS; i++) {
+        int i;
+        for (i = 0; i < NUM_STATS_QUALS; i++) {
           size_t token_len = strlen(stats[i]);
           if (strncmp(event->stat->data[0], stats[i], token_len) == 0) {
                 *stat = i;
