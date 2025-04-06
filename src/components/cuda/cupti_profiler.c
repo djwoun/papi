@@ -2136,7 +2136,7 @@ int restructure_event_name(const char *input, char *output, char *base, char *st
     }
 
     // Copy the stat
-    snprintf(stat, sizeof(stat), "%s", parts[stat_index]);
+    snprintf(stat, PAPI_HUGE_STR_LEN, "%s", parts[stat_index]);
 
     // Build base name (everything except the stat)
     int i;
