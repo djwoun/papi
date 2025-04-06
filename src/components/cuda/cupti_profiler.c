@@ -2229,7 +2229,6 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
         
         papi_errno = push_back(event->stat, stat);
         if (papi_errno != PAPI_OK){
-            printf("ASDF\n");
             return papi_errno;
         }
 
@@ -2600,7 +2599,6 @@ int cuptip_evt_name_to_code(const char *name, uint32_t *event_code)
     }
     
     papi_errno = evt_name_to_device(name, &device, base);
-    printf("%d\n", device);
     if (papi_errno != PAPI_OK) {
         goto fn_exit;
     }
@@ -2615,17 +2613,8 @@ int cuptip_evt_name_to_code(const char *name, uint32_t *event_code)
         papi_errno = (htable_errno == HTABLE_ENOVAL) ? PAPI_ENOEVNT : PAPI_ECMP;
         goto fn_exit;
     }
-
-    
-    /*flags = 0;
-    if (device >= 0) {
-        flags |= DEVICE_FLAG;
-    }
-
-    if ( strstr(name, ":stat=") != NULL) { 
-        flags |= STAT_FLAG;
-    }*/ 
-    flags = (device >= 0) ? DEVICE_FLAG : STAT_FLAG;
+ 
+    flags = (event->stat->size >= 0) ? (STAT_FLAG | DEVICE_FLAG) : DEVICE_FLAG;
 
     if (flags == 0){
         papi_errno = PAPI_EINVAL;
@@ -2684,35 +2673,39 @@ static int evt_code_to_name(uint32_t event_code, char *name, int len)
     }
     
     if (info.stat < NUM_STATS_QUALS){
-        snprintf(stat, sizeof(stat), "%s", stats[info.stat]);
+        str_len = snprintf(stat, sizeof(stat), "%s", stats[info.stat]);
+        if (str_len < 0 || str_len >= PAPI_HUGE_STR_LEN) {
+            ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+            return PAPI_EBUF;
+        }
     }
 
 
     switch (info.flags) {
         case (DEVICE_FLAG):
             str_len = snprintf(name, len, "%s:device=%i", cuptiu_table_p->events[info.nameid].name, info.device);
-            if (str_len > len) {
+            if (str_len < 0 || str_len >= PAPI_HUGE_STR_LEN) {
                 ERRDBG("String formatting exceeded max string length.\n");
                 return PAPI_ENOMEM;
             }
             break;
         case (STAT_FLAG):    
             str_len = snprintf(name, len, "%s:stat=%s", cuptiu_table_p->events[info.nameid].name, stat);
-            if (str_len > len) {
+            if (str_len < 0 || str_len >= PAPI_HUGE_STR_LEN) {
                 ERRDBG("String formatting exceeded max string length.\n");
                 return PAPI_ENOMEM;
             }
             break;
         case (DEVICE_FLAG | STAT_FLAG):
             str_len = snprintf(name, len, "%s:stat=%s:device=%i", cuptiu_table_p->events[info.nameid].name, stat, info.device);
-            if (str_len > len) {
+            if (str_len < 0 || str_len >= PAPI_HUGE_STR_LEN) {
                 ERRDBG("String formatting exceeded max string length.\n");
                 return PAPI_ENOMEM;
             }
             break;
         default:
             str_len = snprintf(name, len, "%s", cuptiu_table_p->events[info.nameid].name);
-            if (str_len > len) {
+            if (str_len < 0 || str_len >= PAPI_HUGE_STR_LEN) {
                 ERRDBG("String formatting exceeded max string length.\n");
                 return PAPI_ENOMEM;
             }
@@ -2777,9 +2770,21 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
     switch (inf.flags) {
         case (0):
             /* store details for the Cuda event */ 
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].name );
-            snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
-            snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
+            strLen = snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].name );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
+            strLen = snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
+            strLen = snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s", cuptiu_table_p->events[inf.nameid].desc );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
             break;
         case DEVICE_FLAG:
         {
@@ -2799,11 +2804,23 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
             *(devices + strlen(devices) - 1) = 0;
 
             /* store details for the Cuda event */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, init_metric_dev_id );
-            snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
+            strLen = snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:device=%i", cuptiu_table_p->events[inf.nameid].name, init_metric_dev_id );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
+            strLen = snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
                      cuptiu_table_p->events[inf.nameid].desc, devices );
-            snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
+            strLen = snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory device qualifier [%s]",
                       cuptiu_table_p->events[inf.nameid].desc, devices );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
 
             break;
         }
@@ -2832,13 +2849,25 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
             }
         
             /* cuda native event name */
-            snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, cuptiu_table_p->events[inf.nameid].stat->data[0] );
+            strLen = snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, cuptiu_table_p->events[inf.nameid].stat->data[0] );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
             /* cuda native event short description */
-            snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
+            strLen = snprintf( info->short_descr, PAPI_MIN_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
                      cuptiu_table_p->events[inf.nameid].desc, all_stat, inf.flags);
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
             /* cuda native event long description */
-            snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
+            strLen = snprintf( info->long_descr, PAPI_HUGE_STR_LEN, "%s masks:Mandatory stat qualifier [%s]",
                       cuptiu_table_p->events[inf.nameid].desc, all_stat, inf.flags );
+            if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+                ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+                return PAPI_EBUF;
+            }
             break;
         }
         default:
