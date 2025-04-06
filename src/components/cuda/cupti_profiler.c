@@ -2745,8 +2745,8 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
     size_t basename_len = stat_position - cuptiu_table_p->events[inf.nameid].basename;
     strLen = snprintf(reconstructedEventName, PAPI_MAX_STR_LEN, "%.*s%s%s",
                (int)basename_len,
-               cuptiu_table_p->events[info.nameid].basename,
-               cuptiu_table_p->events[inf.nameid].stat->data[0],
+               cuptiu_table_p->events[inf.nameid].basename,
+               cuptiu_table_p->events[inf.nameid].stat->arrayMetricStatistics[0],
                stat_position + 4);
 
     /* collect the description and calculated numpass for the Cuda event  */
