@@ -1493,8 +1493,8 @@ fn_fail:
 */
 int verify_events(uint32_t *events_id, int num_events, cuptip_control_t state)
 {
-    int papi_errno, i;
-    char basename[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="";
+    int papi_errno, i, strLen;
+    char reconstructedEventName[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="";
     size_t basename_len;
     int idx;
 
@@ -1519,7 +1519,7 @@ int verify_events(uint32_t *events_id, int num_events, cuptip_control_t state)
         idx = state->gpu_ctl[info.device].added_events->count; 
 
         char metricName[PAPI_MAX_STR_LEN];
-        int strLen = snprintf(metricName, PAPI_MAX_STR_LEN, "%s", cuptiu_table_p->events[info.nameid].name);
+        strLen = snprintf(metricName, PAPI_MAX_STR_LEN, "%s", cuptiu_table_p->events[info.nameid].name);
         if (strLen < 0 || strLen >= PAPI_MAX_STR_LEN) {
             SUBDBG("Failed to fully write added Cuda native event name.\n");
             return PAPI_ENOMEM;
@@ -1540,18 +1540,21 @@ int verify_events(uint32_t *events_id, int num_events, cuptip_control_t state)
         const char *stat_position = strstr(cuptiu_table_p->events[info.nameid].basename, "stat");
         
         if (stat_position == NULL) { 
-            //ERRDBG("Event does not have a 'stat' placeholder.\n"); 
+            ERRDBG("Event does not have a 'stat' placeholder.\n"); 
             return PAPI_EBUG; 
         }
         
+        // Reconstructing event name. Append the basename, stat, and sub-metric.
         basename_len = stat_position - cuptiu_table_p->events[info.nameid].basename; 
-        strncpy(basename, cuptiu_table_p->events[info.nameid].basename, basename_len);  
-        basename[basename_len] = '\0';     
-        strcat(basename, stat);               
-        strcat(basename, stat_position + 4); 
+        strLen = snprintf(reconstructedEventName, PAPI_MAX_STR_LEN, "%.*s%s%s",
+                   (int)basename_len,
+                   cuptiu_table_p->events[info.nameid].basename,
+                   stat,
+                   stat_position + 4);
+
 
         strLen = snprintf(state->gpu_ctl[info.device].added_events->cuda_evts[idx],
-                         PAPI_MAX_STR_LEN, "%s", basename);
+                         PAPI_MAX_STR_LEN, "%s", reconstructedEventName);
         if (strLen < 0 || strLen >= PAPI_MAX_STR_LEN) {
             SUBDBG("Failed to fully write reconstructed Cuda event name.\n");
             return PAPI_ENOMEM;
@@ -2728,7 +2731,7 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
 {
     int papi_errno, i, strLen;
     event_info_t inf;
-    char all_stat[PAPI_HUGE_STR_LEN]="", basename[PAPI_HUGE_STR_LEN]="";
+    char all_stat[PAPI_HUGE_STR_LEN]="", reconstructedEventName[PAPI_HUGE_STR_LEN]="";
 
     papi_errno = evt_id_to_info(event_code, &inf);
     if (papi_errno != PAPI_OK) {
@@ -2740,14 +2743,11 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
         return PAPI_ENOMEM;
     }
     size_t basename_len = stat_position - cuptiu_table_p->events[inf.nameid].basename;
-    strLen = snprintf(basename, sizeof(basename), "%.*s", (int)basename_len, cuptiu_table_p->events[inf.nameid].basename);
-    if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
-        ERRDBG("String larger than PAPI_HUGE_STR_LEN");
-        return PAPI_EBUF;
-    }
-    basename[basename_len] = '\0';
-    strcat(basename, cuptiu_table_p->events[inf.nameid].stat->data[0]);                 
-    strcat(basename, stat_position + 4);
+    strLen = snprintf(reconstructedEventName, PAPI_MAX_STR_LEN, "%.*s%s%s",
+               (int)basename_len,
+               cuptiu_table_p->events[info.nameid].basename,
+               stat,
+               stat_position + 4);
 
     /* collect the description and calculated numpass for the Cuda event  */
     if (cuptiu_table_p->events[inf.nameid].desc[0] == '\0') {
@@ -2760,7 +2760,7 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
             }
         }
         papi_errno = retrieve_metric_descr( cuptiu_table_p->avail_gpu_info[gpu_id].pmetricsContextCreateParams->pMetricsContext,
-                                            basename, cuptiu_table_p->events[inf.nameid].desc,
+                                            reconstructedEventName, cuptiu_table_p->events[inf.nameid].desc,
                                             cuptiu_table_p->avail_gpu_info[gpu_id].pmetricsContextCreateParams->pChipName );
         if (papi_errno != PAPI_OK) {
             return papi_errno;
@@ -2834,8 +2834,8 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
                 
                 // Ensure there's enough space for the string before concatenating
                 if (remaining_space > 0) {
-                    strncat(all_stat, cuptiu_table_p->events[inf.nameid].stat->data[i], remaining_space);
-                    current_len += strlen(cuptiu_table_p->events[inf.nameid].stat->data[i]);
+                    strncat(all_stat, cuptiu_table_p->events[inf.nameid].stat->arrayMetricStatistics[i], remaining_space);
+                    current_len += strlen(cuptiu_table_p->events[inf.nameid].stat->arrayMetricStatistics[i]);
                 } else {
                     ERRDBG("Not enough space for the all_stat string")
                     return papi_errno;
@@ -2849,7 +2849,7 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
             }
         
             /* cuda native event name */
-            strLen = snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, cuptiu_table_p->events[inf.nameid].stat->data[0] );
+            strLen = snprintf( info->symbol, PAPI_HUGE_STR_LEN, "%s:stat=%s", cuptiu_table_p->events[inf.nameid].name, cuptiu_table_p->events[inf.nameid].stat->arrayMetricStatistics[0] );
             if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
                 ERRDBG("String larger than PAPI_HUGE_STR_LEN");
                 return PAPI_EBUF;
@@ -2973,7 +2973,7 @@ static int evt_name_to_stat(const char *name, int *stat, const char *base)
         int i;
         for (i = 0; i < NUM_STATS_QUALS; i++) {
           size_t token_len = strlen(stats[i]);
-          if (strncmp(event->stat->data[0], stats[i], token_len) == 0) {
+          if (strncmp(event->stat->arrayMetricStatistics[0], stats[i], token_len) == 0) {
                 *stat = i;
                 return PAPI_OK;
           }

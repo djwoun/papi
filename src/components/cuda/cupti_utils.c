@@ -84,7 +84,7 @@ int cuptiu_files_search_in_path(const char *file_name, const char *search_path, 
 
 // Initialize the stat Stringvector
 void init_vector(StringVector *vec) {
-    vec->data = NULL;
+    vec->arrayMetricStatistics = NULL;
     vec->size = 0;
     vec->capacity = 0;
 }
@@ -93,7 +93,7 @@ void init_vector(StringVector *vec) {
 int push_back(StringVector *vec, const char *str) {
     size_t i;
     for (i = 0; i < vec->size; i++) {
-      if (strcmp(vec->data[i], str) == 0) {
+      if (strcmp(vec->arrayMetricStatistics[i], str) == 0) {
           return PAPI_OK;        
       }
     }
@@ -101,22 +101,27 @@ int push_back(StringVector *vec, const char *str) {
     // Resize if necessary
     if (vec->size == vec->capacity) {
         size_t new_capacity = (vec->capacity == 0) ? 4 : vec->capacity * 2;
-        char **new_data = realloc(vec->data, new_capacity * sizeof(char*));
+        char **new_data = realloc(vec->arrayMetricStatistics, new_capacity * sizeof(char*));
         if (new_data == NULL) {
             ERRDBG ("Memory allocation failed\n");
             return PAPI_ENOMEM;
         }
-        vec->data = new_data;
+        vec->arrayMetricStatistics = new_data;
         vec->capacity = new_capacity;
     }
 
     // Allocate memory for the new string and copy it
-    vec->data[vec->size] = malloc(strlen(str) + 1); 
-    if (vec->data[vec->size] == NULL) {
+    vec->arrayMetricStatistics[vec->size] = malloc(strlen(str) + 1); 
+    if (vec->arrayMetricStatistics[vec->size] == NULL) {
         ERRDBG ("Memory allocation failed\n");
         return PAPI_ENOMEM;
     }
-    snprintf(vec->data[vec->size], strlen(str) + 1, "%s", str);
+    int strLen = snprintf(vec->arrayMetricStatistics[vec->size], strlen(str) + 1, "%s", str);
+    if (strLen < 0 || strLen >= PAPI_MAX_STR_LEN) {
+            SUBDBG("Failed to fully write added Cuda native event name.\n");
+            return PAPI_ENOMEM;
+    }
+    
     vec->size++; // Increase the size
     return PAPI_OK;
 }
@@ -124,8 +129,8 @@ int push_back(StringVector *vec, const char *str) {
 // Free the memory used by the vector
 void free_vector(StringVector *vec) {
     for (size_t i = 0; i < vec->size; i++) {
-        free(vec->data[i]); 
+        free(vec->arrayMetricStatistics[i]); 
     }
-    free(vec->data); 
-    vec->data = NULL;
+    free(vec->arrayMetricStatistics); 
+    vec->arrayMetricStatistics = NULL;
 }

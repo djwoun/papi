@@ -19,7 +19,7 @@ typedef int (*cuptiu_dev_get_map_cb)(uint64_t event_id, int *dev_id);
 typedef NVPW_CUDA_MetricsContext_Create_Params MCCP_t;
 
 typedef struct {
-    char **data;   
+    char **arrayMetricStatistics ;   
     size_t size;   
     size_t capacity;
 } StringVector;
