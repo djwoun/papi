@@ -2110,7 +2110,13 @@ int is_stat(const char *token) {
 */
 int restructure_event_name(const char *input, char *output, char *base, char *stat) {
     char input_copy[PAPI_HUGE_STR_LEN];
-    snprintf(input_copy, sizeof(input_copy), "%s", input);
+    int strLen = snprintf(input_copy, PAPI_HUGE_STR_LEN, "%s", input);
+    if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+        ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+        return PAPI_EBUF;
+    }
+
+
     input_copy[sizeof(input_copy) - 1] = '\0';
 
     char *parts[10] = {0};
@@ -2136,7 +2142,12 @@ int restructure_event_name(const char *input, char *output, char *base, char *st
     }
 
     // Copy the stat
-    snprintf(stat, PAPI_HUGE_STR_LEN, "%s", parts[stat_index]);
+    strLen = snprintf(stat, PAPI_HUGE_STR_LEN, "%s", parts[stat_index]);
+    if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+        ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+        return PAPI_EBUF;
+    }
+
 
     // Build base name (everything except the stat)
     int i;
@@ -2153,6 +2164,7 @@ int restructure_event_name(const char *input, char *output, char *base, char *st
             strcat(output, "stat");
         }
     }    
+    return PAPI_OK;
 }
 
 /** @class get_ntv_events
@@ -2166,7 +2178,7 @@ int restructure_event_name(const char *input, char *output, char *base, char *st
 */
 static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name, int gpu_id) 
 {
-    int papi_errno;
+    int papi_errno, strLen;
     char name_restruct[PAPI_HUGE_STR_LEN]="", name_no_stat[PAPI_HUGE_STR_LEN]="", stat[PAPI_HUGE_STR_LEN]="";
     int *count = &evt_table->count;
     int *event_stats_count = &evt_table->event_stats_count;
@@ -2183,22 +2195,33 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
         return PAPI_EBUG;
     }
 
-    restructure_event_name(evt_name, name_restruct, name_no_stat, stat);
+    papi_errno = restructure_event_name(evt_name, name_restruct, name_no_stat, stat);
+    if (papi_errno != PAPI_OK){
+            return papi_errno;
+    }
 
     cuptiu_event_t *event;
-    StringVector *stat_vec = malloc(sizeof(StringVector));;
-    if (stat_vec == NULL) {
-        ERRDBG("malloc stat_vec failed.\n");
-        return PAPI_ENOMEM;
-    } 
+    StringVector *stat_vec;
     
     if ( htable_find(evt_table->htable, name_no_stat, (void **) &event) != HTABLE_SUCCESS ) {
         event = &events[*count];
         /* increment count */
         (*count)++;
 
-        snprintf(event->name, sizeof(event->name), "%s", name_no_stat);
-        snprintf(event->basename, sizeof(event->basename), "%s", name_restruct);
+        strLen = snprintf(event->name, sizeof(event->name), "%s", name_no_stat);
+        if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+            ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+            return PAPI_EBUF;
+        }
+
+        strLen = snprintf(event->basename, sizeof(event->basename), "%s", name_restruct);
+        if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+            ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+            return PAPI_EBUF;
+        }
+
+        stat_vec = &event_stats[*event_stats_count];
+        (*event_stats_count)++;
 
         event->stat = stat_vec;
         init_vector(event->stat);
@@ -2206,11 +2229,9 @@ static int get_ntv_events(cuptiu_event_table_t *evt_table, const char *evt_name,
         
         papi_errno = push_back(event->stat, stat);
         if (papi_errno != PAPI_OK){
+            printf("ASDF\n");
             return papi_errno;
         }
-
-        stat_vec = &event_stats[*event_stats_count];
-        (*event_stats_count)++;
 
         if ( htable_insert(evt_table->htable, name_no_stat, event) != HTABLE_SUCCESS ) {
             return PAPI_ESYS;
@@ -2712,7 +2733,7 @@ static int evt_code_to_name(uint32_t event_code, char *name, int len)
 */
 int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
 {
-    int papi_errno, i;
+    int papi_errno, i, strLen;
     event_info_t inf;
     char all_stat[PAPI_HUGE_STR_LEN]="", basename[PAPI_HUGE_STR_LEN]="";
 
@@ -2726,7 +2747,11 @@ int cuptip_evt_code_to_info(uint32_t event_code, PAPI_event_info_t *info)
         return PAPI_ENOMEM;
     }
     size_t basename_len = stat_position - cuptiu_table_p->events[inf.nameid].basename;
-    snprintf(basename, sizeof(basename), "%.*s", (int)basename_len, cuptiu_table_p->events[inf.nameid].basename);
+    strLen = snprintf(basename, sizeof(basename), "%.*s", (int)basename_len, cuptiu_table_p->events[inf.nameid].basename);
+    if (strLen < 0 || strLen >= PAPI_HUGE_STR_LEN) {
+        ERRDBG("String larger than PAPI_HUGE_STR_LEN");
+        return PAPI_EBUF;
+    }
     basename[basename_len] = '\0';
     strcat(basename, cuptiu_table_p->events[inf.nameid].stat->data[0]);                 
     strcat(basename, stat_position + 4);
