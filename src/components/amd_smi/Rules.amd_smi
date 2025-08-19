@@ -3,7 +3,7 @@
 # There are four other environment variables that must be exported
 # for runtime operation; see the README file.
 
-PAPI_AMDMSMI_ROOT ?= /opt/rocm
+PAPI_AMDSMI_ROOT ?= /opt/rocm
 
 # There is one library used by the AMD_SMI component: libamd_smi64.so
 # By default, the software tries to find this in system paths, including
@@ -17,7 +17,7 @@ PAPI_AMDMSMI_ROOT ?= /opt/rocm
 # This allows users to overcome non-standard ROCM installs or specify
 # specific version of the libamd_smi64.so library.
 
-# PAPI_AMDMSMI_ROOT is used at both at compile time and run time.
+# PAPI_AMDSMI_ROOT is used at both at compile time and run time.
 
 # There are many ways to cause this path to be known. Spack is a package
 # manager used on supercomputers, Linux and MacOS. If Spack is aware of ROCM,
@@ -84,10 +84,10 @@ COMPOBJS += linux-amd-smi.o \
 # Where to find amd_smi.h varied in early ROCM releases. If it changes again,
 # for backward compatibility add *more* -I paths, do not just replace this one.
 
-CFLAGS += -I$(PAPI_AMDMSMI_ROOT)/../include/amd_smi
-CFLAGS += -I$(PAPI_AMDMSMI_ROOT)/../include
-CFLAGS += -I$(PAPI_AMDMSMI_ROOT)/include/amd_smi
-CFLAGS += -I$(PAPI_AMDMSMI_ROOT)/include
+CFLAGS += -I$(PAPI_AMDSMI_ROOT)/../include/amd_smi
+CFLAGS += -I$(PAPI_AMDSMI_ROOT)/../include
+CFLAGS += -I$(PAPI_AMDSMI_ROOT)/include/amd_smi
+CFLAGS += -I$(PAPI_AMDSMI_ROOT)/include
 CFLAGS += -g
 LDFLAGS += $(LDL) -g
 
