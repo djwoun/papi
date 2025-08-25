@@ -46,6 +46,69 @@ static amdsmi_status_t (*amdsmi_get_gpu_bdf_id_p)(amdsmi_processor_handle, uint6
 static amdsmi_status_t (*amdsmi_get_gpu_topo_numa_affinity_p)(amdsmi_processor_handle, int32_t *);
 static amdsmi_status_t (*amdsmi_get_energy_count_p)(amdsmi_processor_handle, uint64_t *, float *, uint64_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_power_profile_presets_p)(amdsmi_processor_handle, uint32_t, amdsmi_power_profile_status_t *);
+static amdsmi_status_t (*amdsmi_get_socket_info_p)(amdsmi_socket_handle, size_t, char *);
+static amdsmi_status_t (*amdsmi_get_processor_type_p)(amdsmi_processor_handle, processor_type_t *);
+static amdsmi_status_t (*amdsmi_get_processor_handle_from_bdf_p)(amdsmi_bdf_t, amdsmi_processor_handle *);
+static amdsmi_status_t (*amdsmi_get_gpu_device_bdf_p)(amdsmi_processor_handle, amdsmi_bdf_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_device_uuid_p)(amdsmi_processor_handle, char *, size_t);
+static amdsmi_status_t (*amdsmi_get_gpu_enumeration_info_p)(amdsmi_enumeration_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_vendor_name_p)(amdsmi_processor_handle, char *, size_t);
+static amdsmi_status_t (*amdsmi_get_gpu_vram_vendor_p)(amdsmi_processor_handle, char *, size_t);
+static amdsmi_status_t (*amdsmi_get_gpu_subsystem_name_p)(amdsmi_processor_handle, char *, size_t);
+static amdsmi_status_t (*amdsmi_get_gpu_bad_page_info_p)(amdsmi_processor_handle, amdsmi_retired_page_record_t *, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_bad_page_threshold_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_ras_feature_info_p)(amdsmi_processor_handle, amdsmi_ras_feature_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_ras_block_features_enabled_p)(amdsmi_processor_handle, uint64_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_memory_reserved_pages_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_volt_metric_p)(amdsmi_processor_handle, amdsmi_voltage_type_t, amdsmi_voltage_metric_t, int64_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_perf_level_p)(amdsmi_processor_handle, amdsmi_dev_perf_level_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_overdrive_level_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_mem_overdrive_level_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_od_volt_info_p)(amdsmi_processor_handle, void *);
+static amdsmi_status_t (*amdsmi_get_gpu_metrics_header_info_p)(amdsmi_processor_handle, amd_metrics_table_header_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_pm_metrics_info_p)(amdsmi_processor_handle, amdsmi_gpu_metrics_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_reg_table_info_p)(amdsmi_processor_handle, void *);
+static amdsmi_status_t (*amdsmi_get_gpu_od_volt_curve_regions_p)(amdsmi_processor_handle, amdsmi_freq_volt_region_t *, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_soc_pstate_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_xgmi_plpd_p)(amdsmi_processor_handle, uint64_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_process_isolation_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_lib_version_p)(amdsmi_version_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_ecc_count_p)(amdsmi_processor_handle, amdsmi_error_count_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_ecc_enabled_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_total_ecc_count_p)(amdsmi_processor_handle, amdsmi_error_count_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_ecc_status_p)(amdsmi_processor_handle, uint64_t *);
+static amdsmi_status_t (*amdsmi_gpu_xgmi_error_status_p)(amdsmi_processor_handle, uint64_t *);
+static amdsmi_status_t (*amdsmi_get_xgmi_info_p)(amdsmi_processor_handle, amdsmi_xgmi_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_xgmi_link_status_p)(amdsmi_processor_handle, amdsmi_xgmi_link_status_t *);
+static amdsmi_status_t (*amdsmi_topo_get_numa_node_number_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_topo_get_link_weight_p)(amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *);
+static amdsmi_status_t (*amdsmi_topo_get_link_type_p)(amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *, amdsmi_io_link_type_t *);
+static amdsmi_status_t (*amdsmi_get_link_topology_nearest_p)(amdsmi_processor_handle, amdsmi_link_type_t, amdsmi_topology_nearest_t *);
+static amdsmi_status_t (*amdsmi_is_P2P_accessible_p)(amdsmi_processor_handle, amdsmi_processor_handle, bool *);
+static amdsmi_status_t (*amdsmi_topo_get_p2p_status_p)(amdsmi_processor_handle, amdsmi_processor_handle, amdsmi_io_link_type_t *, amdsmi_p2p_capability_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_compute_partition_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_memory_partition_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_memory_partition_config_p)(amdsmi_processor_handle, amdsmi_memory_partition_config_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_config_p)(amdsmi_processor_handle, amdsmi_accelerator_partition_profile_config_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_event_notification_p)(amdsmi_processor_handle, amdsmi_evt_notification_data_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_driver_info_p)(amdsmi_processor_handle, amdsmi_driver_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_asic_info_p)(amdsmi_processor_handle, amdsmi_asic_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_kfd_info_p)(amdsmi_processor_handle, amdsmi_kfd_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_vram_info_p)(amdsmi_processor_handle, amdsmi_vram_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_board_info_p)(amdsmi_processor_handle, amdsmi_board_info_t *);
+static amdsmi_status_t (*amdsmi_get_pcie_info_p)(amdsmi_processor_handle, amdsmi_pcie_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_xcd_counter_p)(amdsmi_processor_handle, uint64_t *);
+static amdsmi_status_t (*amdsmi_get_fw_info_p)(amdsmi_processor_handle, amdsmi_fw_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_vbios_info_p)(amdsmi_processor_handle, amdsmi_vbios_info_t *);
+static amdsmi_status_t (*amdsmi_is_gpu_power_management_enabled_p)(amdsmi_processor_handle, uint32_t *);
+static amdsmi_status_t (*amdsmi_get_clock_info_p)(amdsmi_processor_handle, amdsmi_clk_info_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_vram_usage_p)(amdsmi_processor_handle, amdsmi_vram_usage_t *);
+static amdsmi_status_t (*amdsmi_get_violation_status_p)(amdsmi_processor_handle, amdsmi_violation_status_t *);
+static amdsmi_status_t (*amdsmi_get_gpu_process_list_p)(amdsmi_processor_handle, uint32_t *, amdsmi_proc_info_t *);
+static const char *(*amdsmi_status_code_to_string_p)(amdsmi_status_t);
+
+
 #ifndef AMDSMI_DISABLE_ESMI
 /* CPU function pointers */
 static amdsmi_status_t (*amdsmi_get_cpu_handles_p)(uint32_t *, amdsmi_processor_handle *);
@@ -236,6 +299,69 @@ static int load_amdsmi_sym(void) {
     amdsmi_get_gpu_topo_numa_affinity_p   = sym("amdsmi_get_gpu_topo_numa_affinity", NULL);
     amdsmi_get_energy_count_p             = sym("amdsmi_get_energy_count", NULL);
     amdsmi_get_gpu_power_profile_presets_p = sym("amdsmi_get_gpu_power_profile_presets", NULL);
+    
+    amdsmi_get_socket_info_p       = sym("amdsmi_get_socket_info", NULL);
+    amdsmi_get_processor_type_p    = sym("amdsmi_get_processor_type", NULL);
+    amdsmi_get_processor_handle_from_bdf_p = sym("amdsmi_get_processor_handle_from_bdf", NULL);
+    amdsmi_get_gpu_device_bdf_p    = sym("amdsmi_get_gpu_device_bdf", NULL);
+    amdsmi_get_gpu_device_uuid_p   = sym("amdsmi_get_gpu_device_uuid", NULL);
+    amdsmi_get_gpu_enumeration_info_p = sym("amdsmi_get_gpu_enumeration_info", NULL);
+    amdsmi_get_gpu_vendor_name_p   = sym("amdsmi_get_gpu_vendor_name", NULL);
+    amdsmi_get_gpu_vram_vendor_p   = sym("amdsmi_get_gpu_vram_vendor", NULL);
+    amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
+    amdsmi_get_gpu_bad_page_info_p = sym("amdsmi_get_gpu_bad_page_info", NULL);
+    amdsmi_get_gpu_bad_page_threshold_p = sym("amdsmi_get_gpu_bad_page_threshold", NULL);
+    amdsmi_get_gpu_ras_feature_info_p = sym("amdsmi_get_gpu_ras_feature_info", NULL);
+    amdsmi_get_gpu_ras_block_features_enabled_p = sym("amdsmi_get_gpu_ras_block_features_enabled", NULL);
+    amdsmi_get_gpu_memory_reserved_pages_p = sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
+    amdsmi_get_gpu_volt_metric_p   = sym("amdsmi_get_gpu_volt_metric", NULL);
+    amdsmi_get_gpu_perf_level_p    = sym("amdsmi_get_gpu_perf_level", NULL);
+    amdsmi_get_gpu_overdrive_level_p = sym("amdsmi_get_gpu_overdrive_level", NULL);
+    amdsmi_get_gpu_mem_overdrive_level_p = sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
+    amdsmi_get_gpu_od_volt_info_p  = sym("amdsmi_get_gpu_od_volt_info", NULL);
+    amdsmi_get_gpu_metrics_header_info_p = sym("amdsmi_get_gpu_metrics_header_info", NULL);
+    amdsmi_get_gpu_pm_metrics_info_p = sym("amdsmi_get_gpu_pm_metrics_info", NULL);
+    amdsmi_get_gpu_reg_table_info_p = sym("amdsmi_get_gpu_reg_table_info", NULL);
+    amdsmi_get_gpu_od_volt_curve_regions_p = sym("amdsmi_get_gpu_od_volt_curve_regions", NULL);
+    amdsmi_get_soc_pstate_p        = sym("amdsmi_get_soc_pstate", NULL);
+    amdsmi_get_xgmi_plpd_p         = sym("amdsmi_get_xgmi_plpd", NULL);
+    amdsmi_get_gpu_process_isolation_p = sym("amdsmi_get_gpu_process_isolation", NULL);
+    amdsmi_get_lib_version_p       = sym("amdsmi_get_lib_version", NULL);
+    amdsmi_get_gpu_ecc_count_p     = sym("amdsmi_get_gpu_ecc_count", NULL);
+    amdsmi_get_gpu_ecc_enabled_p   = sym("amdsmi_get_gpu_ecc_enabled", NULL);
+    amdsmi_get_gpu_total_ecc_count_p = sym("amdsmi_get_gpu_total_ecc_count", NULL);
+    amdsmi_get_gpu_ecc_status_p    = sym("amdsmi_get_gpu_ecc_status", NULL);
+    amdsmi_gpu_xgmi_error_status_p = sym("amdsmi_gpu_xgmi_error_status", NULL);
+    amdsmi_get_xgmi_info_p         = sym("amdsmi_get_xgmi_info", NULL);
+    amdsmi_get_gpu_xgmi_link_status_p = sym("amdsmi_get_gpu_xgmi_link_status", NULL);
+    amdsmi_topo_get_numa_node_number_p = sym("amdsmi_topo_get_numa_node_number", NULL);
+    amdsmi_topo_get_link_weight_p  = sym("amdsmi_topo_get_link_weight", NULL);
+    amdsmi_topo_get_link_type_p    = sym("amdsmi_topo_get_link_type", NULL);
+    amdsmi_get_link_topology_nearest_p = sym("amdsmi_get_link_topology_nearest", NULL);
+    amdsmi_is_P2P_accessible_p     = sym("amdsmi_is_P2P_accessible", NULL);
+    amdsmi_topo_get_p2p_status_p   = sym("amdsmi_topo_get_p2p_status", NULL);
+    amdsmi_get_gpu_compute_partition_p = sym("amdsmi_get_gpu_compute_partition", NULL);
+    amdsmi_get_gpu_memory_partition_p = sym("amdsmi_get_gpu_memory_partition", NULL);
+    amdsmi_get_gpu_memory_partition_config_p = sym("amdsmi_get_gpu_memory_partition_config", NULL);
+    amdsmi_get_gpu_accelerator_partition_profile_config_p = sym("amdsmi_get_gpu_accelerator_partition_profile_config", NULL);
+    amdsmi_get_gpu_accelerator_partition_profile_p = sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
+    amdsmi_get_gpu_event_notification_p = sym("amdsmi_get_gpu_event_notification", NULL);
+    amdsmi_get_gpu_driver_info_p   = sym("amdsmi_get_gpu_driver_info", NULL);
+    amdsmi_get_gpu_asic_info_p     = sym("amdsmi_get_gpu_asic_info", NULL);
+    amdsmi_get_gpu_kfd_info_p      = sym("amdsmi_get_gpu_kfd_info", NULL);
+    amdsmi_get_gpu_vram_info_p     = sym("amdsmi_get_gpu_vram_info", NULL);
+    amdsmi_get_gpu_board_info_p    = sym("amdsmi_get_gpu_board_info", NULL);
+    amdsmi_get_pcie_info_p         = sym("amdsmi_get_pcie_info", NULL);
+    amdsmi_get_gpu_xcd_counter_p   = sym("amdsmi_get_gpu_xcd_counter", NULL);
+    amdsmi_get_fw_info_p           = sym("amdsmi_get_fw_info", NULL);
+    amdsmi_get_gpu_vbios_info_p    = sym("amdsmi_get_gpu_vbios_info", NULL);
+    amdsmi_is_gpu_power_management_enabled_p = sym("amdsmi_is_gpu_power_management_enabled", NULL);
+    amdsmi_get_clock_info_p        = sym("amdsmi_get_clock_info", NULL);
+    amdsmi_get_gpu_vram_usage_p    = sym("amdsmi_get_gpu_vram_usage", NULL);
+    amdsmi_get_violation_status_p  = sym("amdsmi_get_violation_status", NULL);
+    amdsmi_get_gpu_process_list_p  = sym("amdsmi_get_gpu_process_list", NULL);
+    amdsmi_status_code_to_string_p = sym("amdsmi_status_code_to_string", NULL);
+    
 #ifndef AMDSMI_DISABLE_ESMI
     /* CPU functions */
     amdsmi_get_cpu_handles_p = sym("amdsmi_get_cpu_handles", NULL);
@@ -354,6 +480,69 @@ static int unload_amdsmi_sym(void) {
     amdsmi_get_gpu_topo_numa_affinity_p = NULL;
     amdsmi_get_energy_count_p = NULL;
     amdsmi_get_gpu_power_profile_presets_p = NULL;
+    
+    amdsmi_get_socket_info_p       = NULL;
+    amdsmi_get_processor_type_p    = NULL;
+    amdsmi_get_processor_handle_from_bdf_p = NULL;
+    amdsmi_get_gpu_device_bdf_p    = NULL;
+    amdsmi_get_gpu_device_uuid_p   = NULL;
+    amdsmi_get_gpu_enumeration_info_p = NULL;
+    amdsmi_get_gpu_vendor_name_p   = NULL;
+    amdsmi_get_gpu_vram_vendor_p   = NULL;
+    amdsmi_get_gpu_subsystem_name_p = NULL;
+    amdsmi_get_gpu_bad_page_info_p = NULL;
+    amdsmi_get_gpu_bad_page_threshold_p = NULL;
+    amdsmi_get_gpu_ras_feature_info_p = NULL;
+    amdsmi_get_gpu_ras_block_features_enabled_p = NULL;
+    amdsmi_get_gpu_memory_reserved_pages_p = NULL;
+    amdsmi_get_gpu_volt_metric_p   = NULL;
+    amdsmi_get_gpu_perf_level_p    = NULL;
+    amdsmi_get_gpu_overdrive_level_p = NULL;
+    amdsmi_get_gpu_mem_overdrive_level_p = NULL;
+    amdsmi_get_gpu_od_volt_info_p  = NULL;
+    amdsmi_get_gpu_metrics_header_info_p = NULL;
+    amdsmi_get_gpu_pm_metrics_info_p = NULL;
+    amdsmi_get_gpu_reg_table_info_p = NULL;
+    amdsmi_get_gpu_od_volt_curve_regions_p = NULL;
+    amdsmi_get_soc_pstate_p        = NULL;
+    amdsmi_get_xgmi_plpd_p         = NULL;
+    amdsmi_get_gpu_process_isolation_p = NULL;
+    amdsmi_get_lib_version_p       = NULL;
+    amdsmi_get_gpu_ecc_count_p     = NULL;
+    amdsmi_get_gpu_ecc_enabled_p   = NULL;
+    amdsmi_get_gpu_total_ecc_count_p = NULL;
+    amdsmi_get_gpu_ecc_status_p    = NULL;
+    amdsmi_gpu_xgmi_error_status_p = NULL;
+    amdsmi_get_xgmi_info_p         = NULL;
+    amdsmi_get_gpu_xgmi_link_status_p = NULL;
+    amdsmi_topo_get_numa_node_number_p = NULL;
+    amdsmi_topo_get_link_weight_p  = NULL;
+    amdsmi_topo_get_link_type_p    = NULL;
+    amdsmi_get_link_topology_nearest_p = NULL;
+    amdsmi_is_P2P_accessible_p     = NULL;
+    amdsmi_topo_get_p2p_status_p   = NULL;
+    amdsmi_get_gpu_compute_partition_p = NULL;
+    amdsmi_get_gpu_memory_partition_p = NULL;
+    amdsmi_get_gpu_memory_partition_config_p = NULL;
+    amdsmi_get_gpu_accelerator_partition_profile_config_p = NULL;
+    amdsmi_get_gpu_accelerator_partition_profile_p = NULL;
+    amdsmi_get_gpu_event_notification_p = NULL;
+    amdsmi_get_gpu_driver_info_p   = NULL;
+    amdsmi_get_gpu_asic_info_p     = NULL;
+    amdsmi_get_gpu_kfd_info_p      = NULL;
+    amdsmi_get_gpu_vram_info_p     = NULL;
+    amdsmi_get_gpu_board_info_p    = NULL;
+    amdsmi_get_pcie_info_p         = NULL;
+    amdsmi_get_gpu_xcd_counter_p   = NULL;
+    amdsmi_get_fw_info_p           = NULL;
+    amdsmi_get_gpu_vbios_info_p    = NULL;
+    amdsmi_is_gpu_power_management_enabled_p = NULL;
+    amdsmi_get_clock_info_p        = NULL;
+    amdsmi_get_gpu_vram_usage_p    = NULL;
+    amdsmi_get_violation_status_p  = NULL;
+    amdsmi_get_gpu_process_list_p  = NULL;
+    amdsmi_status_code_to_string_p = NULL;
+    
 #ifndef AMDSMI_DISABLE_ESMI
     amdsmi_get_cpu_handles_p = NULL;
     amdsmi_get_cpucore_handles_p = NULL;
@@ -679,8 +868,10 @@ amds_ctx_stop(amds_ctx_t ctx)
 int
 amds_ctx_read(amds_ctx_t ctx, long long **counts)
 {
+    printf("A\n");
     int papi_errno = PAPI_OK;
     for (int i = 0; i < ctx->num_events; ++i) {
+     printf("B\n");
         unsigned int id = ctx->events_id[i];
         papi_errno = ntv_table_p->events[id].access_func(PAPI_MODE_READ, &ntv_table_p->events[id]);
         if (papi_errno != PAPI_OK) {
@@ -688,6 +879,7 @@ amds_ctx_read(amds_ctx_t ctx, long long **counts)
         }
         ctx->counters[i] = (long long) ntv_table_p->events[id].value;
     }
+    printf("C\n");
     *counts = ctx->counters;
     return papi_errno;
 }
@@ -715,6 +907,30 @@ amds_ctx_reset(amds_ctx_t ctx)
     }
     return PAPI_OK;
 }
+
+/* Forward declarations for access functions used by init_event_table */
+static int access_amdsmi_ras_block_enabled(int, void *);
+static int access_amdsmi_ecc_count(int, void *);
+static int access_amdsmi_ecc_total(int, void *);
+static int access_amdsmi_ecc_enabled(int, void *);
+static int access_amdsmi_xgmi_error(int, void *);
+static int access_amdsmi_volt_metric(int, void *);
+static int access_amdsmi_perf_level(int, void *);
+static int access_amdsmi_overdrive(int, void *);
+static int access_amdsmi_mem_overdrive(int, void *);
+static int access_amdsmi_compute_partition(int, void *);
+static int access_amdsmi_memory_partition(int, void *);
+static int access_amdsmi_accel_profile(int, void *);
+static int access_amdsmi_process_isolation(int, void *);
+static int access_amdsmi_vram_info(int, void *);
+static int access_amdsmi_pcie_info(int, void *);
+static int access_amdsmi_power_management(int, void *);
+static int access_amdsmi_link_weight(int, void *);
+static int access_amdsmi_link_type(int, void *);
+static int access_amdsmi_p2p_accessible(int, void *);
+static int access_amdsmi_p2p_status(int, void *);
+static int access_amdsmi_lib_version(int, void *);
+/* End forward declarations */
 /* Initialize native event table: enumerate all supported events */
 static int init_event_table(void) {
     // Check if event table is already initialized
@@ -729,7 +945,7 @@ static int init_event_table(void) {
         return PAPI_OK;
     }
     // Keep original allocation approach
-    ntv_table.events = (native_event_t *) papi_calloc(512 * device_count, sizeof(native_event_t));
+    ntv_table.events = (native_event_t *) papi_calloc(1024 * device_count, sizeof(native_event_t));
     if (!ntv_table.events) {
         return PAPI_ENOMEM;
     }
@@ -1501,6 +1717,702 @@ static int init_event_table(void) {
         htable_insert(htable, ev_prof_curr->name, ev_prof_curr);
         idx++;
     }
+    
+        /* GPU RAS and ECC metrics events */
+    for (int d = 0; d < gpu_count; ++d) {
+        if (!device_handles[d]) continue;
+        uint64_t ras_mask;
+        if (amdsmi_get_gpu_ras_block_features_enabled_p &&
+            amdsmi_get_gpu_ras_block_features_enabled_p(device_handles[d], &ras_mask) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "ras_blocks_enabled:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d RAS enabled block mask", d);
+            native_event_t *ev_ras = &ntv_table.events[idx];
+            ev_ras->id = idx;
+            ev_ras->name = strdup(name_buf);
+            ev_ras->descr = strdup(descr_buf);
+            ev_ras->device = d;
+            ev_ras->value = 0;
+            ev_ras->mode = PAPI_MODE_READ;
+            ev_ras->variant = 0;
+            ev_ras->subvariant = 0;
+            ev_ras->open_func = open_simple;
+            ev_ras->close_func = close_simple;
+            ev_ras->start_func = start_simple;
+            ev_ras->stop_func = stop_simple;
+            ev_ras->access_func = access_amdsmi_ras_block_enabled;
+            htable_insert(htable, ev_ras->name, ev_ras);
+            idx++;
+        }
+        amdsmi_error_count_t ecc_counts;
+        if (amdsmi_get_gpu_ecc_count_p &&
+            amdsmi_get_gpu_ecc_count_p(device_handles[d], &ecc_counts) == AMDSMI_STATUS_SUCCESS) {
+            // Correctable ECC errors
+            snprintf(name_buf, sizeof(name_buf), "ecc_correctable:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d ECC correctable error count", d);
+            native_event_t *ev_ecc_ce = &ntv_table.events[idx];
+            ev_ecc_ce->id = idx;
+            ev_ecc_ce->name = strdup(name_buf);
+            ev_ecc_ce->descr = strdup(descr_buf);
+            ev_ecc_ce->device = d;
+            ev_ecc_ce->value = 0;
+            ev_ecc_ce->mode = PAPI_MODE_READ;
+            ev_ecc_ce->variant = 0;  // 0 for correctable
+            ev_ecc_ce->subvariant = 0;
+            ev_ecc_ce->open_func = open_simple;
+            ev_ecc_ce->close_func = close_simple;
+            ev_ecc_ce->start_func = start_simple;
+            ev_ecc_ce->stop_func = stop_simple;
+            ev_ecc_ce->access_func = access_amdsmi_ecc_count;
+            htable_insert(htable, ev_ecc_ce->name, ev_ecc_ce);
+            idx++;
+            // Uncorrectable ECC errors
+            snprintf(name_buf, sizeof(name_buf), "ecc_uncorrectable:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d ECC uncorrectable error count", d);
+            native_event_t *ev_ecc_ue = &ntv_table.events[idx];
+            ev_ecc_ue->id = idx;
+            ev_ecc_ue->name = strdup(name_buf);
+            ev_ecc_ue->descr = strdup(descr_buf);
+            ev_ecc_ue->device = d;
+            ev_ecc_ue->value = 0;
+            ev_ecc_ue->mode = PAPI_MODE_READ;
+            ev_ecc_ue->variant = 1;  // 1 for uncorrectable
+            ev_ecc_ue->subvariant = 0;
+            ev_ecc_ue->open_func = open_simple;
+            ev_ecc_ue->close_func = close_simple;
+            ev_ecc_ue->start_func = start_simple;
+            ev_ecc_ue->stop_func = stop_simple;
+            ev_ecc_ue->access_func = access_amdsmi_ecc_count;
+            htable_insert(htable, ev_ecc_ue->name, ev_ecc_ue);
+            idx++;
+        }
+        if (amdsmi_get_gpu_total_ecc_count_p &&
+            amdsmi_get_gpu_total_ecc_count_p(device_handles[d], &ecc_counts) == AMDSMI_STATUS_SUCCESS) {
+            // Total correctable ECC errors (all time)
+            snprintf(name_buf, sizeof(name_buf), "ecc_correctable_total:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d total correctable ECC errors", d);
+            native_event_t *ev_ecc_ce_tot = &ntv_table.events[idx];
+            ev_ecc_ce_tot->id = idx;
+            ev_ecc_ce_tot->name = strdup(name_buf);
+            ev_ecc_ce_tot->descr = strdup(descr_buf);
+            ev_ecc_ce_tot->device = d;
+            ev_ecc_ce_tot->value = 0;
+            ev_ecc_ce_tot->mode = PAPI_MODE_READ;
+            ev_ecc_ce_tot->variant = 0;
+            ev_ecc_ce_tot->subvariant = 0;
+            ev_ecc_ce_tot->open_func = open_simple;
+            ev_ecc_ce_tot->close_func = close_simple;
+            ev_ecc_ce_tot->start_func = start_simple;
+            ev_ecc_ce_tot->stop_func = stop_simple;
+            ev_ecc_ce_tot->access_func = access_amdsmi_ecc_total;
+            htable_insert(htable, ev_ecc_ce_tot->name, ev_ecc_ce_tot);
+            idx++;
+            // Total uncorrectable ECC errors
+            snprintf(name_buf, sizeof(name_buf), "ecc_uncorrectable_total:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d total uncorrectable ECC errors", d);
+            native_event_t *ev_ecc_ue_tot = &ntv_table.events[idx];
+            ev_ecc_ue_tot->id = idx;
+            ev_ecc_ue_tot->name = strdup(name_buf);
+            ev_ecc_ue_tot->descr = strdup(descr_buf);
+            ev_ecc_ue_tot->device = d;
+            ev_ecc_ue_tot->value = 0;
+            ev_ecc_ue_tot->mode = PAPI_MODE_READ;
+            ev_ecc_ue_tot->variant = 1;
+            ev_ecc_ue_tot->subvariant = 0;
+            ev_ecc_ue_tot->open_func = open_simple;
+            ev_ecc_ue_tot->close_func = close_simple;
+            ev_ecc_ue_tot->start_func = start_simple;
+            ev_ecc_ue_tot->stop_func = stop_simple;
+            ev_ecc_ue_tot->access_func = access_amdsmi_ecc_total;
+            htable_insert(htable, ev_ecc_ue_tot->name, ev_ecc_ue_tot);
+            idx++;
+        }
+        uint32_t ecc_enabled;
+        if (amdsmi_get_gpu_ecc_enabled_p &&
+            amdsmi_get_gpu_ecc_enabled_p(device_handles[d], &ecc_enabled) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "ecc_enabled:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d ECC enabled (1 or 0)", d);
+            native_event_t *ev_ecc_en = &ntv_table.events[idx];
+            ev_ecc_en->id = idx;
+            ev_ecc_en->name = strdup(name_buf);
+            ev_ecc_en->descr = strdup(descr_buf);
+            ev_ecc_en->device = d;
+            ev_ecc_en->value = 0;
+            ev_ecc_en->mode = PAPI_MODE_READ;
+            ev_ecc_en->variant = 0;
+            ev_ecc_en->subvariant = 0;
+            ev_ecc_en->open_func = open_simple;
+            ev_ecc_en->close_func = close_simple;
+            ev_ecc_en->start_func = start_simple;
+            ev_ecc_en->stop_func = stop_simple;
+            ev_ecc_en->access_func = access_amdsmi_ecc_enabled;
+            htable_insert(htable, ev_ecc_en->name, ev_ecc_en);
+            idx++;
+        }
+        uint64_t xgmi_err;
+        if (amdsmi_gpu_xgmi_error_status_p &&
+            amdsmi_gpu_xgmi_error_status_p(device_handles[d], &xgmi_err) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "xgmi_error_count:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d XGMI error count", d);
+            native_event_t *ev_xgmi_err = &ntv_table.events[idx];
+            ev_xgmi_err->id = idx;
+            ev_xgmi_err->name = strdup(name_buf);
+            ev_xgmi_err->descr = strdup(descr_buf);
+            ev_xgmi_err->device = d;
+            ev_xgmi_err->value = 0;
+            ev_xgmi_err->mode = PAPI_MODE_READ;
+            ev_xgmi_err->variant = 0;
+            ev_xgmi_err->subvariant = 0;
+            ev_xgmi_err->open_func = open_simple;
+            ev_xgmi_err->close_func = close_simple;
+            ev_xgmi_err->start_func = start_simple;
+            ev_xgmi_err->stop_func = stop_simple;
+            ev_xgmi_err->access_func = access_amdsmi_xgmi_error;
+            htable_insert(htable, ev_xgmi_err->name, ev_xgmi_err);
+            idx++;
+        }
+    }
+    /* GPU voltage and power metrics events */
+    for (int d = 0; d < gpu_count; ++d) {
+        if (!device_handles[d]) continue;
+        // Voltage metrics (VDDGFX) if available
+        int64_t dummy_volt;
+        if (amdsmi_get_gpu_volt_metric_p &&
+            amdsmi_get_gpu_volt_metric_p(device_handles[d], AMDSMI_VOLT_TYPE_VDDGFX, AMDSMI_VOLT_CURRENT, &dummy_volt) == AMDSMI_STATUS_SUCCESS) {
+            // Current voltage (mV)
+            snprintf(name_buf, sizeof(name_buf), "vddgfx_voltage_current:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VDDGFX current voltage (mV)", d);
+            native_event_t *ev_vcur = &ntv_table.events[idx];
+            ev_vcur->id = idx;
+            ev_vcur->name = strdup(name_buf);
+            ev_vcur->descr = strdup(descr_buf);
+            ev_vcur->device = d;
+            ev_vcur->value = 0;
+            ev_vcur->mode = PAPI_MODE_READ;
+            ev_vcur->variant = AMDSMI_VOLT_CURRENT;
+            ev_vcur->subvariant = AMDSMI_VOLT_TYPE_VDDGFX;
+            ev_vcur->open_func = open_simple;
+            ev_vcur->close_func = close_simple;
+            ev_vcur->start_func = start_simple;
+            ev_vcur->stop_func = stop_simple;
+            ev_vcur->access_func = access_amdsmi_volt_metric;
+            htable_insert(htable, ev_vcur->name, ev_vcur);
+            idx++;
+            // Average voltage
+            snprintf(name_buf, sizeof(name_buf), "vddgfx_voltage_average:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VDDGFX average voltage (mV)", d);
+            native_event_t *ev_vavg = &ntv_table.events[idx];
+            ev_vavg->id = idx;
+            ev_vavg->name = strdup(name_buf);
+            ev_vavg->descr = strdup(descr_buf);
+            ev_vavg->device = d;
+            ev_vavg->value = 0;
+            ev_vavg->mode = PAPI_MODE_READ;
+            ev_vavg->variant = AMDSMI_VOLT_AVERAGE;
+            ev_vavg->subvariant = AMDSMI_VOLT_TYPE_VDDGFX;
+            ev_vavg->open_func = open_simple;
+            ev_vavg->close_func = close_simple;
+            ev_vavg->start_func = start_simple;
+            ev_vavg->stop_func = stop_simple;
+            ev_vavg->access_func = access_amdsmi_volt_metric;
+            htable_insert(htable, ev_vavg->name, ev_vavg);
+            idx++;
+            // Minimum voltage
+            snprintf(name_buf, sizeof(name_buf), "vddgfx_voltage_min:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VDDGFX lowest voltage (mV)", d);
+            native_event_t *ev_vmin = &ntv_table.events[idx];
+            ev_vmin->id = idx;
+            ev_vmin->name = strdup(name_buf);
+            ev_vmin->descr = strdup(descr_buf);
+            ev_vmin->device = d;
+            ev_vmin->value = 0;
+            ev_vmin->mode = PAPI_MODE_READ;
+            ev_vmin->variant = AMDSMI_VOLT_MIN;
+            ev_vmin->subvariant = AMDSMI_VOLT_TYPE_VDDGFX;
+            ev_vmin->open_func = open_simple;
+            ev_vmin->close_func = close_simple;
+            ev_vmin->start_func = start_simple;
+            ev_vmin->stop_func = stop_simple;
+            ev_vmin->access_func = access_amdsmi_volt_metric;
+            htable_insert(htable, ev_vmin->name, ev_vmin);
+            idx++;
+            // Maximum voltage
+            snprintf(name_buf, sizeof(name_buf), "vddgfx_voltage_max:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VDDGFX highest voltage (mV)", d);
+            native_event_t *ev_vmax = &ntv_table.events[idx];
+            ev_vmax->id = idx;
+            ev_vmax->name = strdup(name_buf);
+            ev_vmax->descr = strdup(descr_buf);
+            ev_vmax->device = d;
+            ev_vmax->value = 0;
+            ev_vmax->mode = PAPI_MODE_READ;
+            ev_vmax->variant = AMDSMI_VOLT_MAX;
+            ev_vmax->subvariant = AMDSMI_VOLT_TYPE_VDDGFX;
+            ev_vmax->open_func = open_simple;
+            ev_vmax->close_func = close_simple;
+            ev_vmax->start_func = start_simple;
+            ev_vmax->stop_func = stop_simple;
+            ev_vmax->access_func = access_amdsmi_volt_metric;
+            htable_insert(htable, ev_vmax->name, ev_vmax);
+            idx++;
+        }
+        // Performance level
+        amdsmi_dev_perf_level_t perf;
+        if (amdsmi_get_gpu_perf_level_p &&
+            amdsmi_get_gpu_perf_level_p(device_handles[d], &perf) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "perf_level:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d performance level (enum)", d);
+            native_event_t *ev_perf = &ntv_table.events[idx];
+            ev_perf->id = idx;
+            ev_perf->name = strdup(name_buf);
+            ev_perf->descr = strdup(descr_buf);
+            ev_perf->device = d;
+            ev_perf->value = 0;
+            ev_perf->mode = PAPI_MODE_READ;
+            ev_perf->variant = 0;
+            ev_perf->subvariant = 0;
+            ev_perf->open_func = open_simple;
+            ev_perf->close_func = close_simple;
+            ev_perf->start_func = start_simple;
+            ev_perf->stop_func = stop_simple;
+            ev_perf->access_func = access_amdsmi_perf_level;
+            htable_insert(htable, ev_perf->name, ev_perf);
+            idx++;
+        }
+        // Overdrive settings
+        uint32_t od_val;
+        if (amdsmi_get_gpu_overdrive_level_p &&
+            amdsmi_get_gpu_overdrive_level_p(device_handles[d], &od_val) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "gpu_overdrive_level:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU core overdrive level", d);
+            native_event_t *ev_od = &ntv_table.events[idx];
+            ev_od->id = idx;
+            ev_od->name = strdup(name_buf);
+            ev_od->descr = strdup(descr_buf);
+            ev_od->device = d;
+            ev_od->value = 0;
+            ev_od->mode = PAPI_MODE_READ;
+            ev_od->variant = 0;
+            ev_od->subvariant = 0;
+            ev_od->open_func = open_simple;
+            ev_od->close_func = close_simple;
+            ev_od->start_func = start_simple;
+            ev_od->stop_func = stop_simple;
+            ev_od->access_func = access_amdsmi_overdrive;
+            htable_insert(htable, ev_od->name, ev_od);
+            idx++;
+        }
+        if (amdsmi_get_gpu_mem_overdrive_level_p &&
+            amdsmi_get_gpu_mem_overdrive_level_p(device_handles[d], &od_val) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "mem_overdrive_level:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM overdrive level", d);
+            native_event_t *ev_mod = &ntv_table.events[idx];
+            ev_mod->id = idx;
+            ev_mod->name = strdup(name_buf);
+            ev_mod->descr = strdup(descr_buf);
+            ev_mod->device = d;
+            ev_mod->value = 0;
+            ev_mod->mode = PAPI_MODE_READ;
+            ev_mod->variant = 0;
+            ev_mod->subvariant = 0;
+            ev_mod->open_func = open_simple;
+            ev_mod->close_func = close_simple;
+            ev_mod->start_func = start_simple;
+            ev_mod->stop_func = stop_simple;
+            ev_mod->access_func = access_amdsmi_mem_overdrive;
+            htable_insert(htable, ev_mod->name, ev_mod);
+            idx++;
+        }
+    }
+    /* GPU partitioning and isolation events */
+    for (int d = 0; d < gpu_count; ++d) {
+        if (!device_handles[d]) continue;
+        uint32_t part_val;
+        if (amdsmi_get_gpu_compute_partition_p &&
+            amdsmi_get_gpu_compute_partition_p(device_handles[d], &part_val) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "compute_partition_mode:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d compute partition mode (ID)", d);
+            native_event_t *ev_cmp = &ntv_table.events[idx];
+            ev_cmp->id = idx;
+            ev_cmp->name = strdup(name_buf);
+            ev_cmp->descr = strdup(descr_buf);
+            ev_cmp->device = d;
+            ev_cmp->value = 0;
+            ev_cmp->mode = PAPI_MODE_READ;
+            ev_cmp->variant = 0;
+            ev_cmp->subvariant = 0;
+            ev_cmp->open_func = open_simple;
+            ev_cmp->close_func = close_simple;
+            ev_cmp->start_func = start_simple;
+            ev_cmp->stop_func = stop_simple;
+            ev_cmp->access_func = access_amdsmi_compute_partition;
+            htable_insert(htable, ev_cmp->name, ev_cmp);
+            idx++;
+        }
+        if (amdsmi_get_gpu_memory_partition_p &&
+            amdsmi_get_gpu_memory_partition_p(device_handles[d], &part_val) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "memory_partition_mode:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d memory partition mode (ID)", d);
+            native_event_t *ev_mpart = &ntv_table.events[idx];
+            ev_mpart->id = idx;
+            ev_mpart->name = strdup(name_buf);
+            ev_mpart->descr = strdup(descr_buf);
+            ev_mpart->device = d;
+            ev_mpart->value = 0;
+            ev_mpart->mode = PAPI_MODE_READ;
+            ev_mpart->variant = 0;
+            ev_mpart->subvariant = 0;
+            ev_mpart->open_func = open_simple;
+            ev_mpart->close_func = close_simple;
+            ev_mpart->start_func = start_simple;
+            ev_mpart->stop_func = stop_simple;
+            ev_mpart->access_func = access_amdsmi_memory_partition;
+            htable_insert(htable, ev_mpart->name, ev_mpart);
+            idx++;
+        }
+        if (amdsmi_get_gpu_accelerator_partition_profile_p &&
+            amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], (amdsmi_accelerator_partition_profile_t *)&part_val) == AMDSMI_STATUS_SUCCESS) {
+            // Using part_val as profile ID for simplicity
+            snprintf(name_buf, sizeof(name_buf), "accelerator_profile:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d accelerator partition profile ID", d);
+            native_event_t *ev_prof = &ntv_table.events[idx];
+            ev_prof->id = idx;
+            ev_prof->name = strdup(name_buf);
+            ev_prof->descr = strdup(descr_buf);
+            ev_prof->device = d;
+            ev_prof->value = 0;
+            ev_prof->mode = PAPI_MODE_READ;
+            ev_prof->variant = 0;
+            ev_prof->subvariant = 0;
+            ev_prof->open_func = open_simple;
+            ev_prof->close_func = close_simple;
+            ev_prof->start_func = start_simple;
+            ev_prof->stop_func = stop_simple;
+            ev_prof->access_func = access_amdsmi_accel_profile;
+            htable_insert(htable, ev_prof->name, ev_prof);
+            idx++;
+        }
+        uint32_t iso;
+        if (amdsmi_get_gpu_process_isolation_p &&
+            amdsmi_get_gpu_process_isolation_p(device_handles[d], &iso) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "process_isolation:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d process isolation enabled (1/0)", d);
+            native_event_t *ev_iso = &ntv_table.events[idx];
+            ev_iso->id = idx;
+            ev_iso->name = strdup(name_buf);
+            ev_iso->descr = strdup(descr_buf);
+            ev_iso->device = d;
+            ev_iso->value = 0;
+            ev_iso->mode = PAPI_MODE_READ;
+            ev_iso->variant = 0;
+            ev_iso->subvariant = 0;
+            ev_iso->open_func = open_simple;
+            ev_iso->close_func = close_simple;
+            ev_iso->start_func = start_simple;
+            ev_iso->stop_func = stop_simple;
+            ev_iso->access_func = access_amdsmi_process_isolation;
+            htable_insert(htable, ev_iso->name, ev_iso);
+            idx++;
+        }
+    }
+    /* GPU memory and PCIe information events */
+    for (int d = 0; d < gpu_count; ++d) {
+        if (!device_handles[d]) continue;
+        // VRAM vendor and type
+        amdsmi_vram_info_t vram;
+        if (amdsmi_get_gpu_vram_info_p &&
+            amdsmi_get_gpu_vram_info_p(device_handles[d], &vram) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "vram_type:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM memory type (enum)", d);
+            native_event_t *ev_vtype = &ntv_table.events[idx];
+            ev_vtype->id = idx;
+            ev_vtype->name = strdup(name_buf);
+            ev_vtype->descr = strdup(descr_buf);
+            ev_vtype->device = d;
+            ev_vtype->value = 0;
+            ev_vtype->mode = PAPI_MODE_READ;
+            ev_vtype->variant = 1;  // 1 = vendor, 0 = type (we'll invert in access)
+            ev_vtype->subvariant = 0;
+            ev_vtype->open_func = open_simple;
+            ev_vtype->close_func = close_simple;
+            ev_vtype->start_func = start_simple;
+            ev_vtype->stop_func = stop_simple;
+            ev_vtype->access_func = access_amdsmi_vram_info;
+            htable_insert(htable, ev_vtype->name, ev_vtype);
+            idx++;
+            snprintf(name_buf, sizeof(name_buf), "vram_vendor_id:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM vendor ID (enum code)", d);
+            native_event_t *ev_vven = &ntv_table.events[idx];
+            ev_vven->id = idx;
+            ev_vven->name = strdup(name_buf);
+            ev_vven->descr = strdup(descr_buf);
+            ev_vven->device = d;
+            ev_vven->value = 0;
+            ev_vven->mode = PAPI_MODE_READ;
+            ev_vven->variant = 0;  // 0 = type, 1 = vendor (swap logic in access)
+            ev_vven->subvariant = 0;
+            ev_vven->open_func = open_simple;
+            ev_vven->close_func = close_simple;
+            ev_vven->start_func = start_simple;
+            ev_vven->stop_func = stop_simple;
+            ev_vven->access_func = access_amdsmi_vram_info;
+            htable_insert(htable, ev_vven->name, ev_vven);
+            idx++;
+        }
+        // PCIe link information
+        amdsmi_pcie_info_t pinfo;
+        if (amdsmi_get_pcie_info_p &&
+            amdsmi_get_pcie_info_p(device_handles[d], &pinfo) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "pcie_link_gen_current:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe current link generation", d);
+            native_event_t *ev_lgen = &ntv_table.events[idx];
+            ev_lgen->id = idx;
+            ev_lgen->name = strdup(name_buf);
+            ev_lgen->descr = strdup(descr_buf);
+            ev_lgen->device = d;
+            ev_lgen->value = 0;
+            ev_lgen->mode = PAPI_MODE_READ;
+            ev_lgen->variant = 0;
+            ev_lgen->subvariant = 0;
+            ev_lgen->open_func = open_simple;
+            ev_lgen->close_func = close_simple;
+            ev_lgen->start_func = start_simple;
+            ev_lgen->stop_func = stop_simple;
+            ev_lgen->access_func = access_amdsmi_pcie_info;
+            htable_insert(htable, ev_lgen->name, ev_lgen);
+            idx++;
+            snprintf(name_buf, sizeof(name_buf), "pcie_link_width_current:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe current link width (lanes)", d);
+            native_event_t *ev_lwid = &ntv_table.events[idx];
+            ev_lwid->id = idx;
+            ev_lwid->name = strdup(name_buf);
+            ev_lwid->descr = strdup(descr_buf);
+            ev_lwid->device = d;
+            ev_lwid->value = 0;
+            ev_lwid->mode = PAPI_MODE_READ;
+            ev_lwid->variant = 1;
+            ev_lwid->subvariant = 0;
+            ev_lwid->open_func = open_simple;
+            ev_lwid->close_func = close_simple;
+            ev_lwid->start_func = start_simple;
+            ev_lwid->stop_func = stop_simple;
+            ev_lwid->access_func = access_amdsmi_pcie_info;
+            htable_insert(htable, ev_lwid->name, ev_lwid);
+            idx++;
+            snprintf(name_buf, sizeof(name_buf), "pcie_link_gen_max:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe maximum supported link generation", d);
+            native_event_t *ev_lgenmax = &ntv_table.events[idx];
+            ev_lgenmax->id = idx;
+            ev_lgenmax->name = strdup(name_buf);
+            ev_lgenmax->descr = strdup(descr_buf);
+            ev_lgenmax->device = d;
+            ev_lgenmax->value = 0;
+            ev_lgenmax->mode = PAPI_MODE_READ;
+            ev_lgenmax->variant = 2;
+            ev_lgenmax->subvariant = 0;
+            ev_lgenmax->open_func = open_simple;
+            ev_lgenmax->close_func = close_simple;
+            ev_lgenmax->start_func = start_simple;
+            ev_lgenmax->stop_func = stop_simple;
+            ev_lgenmax->access_func = access_amdsmi_pcie_info;
+            htable_insert(htable, ev_lgenmax->name, ev_lgenmax);
+            idx++;
+            snprintf(name_buf, sizeof(name_buf), "pcie_link_width_max:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe maximum supported link width", d);
+            native_event_t *ev_lwidmax = &ntv_table.events[idx];
+            ev_lwidmax->id = idx;
+            ev_lwidmax->name = strdup(name_buf);
+            ev_lwidmax->descr = strdup(descr_buf);
+            ev_lwidmax->device = d;
+            ev_lwidmax->value = 0;
+            ev_lwidmax->mode = PAPI_MODE_READ;
+            ev_lwidmax->variant = 3;
+            ev_lwidmax->subvariant = 0;
+            ev_lwidmax->open_func = open_simple;
+            ev_lwidmax->close_func = close_simple;
+            ev_lwidmax->start_func = start_simple;
+            ev_lwidmax->stop_func = stop_simple;
+            ev_lwidmax->access_func = access_amdsmi_pcie_info;
+            htable_insert(htable, ev_lwidmax->name, ev_lwidmax);
+            idx++;
+        }
+        // Process isolation status and power management
+        uint32_t pm_en;
+        if (amdsmi_is_gpu_power_management_enabled_p &&
+            amdsmi_is_gpu_power_management_enabled_p(device_handles[d], &pm_en) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "power_management_enabled:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d power management enabled (1/0)", d);
+            native_event_t *ev_pm = &ntv_table.events[idx];
+            ev_pm->id = idx;
+            ev_pm->name = strdup(name_buf);
+            ev_pm->descr = strdup(descr_buf);
+            ev_pm->device = d;
+            ev_pm->value = 0;
+            ev_pm->mode = PAPI_MODE_READ;
+            ev_pm->variant = 0;
+            ev_pm->subvariant = 0;
+            ev_pm->open_func = open_simple;
+            ev_pm->close_func = close_simple;
+            ev_pm->start_func = start_simple;
+            ev_pm->stop_func = stop_simple;
+            ev_pm->access_func = access_amdsmi_power_management;
+            htable_insert(htable, ev_pm->name, ev_pm);
+            idx++;
+        }
+    }
+    /* GPU topology (XGMI/PCIE) link events between devices */
+    for (int i = 0; i < gpu_count; ++i) {
+        if (!device_handles[i]) continue;
+        for (int j = i + 1; j < gpu_count; ++j) {
+            if (!device_handles[j]) continue;
+            uint64_t link_weight;
+            if (amdsmi_topo_get_link_weight_p &&
+                amdsmi_topo_get_link_weight_p(device_handles[i], device_handles[j], &link_weight) == AMDSMI_STATUS_SUCCESS) {
+                snprintf(name_buf, sizeof(name_buf), "link_weight:device=%d:peer=%d", i, j);
+                snprintf(descr_buf, sizeof(descr_buf), "Link weight between device %d and %d", i, j);
+                native_event_t *ev_lw = &ntv_table.events[idx];
+                ev_lw->id = idx;
+                ev_lw->name = strdup(name_buf);
+                ev_lw->descr = strdup(descr_buf);
+                ev_lw->device = i;
+                ev_lw->value = 0;
+                ev_lw->mode = PAPI_MODE_READ;
+                ev_lw->variant = 0;
+                ev_lw->subvariant = j;
+                ev_lw->open_func = open_simple;
+                ev_lw->close_func = close_simple;
+                ev_lw->start_func = start_simple;
+                ev_lw->stop_func = stop_simple;
+                ev_lw->access_func = access_amdsmi_link_weight;
+                htable_insert(htable, ev_lw->name, ev_lw);
+                idx++;
+            }
+            uint64_t _hops = 0; amdsmi_io_link_type_t link_type;
+            if (amdsmi_topo_get_link_type_p && amdsmi_topo_get_link_type_p(device_handles[i], device_handles[j], &_hops, &link_type) == AMDSMI_STATUS_SUCCESS) {
+                snprintf(name_buf, sizeof(name_buf), "link_type:device=%d:peer=%d", i, j);
+                snprintf(descr_buf, sizeof(descr_buf), "Link type between device %d and %d", i, j);
+                native_event_t *ev_lt = &ntv_table.events[idx];
+                ev_lt->id = idx;
+                ev_lt->name = strdup(name_buf);
+                ev_lt->descr = strdup(descr_buf);
+                ev_lt->device = i;
+                ev_lt->value = 0;
+                ev_lt->mode = PAPI_MODE_READ;
+                ev_lt->variant = 0;
+                ev_lt->subvariant = j;
+                ev_lt->open_func = open_simple;
+                ev_lt->close_func = close_simple;
+                ev_lt->start_func = start_simple;
+                ev_lt->stop_func = stop_simple;
+                ev_lt->access_func = access_amdsmi_link_type;
+                htable_insert(htable, ev_lt->name, ev_lt);
+                idx++;
+            }
+            bool p2p_flag;
+            if (amdsmi_is_P2P_accessible_p &&
+                amdsmi_is_P2P_accessible_p(device_handles[i], device_handles[j], &p2p_flag) == AMDSMI_STATUS_SUCCESS) {
+                snprintf(name_buf, sizeof(name_buf), "p2p_accessible:device=%d:peer=%d", i, j);
+                snprintf(descr_buf, sizeof(descr_buf), "P2P access between device %d and %d (1=Yes,0=No)", i, j);
+                native_event_t *ev_p2p = &ntv_table.events[idx];
+                ev_p2p->id = idx;
+                ev_p2p->name = strdup(name_buf);
+                ev_p2p->descr = strdup(descr_buf);
+                ev_p2p->device = i;
+                ev_p2p->value = 0;
+                ev_p2p->mode = PAPI_MODE_READ;
+                ev_p2p->variant = 0;
+                ev_p2p->subvariant = j;
+                ev_p2p->open_func = open_simple;
+                ev_p2p->close_func = close_simple;
+                ev_p2p->start_func = start_simple;
+                ev_p2p->stop_func = stop_simple;
+                ev_p2p->access_func = access_amdsmi_p2p_accessible;
+                htable_insert(htable, ev_p2p->name, ev_p2p);
+                idx++;
+            }
+            amdsmi_io_link_type_t _io_type; amdsmi_p2p_capability_t p2p_status;
+            if (amdsmi_topo_get_p2p_status_p && amdsmi_topo_get_p2p_status_p(device_handles[i], device_handles[j], &_io_type, &p2p_status) == AMDSMI_STATUS_SUCCESS) {
+                snprintf(name_buf, sizeof(name_buf), "p2p_status:device=%d:peer=%d", i, j);
+                snprintf(descr_buf, sizeof(descr_buf), "P2P status between device %d and %d (code)", i, j);
+                native_event_t *ev_p2ps = &ntv_table.events[idx];
+                ev_p2ps->id = idx;
+                ev_p2ps->name = strdup(name_buf);
+                ev_p2ps->descr = strdup(descr_buf);
+                ev_p2ps->device = i;
+                ev_p2ps->value = 0;
+                ev_p2ps->mode = PAPI_MODE_READ;
+                ev_p2ps->variant = 0;
+                ev_p2ps->subvariant = j;
+                ev_p2ps->open_func = open_simple;
+                ev_p2ps->close_func = close_simple;
+                ev_p2ps->start_func = start_simple;
+                ev_p2ps->stop_func = stop_simple;
+                ev_p2ps->access_func = access_amdsmi_p2p_status;
+                htable_insert(htable, ev_p2ps->name, ev_p2ps);
+                idx++;
+            }
+        }
+    }
+    /* AMD SMI library version events (global) */
+    if (amdsmi_get_lib_version_p && gpu_count > 0) {
+        amdsmi_version_t ver;
+        if (amdsmi_get_lib_version_p(&ver) == AMDSMI_STATUS_SUCCESS) {
+            snprintf(name_buf, sizeof(name_buf), "amdsmi_lib_version_major");
+            snprintf(descr_buf, sizeof(descr_buf), "AMD SMI library major version");
+            native_event_t *ev_ver_maj = &ntv_table.events[idx];
+            ev_ver_maj->id = idx;
+            ev_ver_maj->name = strdup(name_buf);
+            ev_ver_maj->descr = strdup(descr_buf);
+            ev_ver_maj->device = 0;
+            ev_ver_maj->value = 0;
+            ev_ver_maj->mode = PAPI_MODE_READ;
+            ev_ver_maj->variant = 0;
+            ev_ver_maj->subvariant = 0;
+            ev_ver_maj->open_func = open_simple;
+            ev_ver_maj->close_func = close_simple;
+            ev_ver_maj->start_func = start_simple;
+            ev_ver_maj->stop_func = stop_simple;
+            ev_ver_maj->access_func = access_amdsmi_lib_version;
+            htable_insert(htable, ev_ver_maj->name, ev_ver_maj);
+            idx++;
+            snprintf(name_buf, sizeof(name_buf), "amdsmi_lib_version_minor");
+            snprintf(descr_buf, sizeof(descr_buf), "AMD SMI library minor version");
+            native_event_t *ev_ver_min = &ntv_table.events[idx];
+            ev_ver_min->id = idx;
+            ev_ver_min->name = strdup(name_buf);
+            ev_ver_min->descr = strdup(descr_buf);
+            ev_ver_min->device = 0;
+            ev_ver_min->value = 0;
+            ev_ver_min->mode = PAPI_MODE_READ;
+            ev_ver_min->variant = 1;
+            ev_ver_min->subvariant = 0;
+            ev_ver_min->open_func = open_simple;
+            ev_ver_min->close_func = close_simple;
+            ev_ver_min->start_func = start_simple;
+            ev_ver_min->stop_func = stop_simple;
+            ev_ver_min->access_func = access_amdsmi_lib_version;
+            htable_insert(htable, ev_ver_min->name, ev_ver_min);
+            idx++;
+            snprintf(name_buf, sizeof(name_buf), "amdsmi_lib_version_patch");
+            snprintf(descr_buf, sizeof(descr_buf), "AMD SMI library patch version");
+            native_event_t *ev_ver_pat = &ntv_table.events[idx];
+            ev_ver_pat->id = idx;
+            ev_ver_pat->name = strdup(name_buf);
+            ev_ver_pat->descr = strdup(descr_buf);
+            ev_ver_pat->device = 0;
+            ev_ver_pat->value = 0;
+            ev_ver_pat->mode = PAPI_MODE_READ;
+            ev_ver_pat->variant = 2;
+            ev_ver_pat->subvariant = 0;
+            ev_ver_pat->open_func = open_simple;
+            ev_ver_pat->close_func = close_simple;
+            ev_ver_pat->start_func = start_simple;
+            ev_ver_pat->stop_func = stop_simple;
+            ev_ver_pat->access_func = access_amdsmi_lib_version;
+            htable_insert(htable, ev_ver_pat->name, ev_ver_pat);
+            idx++;
+        }
+    }
+    
 #ifndef AMDSMI_DISABLE_ESMI
     /* CPU metrics events */
     if (cpu_count > 0) {
@@ -2353,6 +3265,405 @@ static int access_amdsmi_power_profile_status(int mode, void *arg) {
     }
     return PAPI_OK;
 }
+
+/* Access function for RAS block features enabled mask */
+static int access_amdsmi_ras_block_enabled(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint64_t mask = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_ras_block_features_enabled_p(device_handles[event->device], &mask);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) mask;
+    return PAPI_OK;
+}
+
+/* Access function for ECC error counts (correctable/uncorrectable) */
+static int access_amdsmi_ecc_count(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_error_count_t counts;
+    amdsmi_status_t status = amdsmi_get_gpu_ecc_count_p(device_handles[event->device], &counts);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    if (event->variant == 0) {
+        event->value = (int64_t) counts.correctable_count;
+    } else {
+        event->value = (int64_t) counts.uncorrectable_count;
+    }
+    return PAPI_OK;
+}
+
+/* Access function for total ECC error counts */
+static int access_amdsmi_ecc_total(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_error_count_t counts;
+    amdsmi_status_t status = amdsmi_get_gpu_total_ecc_count_p(device_handles[event->device], &counts);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    if (event->variant == 0) {
+        event->value = (int64_t) counts.correctable_count;
+    } else {
+        event->value = (int64_t) counts.uncorrectable_count;
+    }
+    return PAPI_OK;
+}
+
+/* Access function for ECC enabled flag */
+static int access_amdsmi_ecc_enabled(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t enabled = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_ecc_enabled_p(device_handles[event->device], &enabled);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) enabled;
+    return PAPI_OK;
+}
+
+/* Access function for XGMI error count */
+static int access_amdsmi_xgmi_error(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint64_t count = 0;
+    amdsmi_status_t status = amdsmi_gpu_xgmi_error_status_p(device_handles[event->device], &count);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) count;
+    return PAPI_OK;
+}
+
+/* Access function for voltage metrics (VDDGFX) */
+static int access_amdsmi_volt_metric(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    int64_t volt_val = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_volt_metric_p(device_handles[event->device],
+                                                         (amdsmi_voltage_type_t) event->subvariant,
+                                                         (amdsmi_voltage_metric_t) event->variant,
+                                                         &volt_val);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = volt_val;
+    return PAPI_OK;
+}
+
+/* Access function for performance level */
+static int access_amdsmi_perf_level(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_dev_perf_level_t level;
+    amdsmi_status_t status = amdsmi_get_gpu_perf_level_p(device_handles[event->device], &level);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) level;
+    return PAPI_OK;
+}
+
+/* Access function for GPU core overdrive level */
+static int access_amdsmi_overdrive(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t od_level = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_overdrive_level_p(device_handles[event->device], &od_level);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) od_level;
+    return PAPI_OK;
+}
+
+/* Access function for VRAM overdrive level */
+static int access_amdsmi_mem_overdrive(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t mem_od = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_mem_overdrive_level_p(device_handles[event->device], &mem_od);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) mem_od;
+    return PAPI_OK;
+}
+
+/* Access function for compute partition mode */
+static int access_amdsmi_compute_partition(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t part = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_compute_partition_p(device_handles[event->device], &part);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) part;
+    return PAPI_OK;
+}
+
+/* Access function for memory partition mode */
+static int access_amdsmi_memory_partition(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t part = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_memory_partition_p(device_handles[event->device], &part);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) part;
+    return PAPI_OK;
+}
+
+/* Access function for accelerator partition profile */
+static int access_amdsmi_accel_profile(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t profile_id = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[event->device], (amdsmi_accelerator_partition_profile_t *)&profile_id);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) profile_id;
+    return PAPI_OK;
+}
+
+/* Access function for GPU process isolation flag */
+static int access_amdsmi_process_isolation(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t iso = 0;
+    amdsmi_status_t status = amdsmi_get_gpu_process_isolation_p(device_handles[event->device], &iso);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) iso;
+    return PAPI_OK;
+}
+
+/* Access function for VRAM info (type or vendor) */
+static int access_amdsmi_vram_info(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_vram_info_t info;
+    amdsmi_status_t status = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    // Note: We treat variant=0 as vendor ID, variant=1 as memory type (adjusted when creating events)
+    if (event->variant == 0) {
+        event->value = (int64_t) info.vram_vendor;   // vendor enum code
+    } else {
+        event->value = (int64_t) info.vram_type;     // memory type enum code
+    }
+    return PAPI_OK;
+}
+
+/* Access function for PCIe link info */
+static int access_amdsmi_pcie_info(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_pcie_info_t info;
+    amdsmi_status_t status = amdsmi_get_pcie_info_p(device_handles[event->device], &info);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    // We assume info contains fields for current and max link generation and width
+    switch (event->variant) {
+        case 0:  // current link generation
+            event->value = info.pcie_static.pcie_interface_version;
+            break;
+        case 1:  // current link width
+            event->value = info.pcie_metric.pcie_width;
+            break;
+        case 2:  // max link generation
+            event->value = info.pcie_static.max_pcie_interface_version;
+            break;
+        case 3:  // max link width
+            event->value = info.pcie_static.max_pcie_width;
+            break;
+        default:
+            return PAPI_EMISC;
+    }
+    return PAPI_OK;
+}
+
+/* Access function for P2P link weight between two GPUs */
+static int access_amdsmi_link_weight(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->subvariant < 0 || event->device >= device_count || event->subvariant >= device_count ||
+        !device_handles || !device_handles[event->device] || !device_handles[event->subvariant])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint64_t weight = 0;
+    amdsmi_status_t status = amdsmi_topo_get_link_weight_p(device_handles[event->device], device_handles[event->subvariant], &weight);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) weight;
+    return PAPI_OK;
+}
+
+/* Access function for P2P link type between two GPUs */
+static int access_amdsmi_link_type(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->subvariant < 0 || event->device >= device_count || event->subvariant >= device_count ||
+        !device_handles || !device_handles[event->device] || !device_handles[event->subvariant])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_io_link_type_t type; uint64_t hops = 0;
+    amdsmi_status_t status = amdsmi_topo_get_link_type_p(device_handles[event->device], device_handles[event->subvariant], &hops, &type);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) type;
+    return PAPI_OK;
+}
+
+/* Access function for P2P accessibility flag */
+static int access_amdsmi_p2p_accessible(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->subvariant < 0 || event->device >= device_count || event->subvariant >= device_count ||
+        !device_handles || !device_handles[event->device] || !device_handles[event->subvariant])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    bool accessible = false;
+    amdsmi_status_t status = amdsmi_is_P2P_accessible_p(device_handles[event->device], device_handles[event->subvariant], &accessible);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t)(accessible ? 1 : 0);
+    return PAPI_OK;
+}
+
+/* Access function for detailed P2P status code */
+static int access_amdsmi_p2p_status(int mode, void *arg)
+{
+    native_event_t *event = (native_event_t *)arg;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_EINVAL;
+
+    if (!amdsmi_topo_get_p2p_status_p || event->device < 0 || event->subvariant < 0)
+        return PAPI_EMISC;
+
+    amdsmi_io_link_type_t io_t;
+    amdsmi_p2p_capability_t cap;
+    amdsmi_status_t status = amdsmi_topo_get_p2p_status_p(
+        device_handles[event->device],
+        device_handles[event->subvariant],
+        &io_t,
+        &cap);
+
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+
+    uint64_t mask = 0;
+    if (cap.is_iolink_coherent)          mask |= 1ull;
+    if (cap.is_iolink_atomics_32bit)     mask |= 1ull << 1;
+    if (cap.is_iolink_atomics_64bit)     mask |= 1ull << 2;
+    if (cap.is_iolink_dma)               mask |= 1ull << 3;
+    if (cap.is_iolink_bi_directional)    mask |= 1ull << 4;
+
+    event->value = (int64_t)mask;
+    return PAPI_OK;
+}
+
+
+static int access_amdsmi_power_management(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    uint32_t enabled = 0;
+    amdsmi_status_t status = amdsmi_is_gpu_power_management_enabled_p(device_handles[event->device], &enabled);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+    event->value = (int64_t) enabled;
+    return PAPI_OK;
+}
+
+static int access_amdsmi_lib_version(int mode, void *arg)
+{
+    native_event_t *event = (native_event_t *)arg;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_EINVAL;
+
+    if (!amdsmi_get_lib_version_p)
+        return PAPI_EMISC;
+
+    amdsmi_version_t ver;
+    amdsmi_status_t status = amdsmi_get_lib_version_p(&ver);
+    if (status != AMDSMI_STATUS_SUCCESS)
+        return PAPI_EMISC;
+
+    if (event->variant == 0) {
+        event->value = ver.major;
+    } else if (event->variant == 1) {
+        event->value = ver.minor;
+    } else if (event->variant == 2) {
+        event->value = ver.release;
+    } else {
+        event->value = ver.year;
+    }
+    return PAPI_OK;
+}
+
+
+
+/* Access function for GPU process count (number of active processes on GPU) */
+static int access_amdsmi_process_count(int mode, void *arg) {
+    native_event_t *event = (native_event_t *) arg;
+    if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+        return PAPI_EMISC;
+    if (mode != PAPI_MODE_READ)
+        return PAPI_ENOSUPP;
+    amdsmi_proc_info_t proc_list[64];  // allocate space for up to 64 processes
+    uint32_t max_count = 64;
+    amdsmi_status_t status = amdsmi_get_gpu_process_list_p(device_handles[event->device], &max_count, proc_list);
+    if (status != AMDSMI_STATUS_SUCCESS && status != AMDSMI_STATUS_INSUFFICIENT_SIZE)
+        return PAPI_EMISC;
+    // If INSUFFICIENT_SIZE, max_count holds required count (but we limited array); we'll still report max_count (capped at 64)
+    event->value = (int64_t) max_count;
+    return PAPI_OK;
+}
+
+
 #ifndef AMDSMI_DISABLE_ESMI
 /* The functions below implement CPU metrics access */
 static int access_amdsmi_cpu_socket_power(int mode, void *arg) {
