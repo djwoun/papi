@@ -39,7 +39,7 @@ static amdsmi_status_t (*amdsmi_get_gpu_pci_replay_counter_p)(amdsmi_processor_h
 static amdsmi_status_t (*amdsmi_get_clk_freq_p)(amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_frequencies_t *);
 static amdsmi_status_t (*amdsmi_set_clk_freq_p)(amdsmi_processor_handle, amdsmi_clk_type_t, uint64_t);
 static amdsmi_status_t (*amdsmi_get_gpu_metrics_info_p)(amdsmi_processor_handle, amdsmi_gpu_metrics_t *);
-/* New AMD SMI function pointers */
+
 /* Additional read-only AMD SMI function pointers */
 static amdsmi_status_t (*amdsmi_get_lib_version_p)(amdsmi_version_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_driver_info_p)(amdsmi_processor_handle, amdsmi_driver_info_t *);
@@ -62,13 +62,10 @@ static amdsmi_status_t (*amdsmi_get_gpu_compute_partition_p)(amdsmi_processor_ha
 static amdsmi_status_t (*amdsmi_get_gpu_memory_partition_p)(amdsmi_processor_handle, char *, uint32_t);
 static amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *,
                                                                          uint32_t *);
-
 static amdsmi_status_t (*amdsmi_get_gpu_id_p)(amdsmi_processor_handle, uint16_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_revision_p)(amdsmi_processor_handle, uint16_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_subsystem_id_p)(amdsmi_processor_handle, uint16_t *);
-// static amdsmi_status_t
-// (*amdsmi_get_gpu_virtualization_mode_p)(amdsmi_processor_handle,
-// amdsmi_virtualization_mode_t *);
+// (*amdsmi_get_gpu_virtualization_mode_p)(amdsmi_processor_handle,amdsmi_virtualization_mode_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_pci_bandwidth_p)(amdsmi_processor_handle, amdsmi_pcie_bandwidth_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_bdf_id_p)(amdsmi_processor_handle, uint64_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_topo_numa_affinity_p)(amdsmi_processor_handle, int32_t *);
@@ -111,7 +108,6 @@ static void *htable = NULL;
 static char error_string[PAPI_MAX_STR_LEN + 1];
 /* forward declarations for internal helpers */
 static int load_amdsmi_sym(void);
-static int unload_amdsmi_sym(void);
 static int init_device_table(void);
 static int shutdown_device_table(void);
 static int init_event_table(void);
@@ -183,22 +179,6 @@ static int access_amdsmi_fan_speed_max(int mode, void *arg);
 static int access_amdsmi_pci_bandwidth(int mode, void *arg);
 static int access_amdsmi_energy_count(int mode, void *arg);
 static int access_amdsmi_power_profile_status(int mode, void *arg);
-static uint64_t _str_to_u64_hash(const char *s);
-static int access_amdsmi_uuid_hash(int mode, void *arg);
-static int access_amdsmi_gpu_string_hash(int mode, void *arg);
-static int access_amdsmi_enumeration_info(int mode, void *arg);
-static int access_amdsmi_asic_info(int mode, void *arg);
-static int access_amdsmi_link_metrics(int mode, void *arg);
-static int access_amdsmi_process_count(int mode, void *arg);
-static int access_amdsmi_ecc_total(int mode, void *arg);
-static int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
-static int access_amdsmi_compute_partition_hash(int mode, void *arg);
-static int access_amdsmi_memory_partition_hash(int mode, void *arg);
-static int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
-static int access_amdsmi_lib_version(int mode, void *arg);
-
-/* Prototypes for added GPU/query accessors (outside AMDSMI_DISABLE_ESMI guard)
- */
 static uint64_t _str_to_u64_hash(const char *s);
 static int access_amdsmi_uuid_hash(int mode, void *arg);
 static int access_amdsmi_gpu_string_hash(int mode, void *arg);
@@ -348,133 +328,9 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_cpu_dimm_power_consumption_p = sym("amdsmi_get_cpu_dimm_power_consumption", NULL);
   amdsmi_get_cpu_dimm_thermal_sensor_p = sym("amdsmi_get_cpu_dimm_thermal_sensor", NULL);
 #endif
-  /* Verify that all required symbols are loaded */
-  struct {
-    const char *name;
-    void *ptr;
-  } required[] = {{"amdsmi_init", amdsmi_init_p},
-                  {"amdsmi_shut_down", amdsmi_shut_down_p},
-                  {"amdsmi_get_socket_handles", amdsmi_get_socket_handles_p},
-                  {"amdsmi_get_processor_handles_by_type", amdsmi_get_processor_handles_by_type_p},
-                  {"amdsmi_get_temp_metric", amdsmi_get_temp_metric_p},
-                  {"amdsmi_get_gpu_memory_total", amdsmi_get_total_memory_p},
-                  {"amdsmi_get_gpu_memory_usage", amdsmi_get_memory_usage_p},
-                  {"amdsmi_get_gpu_activity", amdsmi_get_gpu_activity_p},
-                  {"amdsmi_get_power_cap_info", amdsmi_get_power_cap_info_p},
-                  {"amdsmi_set_power_cap", amdsmi_set_power_cap_p},
-                  {"amdsmi_get_power_info", amdsmi_get_power_info_p},
-                  {"amdsmi_get_gpu_pci_throughput", amdsmi_get_gpu_pci_throughput_p},
-                  {"amdsmi_get_gpu_pci_replay_counter", amdsmi_get_gpu_pci_replay_counter_p},
-                  {"amdsmi_get_gpu_fan_rpms", amdsmi_get_gpu_fan_rpms_p},
-                  {"amdsmi_get_gpu_fan_speed", amdsmi_get_gpu_fan_speed_p},
-                  {"amdsmi_get_gpu_fan_speed_max", amdsmi_get_gpu_fan_speed_max_p},
-                  {"amdsmi_get_clk_freq", amdsmi_get_clk_freq_p},
-                  {"amdsmi_set_clk_freq", amdsmi_set_clk_freq_p},
-                  {"amdsmi_get_gpu_metrics_info", amdsmi_get_gpu_metrics_info_p},
-                  {"amdsmi_get_gpu_id", amdsmi_get_gpu_id_p},
-                  {"amdsmi_get_gpu_revision", amdsmi_get_gpu_revision_p},
-                  {"amdsmi_get_gpu_subsystem_id", amdsmi_get_gpu_subsystem_id_p},
-                  //        { "amdsmi_get_gpu_virtualization_mode",
-                  //        amdsmi_get_gpu_virtualization_mode_p },
-                  {"amdsmi_get_gpu_pci_bandwidth", amdsmi_get_gpu_pci_bandwidth_p},
-                  {"amdsmi_get_gpu_bdf_id", amdsmi_get_gpu_bdf_id_p},
-                  {"amdsmi_get_gpu_topo_numa_affinity", amdsmi_get_gpu_topo_numa_affinity_p},
-                  {"amdsmi_get_energy_count", amdsmi_get_energy_count_p},
-                  {"amdsmi_get_gpu_power_profile_presets", amdsmi_get_gpu_power_profile_presets_p},
-#ifndef AMDSMI_DISABLE_ESMI
-                  {"amdsmi_get_cpu_handles", amdsmi_get_cpu_handles_p},
-                  {"amdsmi_get_cpucore_handles", amdsmi_get_cpucore_handles_p},
-                  {"amdsmi_get_cpu_socket_power", amdsmi_get_cpu_socket_power_p},
-                  {"amdsmi_get_cpu_socket_power_cap", amdsmi_get_cpu_socket_power_cap_p},
-                  {"amdsmi_get_cpu_socket_power_cap_max", amdsmi_get_cpu_socket_power_cap_max_p},
-                  {"amdsmi_get_cpu_core_energy", amdsmi_get_cpu_core_energy_p},
-                  {"amdsmi_get_cpu_socket_energy", amdsmi_get_cpu_socket_energy_p},
-                  {"amdsmi_get_cpu_smu_fw_version", amdsmi_get_cpu_smu_fw_version_p},
-                  {"amdsmi_get_threads_per_core", amdsmi_get_threads_per_core_p},
-                  {"amdsmi_get_cpu_family", amdsmi_get_cpu_family_p},
-                  {"amdsmi_get_cpu_model", amdsmi_get_cpu_model_p},
-                  {"amdsmi_get_cpu_core_boostlimit", amdsmi_get_cpu_core_boostlimit_p},
-                  {"amdsmi_get_cpu_socket_current_active_freq_limit", amdsmi_get_cpu_socket_current_active_freq_limit_p},
-                  {"amdsmi_get_cpu_socket_freq_range", amdsmi_get_cpu_socket_freq_range_p},
-                  {"amdsmi_get_cpu_core_current_freq_limit", amdsmi_get_cpu_core_current_freq_limit_p},
-                  {"amdsmi_get_minmax_bandwidth_between_processors", amdsmi_get_minmax_bandwidth_between_processors_p},
-                  {"amdsmi_get_cpu_dimm_temp_range_and_refresh_rate", amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p},
-                  {"amdsmi_get_cpu_dimm_power_consumption", amdsmi_get_cpu_dimm_power_consumption_p},
-                  {"amdsmi_get_cpu_dimm_thermal_sensor", amdsmi_get_cpu_dimm_thermal_sensor_p}
-#endif
-  };
-  int miss = 0;
-  int pos = snprintf(error_string, sizeof(error_string), "Missing AMD SMI symbols:");
-  for (size_t i = 0; i < sizeof(required) / sizeof(required[0]); ++i) {
-    if (!required[i].ptr) {
-      miss++;
-      pos += snprintf(error_string + pos, sizeof(error_string) - pos, "\n  %s", required[i].name);
-    }
-  }
-  if (miss) {
-    dlclose(amds_dlp);
-    amds_dlp = NULL;
-    return PAPI_ENOSUPP;
-  }
   return PAPI_OK;
 }
-static int unload_amdsmi_sym(void) {
-  /* Reset all function pointers and close library */
-  amdsmi_init_p = NULL;
-  amdsmi_shut_down_p = NULL;
-  amdsmi_get_socket_handles_p = NULL;
-  amdsmi_get_processor_handles_by_type_p = NULL;
-  amdsmi_get_temp_metric_p = NULL;
-  amdsmi_get_gpu_fan_rpms_p = NULL;
-  amdsmi_get_gpu_fan_speed_p = NULL;
-  amdsmi_get_gpu_fan_speed_max_p = NULL;
-  amdsmi_get_total_memory_p = NULL;
-  amdsmi_get_memory_usage_p = NULL;
-  amdsmi_get_gpu_activity_p = NULL;
-  amdsmi_get_power_cap_info_p = NULL;
-  amdsmi_set_power_cap_p = NULL;
-  amdsmi_get_power_info_p = NULL;
-  amdsmi_get_gpu_pci_throughput_p = NULL;
-  amdsmi_get_gpu_pci_replay_counter_p = NULL;
-  amdsmi_get_clk_freq_p = NULL;
-  amdsmi_set_clk_freq_p = NULL;
-  amdsmi_get_gpu_metrics_info_p = NULL;
-  amdsmi_get_gpu_id_p = NULL;
-  amdsmi_get_gpu_revision_p = NULL;
-  amdsmi_get_gpu_subsystem_id_p = NULL;
-  //    amdsmi_get_gpu_virtualization_mode_p = NULL;
-  amdsmi_get_gpu_pci_bandwidth_p = NULL;
-  amdsmi_get_gpu_bdf_id_p = NULL;
-  amdsmi_get_gpu_topo_numa_affinity_p = NULL;
-  amdsmi_get_energy_count_p = NULL;
-  amdsmi_get_gpu_power_profile_presets_p = NULL;
-#ifndef AMDSMI_DISABLE_ESMI
-  amdsmi_get_cpu_handles_p = NULL;
-  amdsmi_get_cpucore_handles_p = NULL;
-  amdsmi_get_cpu_socket_power_p = NULL;
-  amdsmi_get_cpu_socket_power_cap_p = NULL;
-  amdsmi_get_cpu_socket_power_cap_max_p = NULL;
-  amdsmi_get_cpu_core_energy_p = NULL;
-  amdsmi_get_cpu_socket_energy_p = NULL;
-  amdsmi_get_cpu_smu_fw_version_p = NULL;
-  amdsmi_get_threads_per_core_p = NULL;
-  amdsmi_get_cpu_family_p = NULL;
-  amdsmi_get_cpu_model_p = NULL;
-  amdsmi_get_cpu_core_boostlimit_p = NULL;
-  amdsmi_get_cpu_socket_current_active_freq_limit_p = NULL;
-  amdsmi_get_cpu_socket_freq_range_p = NULL;
-  amdsmi_get_cpu_core_current_freq_limit_p = NULL;
-  amdsmi_get_minmax_bandwidth_between_processors_p = NULL;
-  amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p = NULL;
-  amdsmi_get_cpu_dimm_power_consumption_p = NULL;
-  amdsmi_get_cpu_dimm_thermal_sensor_p = NULL;
-#endif
-  if (amds_dlp) {
-    dlclose(amds_dlp);
-    amds_dlp = NULL;
-  }
-  return PAPI_OK;
-}
+
 /* Initialize AMD SMI library and discover devices */
 int amds_init(void) {
   // Check if already initialized to avoid expensive re-initialization
@@ -662,21 +518,20 @@ fn_fail:
     cores_per_socket = NULL;
   }
   amdsmi_shut_down_p();
-  unload_amdsmi_sym();
   return papi_errno;
 }
 int amds_shutdown(void) {
   shutdown_event_table();
   shutdown_device_table();
   htable_shutdown(htable);
-  amdsmi_shut_down_p(); // shutdown AMD SMI library
-  return unload_amdsmi_sym();
+ 
+  return amdsmi_shut_down_p();
 }
 int amds_err_get_last(const char **err_string) {
   if (err_string)
     *err_string = error_string;
   return PAPI_OK;
-}
+} 
 /* Event enumeration: iterate over native events */
 int amds_evt_enum(unsigned int *EventCode, int modifier) {
   if (modifier == PAPI_ENUM_FIRST) {
@@ -2445,7 +2300,7 @@ static int init_event_table(void) {
       }
     }
     /* VBIOS info (strings hashed) */
-    if (amdsmi_get_gpu_vbios_info_p) {
+    /*if (amdsmi_get_gpu_vbios_info_p) {
       amdsmi_vbios_info_t vb;
       if (amdsmi_get_gpu_vbios_info_p(device_handles[d], &vb) == AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
@@ -2515,7 +2370,7 @@ static int init_event_table(void) {
         htable_insert(htable, ev_vbd->name, ev_vbd);
         idx++;
       }
-    }
+    }*/
     /* PCIe metrics via amdsmi_get_link_metrics (aggregate read/write kB over
      * XGMI) */
     amdsmi_link_metrics_t lm_probe; memset(&lm_probe, 0, sizeof(lm_probe));
