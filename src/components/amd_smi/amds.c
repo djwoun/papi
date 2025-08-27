@@ -125,7 +125,6 @@ static int init_device_table(void);
 static int shutdown_device_table(void);
 static int init_event_table(void);
 static int shutdown_event_table(void);
-static native_event_table_t ntv_table;
 native_event_table_t *ntv_table_p = NULL;
 
 /* Redirects stderr to /dev/null, returns dup of old stderr (or -1 on failure). */

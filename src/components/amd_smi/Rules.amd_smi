@@ -98,16 +98,17 @@ CFLAGS += -g
 LDFLAGS += $(LDL) -g
 
 linux-amd-smi.o: components/amd_smi/linux-amd-smi.c $(HEADERS)
-        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/linux-amd-smi.c -o linux-amd-smi.o
+	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/linux-amd-smi.c -o linux-amd-smi.o
 
 amds.o: components/amd_smi/amds.c $(HEADERS)
-        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds.c -o amds.o
+	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds.c -o amds.o
 
 amds_accessors.o: components/amd_smi/amds_accessors.c $(HEADERS)
-        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_accessors.c -o amds_accessors.o
+	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_accessors.c -o amds_accessors.o
 
 amds_evtapi.o: components/amd_smi/amds_evtapi.c $(HEADERS)
-        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_evtapi.c -o amds_evtapi.o
-
+	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_evtapi.c -o amds_evtapi.o
+ 
 amds_ctx.o: components/amd_smi/amds_ctx.c $(HEADERS)
-        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_ctx.c -o amds_ctx.o
+	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_ctx.c -o amds_ctx.o
+
