@@ -76,9 +76,15 @@ PAPI_AMDSMI_ROOT ?= /opt/rocm
 # papi/src/utils/papi_component_avail. 
 
 COMPSRCS += components/amd_smi/linux-amd-smi.c \
-            components/amd_smi/amds.c
+            components/amd_smi/amds.c \
+            components/amd_smi/amds_accessors.c \
+            components/amd_smi/amds_evtapi.c \
+            components/amd_smi/amds_ctx.c
 COMPOBJS += linux-amd-smi.o \
-            amds.o
+            amds.o \
+            amds_accessors.o \
+            amds_evtapi.o \
+            amds_ctx.o
 
 # CFLAGS specifies compile flags; need include files here, and macro defines.
 # Where to find amd_smi.h varied in early ROCM releases. If it changes again,
@@ -92,7 +98,16 @@ CFLAGS += -g
 LDFLAGS += $(LDL) -g
 
 linux-amd-smi.o: components/amd_smi/linux-amd-smi.c $(HEADERS)
-	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/linux-amd-smi.c -o linux-amd-smi.o
+        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/linux-amd-smi.c -o linux-amd-smi.o
 
 amds.o: components/amd_smi/amds.c $(HEADERS)
-	$(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds.c -o amds.o
+        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds.c -o amds.o
+
+amds_accessors.o: components/amd_smi/amds_accessors.c $(HEADERS)
+        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_accessors.c -o amds_accessors.o
+
+amds_evtapi.o: components/amd_smi/amds_evtapi.c $(HEADERS)
+        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_evtapi.c -o amds_evtapi.o
+
+amds_ctx.o: components/amd_smi/amds_ctx.c $(HEADERS)
+        $(CC) $(LIBCFLAGS) $(OPTFLAGS) -c components/amd_smi/amds_ctx.c -o amds_ctx.o
