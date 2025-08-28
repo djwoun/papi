@@ -205,17 +205,33 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
     amdsmi_link_metrics_t lm; memset(&lm, 0, sizeof(lm));
     if (amdsmi_get_link_metrics_p(device_handles[event->device], &lm) != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
 
-    uint64_t acc = 0;
     uint32_t n = lm.num_links;
     if (n > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK) n = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
 
-    for (uint32_t i = 0; i < n; ++i) {
-        if (event->subvariant != 0 && lm.links[i].link_type != (uint32_t)event->subvariant) continue;
+    uint32_t enc = event->subvariant;
+    uint32_t link_type = enc >> 16;
+    uint32_t link_index = enc & 0xFFFF; /* 0xFFFF denotes aggregate */
+
+    uint64_t acc = 0;
+    if (link_index == 0xFFFF) {
+        for (uint32_t i = 0; i < n; ++i) {
+            if (link_type && lm.links[i].link_type != link_type) continue;
+            switch (event->variant) {
+                case 0: acc += lm.links[i].read;         break;  /* KB */
+                case 1: acc += lm.links[i].write;        break;  /* KB */
+                case 2: acc += lm.links[i].bit_rate;     break;  /* Gb/s */
+                case 3: acc += lm.links[i].max_bandwidth;break;  /* Gb/s */
+                default: return PAPI_ENOSUPP;
+            }
+        }
+    } else {
+        if (link_index >= n) return PAPI_EMISC;
+        if (link_type && lm.links[link_index].link_type != link_type) return PAPI_EMISC;
         switch (event->variant) {
-            case 0: acc += lm.links[i].read;         break;  /* KB */
-            case 1: acc += lm.links[i].write;        break;  /* KB */
-            case 2: acc += lm.links[i].bit_rate;     break;  /* Gb/s */
-            case 3: acc += lm.links[i].max_bandwidth;break;  /* Gb/s */
+            case 0: acc = lm.links[link_index].read;         break;  /* KB */
+            case 1: acc = lm.links[link_index].write;        break;  /* KB */
+            case 2: acc = lm.links[link_index].bit_rate;     break;  /* Gb/s */
+            case 3: acc = lm.links[link_index].max_bandwidth;break;  /* Gb/s */
             default: return PAPI_ENOSUPP;
         }
     }

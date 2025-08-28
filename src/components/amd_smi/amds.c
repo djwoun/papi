@@ -3330,72 +3330,243 @@ static int init_event_table(void) {
         idx++;
       }
     }*/
-    /* PCIe metrics via amdsmi_get_link_metrics (aggregate read/write kB over
-     * XGMI) */
+    /* PCIe metrics via amdsmi_get_link_metrics. Register per-link events and
+     * aggregate totals for XGMI and PCIe links. */
     amdsmi_link_metrics_t lm_probe; memset(&lm_probe, 0, sizeof(lm_probe));
     int has_xgmi = 0, has_pcie = 0;
     if (amdsmi_get_link_metrics_p(device_handles[d], &lm_probe) == AMDSMI_STATUS_SUCCESS) {
         uint32_t n = lm_probe.num_links;
-        if (n > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK) n = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
-        for (uint32_t i=0;i<n;i++) {
-            if (lm_probe.links[i].link_type == AMDSMI_LINK_TYPE_XGMI) has_xgmi = 1;
-            if (lm_probe.links[i].link_type == AMDSMI_LINK_TYPE_PCIE) has_pcie = 1;
+        if (n > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK)
+            n = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
+        for (uint32_t i = 0; i < n; ++i) {
+            uint32_t type = lm_probe.links[i].link_type;
+            if (type == AMDSMI_LINK_TYPE_XGMI) {
+                has_xgmi = 1;
+                /* Per-link XGMI read/write/bit rate/max bandwidth */
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+                snprintf(name_buf, sizeof(name_buf),
+                         "xgmi_link%u_read_kB:device=%d", i, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d XGMI link %u read (kB)", d, i);
+                native_event_t *ev_lr = &ntv_table.events[idx];
+                ev_lr->id = idx; ev_lr->name = strdup(name_buf);
+                ev_lr->descr = strdup(descr_buf);
+                if (!ev_lr->name || !ev_lr->descr) return PAPI_ENOMEM;
+                ev_lr->device = d; ev_lr->value = 0;
+                ev_lr->mode = PAPI_MODE_READ; ev_lr->variant = 0;
+                ev_lr->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | i;
+                ev_lr->open_func = open_simple; ev_lr->close_func = close_simple;
+                ev_lr->start_func = start_simple; ev_lr->stop_func = stop_simple;
+                ev_lr->access_func = access_amdsmi_link_metrics;
+                htable_insert(htable, ev_lr->name, ev_lr); idx++;
+
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+                snprintf(name_buf, sizeof(name_buf),
+                         "xgmi_link%u_write_kB:device=%d", i, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d XGMI link %u write (kB)", d, i);
+                native_event_t *ev_lw = &ntv_table.events[idx];
+                ev_lw->id = idx; ev_lw->name = strdup(name_buf);
+                ev_lw->descr = strdup(descr_buf);
+                if (!ev_lw->name || !ev_lw->descr) return PAPI_ENOMEM;
+                ev_lw->device = d; ev_lw->value = 0;
+                ev_lw->mode = PAPI_MODE_READ; ev_lw->variant = 1;
+                ev_lw->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | i;
+                ev_lw->open_func = open_simple; ev_lw->close_func = close_simple;
+                ev_lw->start_func = start_simple; ev_lw->stop_func = stop_simple;
+                ev_lw->access_func = access_amdsmi_link_metrics;
+                htable_insert(htable, ev_lw->name, ev_lw); idx++;
+
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+                snprintf(name_buf, sizeof(name_buf),
+                         "xgmi_link%u_bit_rate_Gbps:device=%d", i, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d XGMI link %u speed (Gb/s)", d, i);
+                native_event_t *ev_lb = &ntv_table.events[idx];
+                ev_lb->id = idx; ev_lb->name = strdup(name_buf);
+                ev_lb->descr = strdup(descr_buf);
+                if (!ev_lb->name || !ev_lb->descr) return PAPI_ENOMEM;
+                ev_lb->device = d; ev_lb->value = 0;
+                ev_lb->mode = PAPI_MODE_READ; ev_lb->variant = 2;
+                ev_lb->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | i;
+                ev_lb->open_func = open_simple; ev_lb->close_func = close_simple;
+                ev_lb->start_func = start_simple; ev_lb->stop_func = stop_simple;
+                ev_lb->access_func = access_amdsmi_link_metrics;
+                htable_insert(htable, ev_lb->name, ev_lb); idx++;
+
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+                snprintf(name_buf, sizeof(name_buf),
+                         "xgmi_link%u_max_bandwidth_Gbps:device=%d", i, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d XGMI link %u max bandwidth (Gb/s)", d, i);
+                native_event_t *ev_lm = &ntv_table.events[idx];
+                ev_lm->id = idx; ev_lm->name = strdup(name_buf);
+                ev_lm->descr = strdup(descr_buf);
+                if (!ev_lm->name || !ev_lm->descr) return PAPI_ENOMEM;
+                ev_lm->device = d; ev_lm->value = 0;
+                ev_lm->mode = PAPI_MODE_READ; ev_lm->variant = 3;
+                ev_lm->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | i;
+                ev_lm->open_func = open_simple; ev_lm->close_func = close_simple;
+                ev_lm->start_func = start_simple; ev_lm->stop_func = stop_simple;
+                ev_lm->access_func = access_amdsmi_link_metrics;
+                htable_insert(htable, ev_lm->name, ev_lm); idx++;
+            } else if (type == AMDSMI_LINK_TYPE_PCIE) {
+                has_pcie = 1;
+                /* Per-link PCIe bit rate/max bandwidth */
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+                snprintf(name_buf, sizeof(name_buf),
+                         "pcie_link%u_bit_rate_Gbps:device=%d", i, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d PCIe link %u speed (Gb/s)", d, i);
+                native_event_t *ev_pb = &ntv_table.events[idx];
+                ev_pb->id = idx; ev_pb->name = strdup(name_buf);
+                ev_pb->descr = strdup(descr_buf);
+                if (!ev_pb->name || !ev_pb->descr) return PAPI_ENOMEM;
+                ev_pb->device = d; ev_pb->value = 0;
+                ev_pb->mode = PAPI_MODE_READ; ev_pb->variant = 2;
+                ev_pb->subvariant = (AMDSMI_LINK_TYPE_PCIE << 16) | i;
+                ev_pb->open_func = open_simple; ev_pb->close_func = close_simple;
+                ev_pb->start_func = start_simple; ev_pb->stop_func = stop_simple;
+                ev_pb->access_func = access_amdsmi_link_metrics;
+                htable_insert(htable, ev_pb->name, ev_pb); idx++;
+
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+                snprintf(name_buf, sizeof(name_buf),
+                         "pcie_link%u_max_bandwidth_Gbps:device=%d", i, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d PCIe link %u max bandwidth (Gb/s)", d, i);
+                native_event_t *ev_pm = &ntv_table.events[idx];
+                ev_pm->id = idx; ev_pm->name = strdup(name_buf);
+                ev_pm->descr = strdup(descr_buf);
+                if (!ev_pm->name || !ev_pm->descr) return PAPI_ENOMEM;
+                ev_pm->device = d; ev_pm->value = 0;
+                ev_pm->mode = PAPI_MODE_READ; ev_pm->variant = 3;
+                ev_pm->subvariant = (AMDSMI_LINK_TYPE_PCIE << 16) | i;
+                ev_pm->open_func = open_simple; ev_pm->close_func = close_simple;
+                ev_pm->start_func = start_simple; ev_pm->stop_func = stop_simple;
+                ev_pm->access_func = access_amdsmi_link_metrics;
+                htable_insert(htable, ev_pm->name, ev_pm); idx++;
+            }
         }
-    }
-    
-    /* --- XGMI totals (only if present). Read/Write are XGMI-only. --- */
-    if (has_xgmi) {
-        /* xgmi_total_read_kB */
-        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
-        snprintf(name_buf, sizeof(name_buf), "xgmi_total_read_kB:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d total XGMI read across links (kB)", d);
-        native_event_t *ev_xr = &ntv_table.events[idx];
-        ev_xr->id=idx; ev_xr->name=strdup(name_buf); ev_xr->descr=strdup(descr_buf);
-        if (!ev_xr->name || !ev_xr->descr) return PAPI_ENOMEM;
-        ev_xr->device=d; ev_xr->value=0; ev_xr->mode=PAPI_MODE_READ; ev_xr->variant=0;
-        ev_xr->subvariant = AMDSMI_LINK_TYPE_XGMI;
-        ev_xr->open_func=open_simple; ev_xr->close_func=close_simple; ev_xr->start_func=start_simple; ev_xr->stop_func=stop_simple;
-        ev_xr->access_func=access_amdsmi_link_metrics; htable_insert(htable, ev_xr->name, ev_xr); idx++;
-    
-        /* xgmi_total_write_kB */
-        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
-        snprintf(name_buf, sizeof(name_buf), "xgmi_total_write_kB:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d total XGMI write across links (kB)", d);
-        native_event_t *ev_xw = &ntv_table.events[idx];
-        ev_xw->id=idx; ev_xw->name=strdup(name_buf); ev_xw->descr=strdup(descr_buf);
-        if (!ev_xw->name || !ev_xw->descr) return PAPI_ENOMEM;
-        ev_xw->device=d; ev_xw->value=0; ev_xw->mode=PAPI_MODE_READ; ev_xw->variant=1;
-        ev_xw->subvariant = AMDSMI_LINK_TYPE_XGMI;
-        ev_xw->open_func=open_simple; ev_xw->close_func=close_simple; ev_xw->start_func=start_simple; ev_xw->stop_func=stop_simple;
-        ev_xw->access_func=access_amdsmi_link_metrics; htable_insert(htable, ev_xw->name, ev_xw); idx++;
-    
-        /* Optional XGMI rates */
-        /* ... same pattern with variant=2 (bit_rate_Gbps) and 3 (max_bandwidth_Gbps) ... */
-    }
-    
-    /* --- PCIe aggregate rates (if present). No read/write here (N/A). --- */
-    if (has_pcie) {
-        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
-        snprintf(name_buf, sizeof(name_buf), "pcie_total_bit_rate_Gbps:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d aggregate PCIe link speed (Gb/s)", d);
-        native_event_t *ev_pb = &ntv_table.events[idx];
-        ev_pb->id=idx; ev_pb->name=strdup(name_buf); ev_pb->descr=strdup(descr_buf);
-        if (!ev_pb->name || !ev_pb->descr) return PAPI_ENOMEM;
-        ev_pb->device=d; ev_pb->value=0; ev_pb->mode=PAPI_MODE_READ; ev_pb->variant=2;
-        ev_pb->subvariant = AMDSMI_LINK_TYPE_PCIE;
-        ev_pb->open_func=open_simple; ev_pb->close_func=close_simple; ev_pb->start_func=start_simple; ev_pb->stop_func=stop_simple;
-        ev_pb->access_func=access_amdsmi_link_metrics; htable_insert(htable, ev_pb->name, ev_pb); idx++;
-    
-        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
-        snprintf(name_buf, sizeof(name_buf), "pcie_total_max_bandwidth_Gbps:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d aggregate PCIe max bandwidth (Gb/s)", d);
-        native_event_t *ev_pm = &ntv_table.events[idx];
-        ev_pm->id=idx; ev_pm->name=strdup(name_buf); ev_pm->descr=strdup(descr_buf);
-        if (!ev_pm->name || !ev_pm->descr) return PAPI_ENOMEM;
-        ev_pm->device=d; ev_pm->value=0; ev_pm->mode=PAPI_MODE_READ; ev_pm->variant=3;
-        ev_pm->subvariant = AMDSMI_LINK_TYPE_PCIE;
-        ev_pm->open_func=open_simple; ev_pm->close_func=close_simple; ev_pm->start_func=start_simple; ev_pm->stop_func=stop_simple;
-        ev_pm->access_func=access_amdsmi_link_metrics; htable_insert(htable, ev_pm->name, ev_pm); idx++;
+
+        /* --- Aggregate totals by link type --- */
+        if (has_xgmi) {
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+            snprintf(name_buf, sizeof(name_buf),
+                     "xgmi_total_read_kB:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d total XGMI read across links (kB)", d);
+            native_event_t *ev_xr = &ntv_table.events[idx];
+            ev_xr->id = idx; ev_xr->name = strdup(name_buf);
+            ev_xr->descr = strdup(descr_buf);
+            if (!ev_xr->name || !ev_xr->descr) return PAPI_ENOMEM;
+            ev_xr->device = d; ev_xr->value = 0;
+            ev_xr->mode = PAPI_MODE_READ; ev_xr->variant = 0;
+            ev_xr->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | 0xFFFF;
+            ev_xr->open_func = open_simple; ev_xr->close_func = close_simple;
+            ev_xr->start_func = start_simple; ev_xr->stop_func = stop_simple;
+            ev_xr->access_func = access_amdsmi_link_metrics;
+            htable_insert(htable, ev_xr->name, ev_xr); idx++;
+
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+            snprintf(name_buf, sizeof(name_buf),
+                     "xgmi_total_write_kB:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d total XGMI write across links (kB)", d);
+            native_event_t *ev_xw = &ntv_table.events[idx];
+            ev_xw->id = idx; ev_xw->name = strdup(name_buf);
+            ev_xw->descr = strdup(descr_buf);
+            if (!ev_xw->name || !ev_xw->descr) return PAPI_ENOMEM;
+            ev_xw->device = d; ev_xw->value = 0;
+            ev_xw->mode = PAPI_MODE_READ; ev_xw->variant = 1;
+            ev_xw->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | 0xFFFF;
+            ev_xw->open_func = open_simple; ev_xw->close_func = close_simple;
+            ev_xw->start_func = start_simple; ev_xw->stop_func = stop_simple;
+            ev_xw->access_func = access_amdsmi_link_metrics;
+            htable_insert(htable, ev_xw->name, ev_xw); idx++;
+
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+            snprintf(name_buf, sizeof(name_buf),
+                     "xgmi_total_bit_rate_Gbps:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d aggregate XGMI link speed (Gb/s)", d);
+            native_event_t *ev_xb = &ntv_table.events[idx];
+            ev_xb->id = idx; ev_xb->name = strdup(name_buf);
+            ev_xb->descr = strdup(descr_buf);
+            if (!ev_xb->name || !ev_xb->descr) return PAPI_ENOMEM;
+            ev_xb->device = d; ev_xb->value = 0;
+            ev_xb->mode = PAPI_MODE_READ; ev_xb->variant = 2;
+            ev_xb->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | 0xFFFF;
+            ev_xb->open_func = open_simple; ev_xb->close_func = close_simple;
+            ev_xb->start_func = start_simple; ev_xb->stop_func = stop_simple;
+            ev_xb->access_func = access_amdsmi_link_metrics;
+            htable_insert(htable, ev_xb->name, ev_xb); idx++;
+
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+            snprintf(name_buf, sizeof(name_buf),
+                     "xgmi_total_max_bandwidth_Gbps:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d aggregate XGMI max bandwidth (Gb/s)", d);
+            native_event_t *ev_xm = &ntv_table.events[idx];
+            ev_xm->id = idx; ev_xm->name = strdup(name_buf);
+            ev_xm->descr = strdup(descr_buf);
+            if (!ev_xm->name || !ev_xm->descr) return PAPI_ENOMEM;
+            ev_xm->device = d; ev_xm->value = 0;
+            ev_xm->mode = PAPI_MODE_READ; ev_xm->variant = 3;
+            ev_xm->subvariant = (AMDSMI_LINK_TYPE_XGMI << 16) | 0xFFFF;
+            ev_xm->open_func = open_simple; ev_xm->close_func = close_simple;
+            ev_xm->start_func = start_simple; ev_xm->stop_func = stop_simple;
+            ev_xm->access_func = access_amdsmi_link_metrics;
+            htable_insert(htable, ev_xm->name, ev_xm); idx++;
+        }
+
+        if (has_pcie) {
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+            snprintf(name_buf, sizeof(name_buf),
+                     "pcie_total_bit_rate_Gbps:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d aggregate PCIe link speed (Gb/s)", d);
+            native_event_t *ev_pb = &ntv_table.events[idx];
+            ev_pb->id = idx; ev_pb->name = strdup(name_buf);
+            ev_pb->descr = strdup(descr_buf);
+            if (!ev_pb->name || !ev_pb->descr) return PAPI_ENOMEM;
+            ev_pb->device = d; ev_pb->value = 0;
+            ev_pb->mode = PAPI_MODE_READ; ev_pb->variant = 2;
+            ev_pb->subvariant = (AMDSMI_LINK_TYPE_PCIE << 16) | 0xFFFF;
+            ev_pb->open_func = open_simple; ev_pb->close_func = close_simple;
+            ev_pb->start_func = start_simple; ev_pb->stop_func = stop_simple;
+            ev_pb->access_func = access_amdsmi_link_metrics;
+            htable_insert(htable, ev_pb->name, ev_pb); idx++;
+
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+            snprintf(name_buf, sizeof(name_buf),
+                     "pcie_total_max_bandwidth_Gbps:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d aggregate PCIe max bandwidth (Gb/s)", d);
+            native_event_t *ev_pm = &ntv_table.events[idx];
+            ev_pm->id = idx; ev_pm->name = strdup(name_buf);
+            ev_pm->descr = strdup(descr_buf);
+            if (!ev_pm->name || !ev_pm->descr) return PAPI_ENOMEM;
+            ev_pm->device = d; ev_pm->value = 0;
+            ev_pm->mode = PAPI_MODE_READ; ev_pm->variant = 3;
+            ev_pm->subvariant = (AMDSMI_LINK_TYPE_PCIE << 16) | 0xFFFF;
+            ev_pm->open_func = open_simple; ev_pm->close_func = close_simple;
+            ev_pm->start_func = start_simple; ev_pm->stop_func = stop_simple;
+            ev_pm->access_func = access_amdsmi_link_metrics;
+            htable_insert(htable, ev_pm->name, ev_pm); idx++;
+        }
     }
 
     /* Process list size (count of running GPU processes) */
