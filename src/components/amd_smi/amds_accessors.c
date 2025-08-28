@@ -846,8 +846,22 @@ int access_amdsmi_energy_count(int mode, void *arg) {
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
   }
-  // Convert energy count to microJoules
-  event->value = (int64_t)(energy * resolution);
+  switch (event->variant) {
+  case 0:
+    // Convert accumulated energy count to microJoules
+    event->value = (int64_t)(energy * resolution);
+    break;
+  case 1:
+    // Resolution reported in Joules; convert to microJoules per count
+    event->value = (int64_t)(resolution * 1.0e6);
+    break;
+  case 2:
+    // Raw timestamp returned by the SMI library (nanoseconds)
+    event->value = (int64_t)timestamp;
+    break;
+  default:
+    return PAPI_EMISC;
+  }
   return PAPI_OK;
 }
 int access_amdsmi_power_profile_status(int mode, void *arg) {

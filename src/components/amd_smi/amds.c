@@ -2301,6 +2301,44 @@ static int init_event_table(void) {
     ev_energy->access_func = access_amdsmi_energy_count;
     htable_insert(htable, ev_energy->name, ev_energy);
     idx++;
+
+    snprintf(name_buf, sizeof(name_buf), "energy_resolution:device=%d", d);
+    snprintf(descr_buf, sizeof(descr_buf), "Device %d energy counter resolution (microJoules)", d);
+    native_event_t *ev_res = &ntv_table.events[idx];
+    ev_res->id = idx;
+    ev_res->name = strdup(name_buf);
+    ev_res->descr = strdup(descr_buf);
+    ev_res->device = d;
+    ev_res->value = 0;
+    ev_res->mode = PAPI_MODE_READ;
+    ev_res->variant = 1;
+    ev_res->subvariant = 0;
+    ev_res->open_func = open_simple;
+    ev_res->close_func = close_simple;
+    ev_res->start_func = start_simple;
+    ev_res->stop_func = stop_simple;
+    ev_res->access_func = access_amdsmi_energy_count;
+    htable_insert(htable, ev_res->name, ev_res);
+    idx++;
+
+    snprintf(name_buf, sizeof(name_buf), "energy_timestamp:device=%d", d);
+    snprintf(descr_buf, sizeof(descr_buf), "Device %d energy counter timestamp (ns)", d);
+    native_event_t *ev_ts = &ntv_table.events[idx];
+    ev_ts->id = idx;
+    ev_ts->name = strdup(name_buf);
+    ev_ts->descr = strdup(descr_buf);
+    ev_ts->device = d;
+    ev_ts->value = 0;
+    ev_ts->mode = PAPI_MODE_READ;
+    ev_ts->variant = 2;
+    ev_ts->subvariant = 0;
+    ev_ts->open_func = open_simple;
+    ev_ts->close_func = close_simple;
+    ev_ts->start_func = start_simple;
+    ev_ts->stop_func = stop_simple;
+    ev_ts->access_func = access_amdsmi_energy_count;
+    htable_insert(htable, ev_ts->name, ev_ts);
+    idx++;
   }
   /* GPU power profile information */
   for (int d = 0; d < gpu_count; ++d) {
