@@ -1479,6 +1479,29 @@ int access_amdsmi_board_serial_hash(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_fw_version(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_fw_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+    return PAPI_EMISC;
+
+  amdsmi_fw_info_t info;
+  amdsmi_status_t st = amdsmi_get_fw_info_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+
+  amdsmi_fw_block_t id = (amdsmi_fw_block_t)event->variant;
+  uint8_t n = info.num_fw_info;
+  if (n > AMDSMI_FW_ID__MAX) n = AMDSMI_FW_ID__MAX;
+  for (uint8_t i = 0; i < n; ++i) {
+    if (info.fw_info_list[i].fw_id == id) {
+      event->value = (int64_t)info.fw_info_list[i].fw_version;
+      return PAPI_OK;
+    }
+  }
+  return PAPI_EMISC;
+}
+
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
   if (!amdsmi_get_gpu_vram_info_p) return PAPI_ENOSUPP;

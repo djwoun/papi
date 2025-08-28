@@ -1936,6 +1936,27 @@ static int init_event_table(void) {
       }
     }
 
+    if (amdsmi_get_fw_info_p) {
+      amdsmi_fw_info_t finfo;
+      if (amdsmi_get_fw_info_p(device_handles[d], &finfo) == AMDSMI_STATUS_SUCCESS) {
+        uint8_t n = finfo.num_fw_info;
+        if (n > AMDSMI_FW_ID__MAX) n = AMDSMI_FW_ID__MAX;
+        for (uint8_t f = 0; f < n; ++f) {
+          if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+          uint32_t fid = finfo.fw_info_list[f].fw_id;
+          snprintf(name_buf, sizeof(name_buf), "fw_version_id%u:device=%d", fid, d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d firmware id %u version", d, fid);
+          native_event_t *ev_fw = &ntv_table.events[idx];
+          ev_fw->id = idx; ev_fw->name = strdup(name_buf); ev_fw->descr = strdup(descr_buf);
+          ev_fw->device = d; ev_fw->value = 0; ev_fw->mode = PAPI_MODE_READ; ev_fw->variant = fid; ev_fw->subvariant = 0;
+          ev_fw->open_func = open_simple; ev_fw->close_func = close_simple; ev_fw->start_func = start_simple; ev_fw->stop_func = stop_simple;
+          ev_fw->access_func = access_amdsmi_fw_version;
+          htable_insert(htable, ev_fw->name, ev_fw);
+          idx++;
+        }
+      }
+    }
+
     if (amdsmi_get_gpu_board_info_p) {
       amdsmi_board_info_t binfo;
       if (amdsmi_get_gpu_board_info_p(device_handles[d], &binfo) == AMDSMI_STATUS_SUCCESS) {

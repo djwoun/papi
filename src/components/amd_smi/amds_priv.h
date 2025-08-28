@@ -200,6 +200,7 @@ int access_amdsmi_process_isolation(int mode, void *arg);
 int access_amdsmi_xcd_counter(int mode, void *arg);
 int access_amdsmi_board_serial_hash(int mode, void *arg);
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+int access_amdsmi_fw_version(int mode, void *arg);
 int access_amdsmi_bad_page_count(int mode, void *arg);
 int access_amdsmi_bad_page_threshold(int mode, void *arg);
 int access_amdsmi_bad_page_record(int mode, void *arg);
