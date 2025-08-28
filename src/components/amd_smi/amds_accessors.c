@@ -1257,3 +1257,96 @@ int access_amdsmi_xcd_counter(int mode, void *arg) {
   event->value = (int64_t)cnt;
   return PAPI_OK;
 }
+
+int access_amdsmi_board_serial_hash(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_board_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  amdsmi_board_info_t info;
+  amdsmi_status_t st = amdsmi_get_gpu_board_info_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (int64_t)_str_to_u64_hash(info.product_serial);
+  return PAPI_OK;
+}
+
+int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_vram_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  amdsmi_vram_info_t info;
+  amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (int64_t)info.vram_max_bandwidth; /* GB/s */
+  return PAPI_OK;
+}
+
+int access_amdsmi_bad_page_count(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_bad_page_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  uint32_t num = 0;
+  amdsmi_status_t st = amdsmi_get_gpu_bad_page_info_p(device_handles[event->device], &num, NULL);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (int64_t)num;
+  return PAPI_OK;
+}
+
+int access_amdsmi_bad_page_threshold(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_bad_page_threshold_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  uint32_t thr = 0;
+  amdsmi_status_t st = amdsmi_get_gpu_bad_page_threshold_p(device_handles[event->device], &thr);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (int64_t)thr;
+  return PAPI_OK;
+}
+
+int access_amdsmi_power_sensor(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_power_info_v2_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  amdsmi_power_info_t info;
+  amdsmi_status_t st = amdsmi_get_power_info_v2_p(device_handles[event->device], event->subvariant, &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  if (event->variant == 0)
+    event->value = (int64_t)info.current_socket_power;
+  else if (event->variant == 1)
+    event->value = (int64_t)info.average_socket_power;
+  else
+    return PAPI_ENOSUPP;
+  return PAPI_OK;
+}
+
+int access_amdsmi_event_notification(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_init_gpu_event_notification_p || !amdsmi_set_gpu_event_notification_mask_p ||
+      !amdsmi_get_gpu_event_notification_p || !amdsmi_stop_gpu_event_notification_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  amdsmi_status_t st = amdsmi_init_gpu_event_notification_p(device_handles[event->device]);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  uint64_t mask = AMDSMI_EVENT_MASK_FROM_INDEX(event->variant);
+  st = amdsmi_set_gpu_event_notification_mask_p(device_handles[event->device], mask);
+  if (st != AMDSMI_STATUS_SUCCESS) {
+    amdsmi_stop_gpu_event_notification_p(device_handles[event->device]);
+    return PAPI_EMISC;
+  }
+  amdsmi_evt_notification_data_t data[8];
+  uint32_t num = 8;
+  st = amdsmi_get_gpu_event_notification_p(0, &num, data);
+  uint32_t cnt = 0;
+  if (st == AMDSMI_STATUS_SUCCESS) {
+    for (uint32_t i = 0; i < num; ++i)
+      if (data[i].event == (amdsmi_evt_notification_type_t)event->variant) cnt++;
+  }
+  amdsmi_stop_gpu_event_notification_p(device_handles[event->device]);
+  event->value = (int64_t)cnt;
+  return PAPI_OK;
+}

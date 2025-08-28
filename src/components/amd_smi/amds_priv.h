@@ -112,6 +112,13 @@ extern amdsmi_status_t (*amdsmi_get_pcie_info_p)(amdsmi_processor_handle, amdsmi
 extern amdsmi_status_t (*amdsmi_get_processor_count_from_handles_p)(amdsmi_processor_handle *, uint32_t *, uint32_t *, uint32_t *, uint32_t *);
 extern amdsmi_status_t (*amdsmi_get_soc_pstate_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
 extern amdsmi_status_t (*amdsmi_get_xgmi_plpd_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_bad_page_info_p)(amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_bad_page_threshold_p)(amdsmi_processor_handle, uint32_t *);
+extern amdsmi_status_t (*amdsmi_get_power_info_v2_p)(amdsmi_processor_handle, uint32_t, amdsmi_power_info_t *);
+extern amdsmi_status_t (*amdsmi_init_gpu_event_notification_p)(amdsmi_processor_handle);
+extern amdsmi_status_t (*amdsmi_set_gpu_event_notification_mask_p)(amdsmi_processor_handle, uint64_t);
+extern amdsmi_status_t (*amdsmi_get_gpu_event_notification_p)(int, uint32_t *, amdsmi_evt_notification_data_t *);
+extern amdsmi_status_t (*amdsmi_stop_gpu_event_notification_p)(amdsmi_processor_handle);
 
 #ifndef AMDSMI_DISABLE_ESMI
 extern amdsmi_status_t (*amdsmi_get_cpu_handles_p)(uint32_t *, amdsmi_processor_handle *);
@@ -180,6 +187,12 @@ int access_amdsmi_soc_pstate_id(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_id(int mode, void *arg);
 int access_amdsmi_process_isolation(int mode, void *arg);
 int access_amdsmi_xcd_counter(int mode, void *arg);
+int access_amdsmi_board_serial_hash(int mode, void *arg);
+int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+int access_amdsmi_bad_page_count(int mode, void *arg);
+int access_amdsmi_bad_page_threshold(int mode, void *arg);
+int access_amdsmi_power_sensor(int mode, void *arg);
+int access_amdsmi_event_notification(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);

@@ -85,6 +85,13 @@ amdsmi_status_t (*amdsmi_get_pcie_info_p)(amdsmi_processor_handle, amdsmi_pcie_i
 amdsmi_status_t (*amdsmi_get_processor_count_from_handles_p)(amdsmi_processor_handle *, uint32_t *, uint32_t *, uint32_t *, uint32_t *);
 amdsmi_status_t (*amdsmi_get_soc_pstate_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
 amdsmi_status_t (*amdsmi_get_xgmi_plpd_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
+amdsmi_status_t (*amdsmi_get_gpu_bad_page_info_p)(amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *);
+amdsmi_status_t (*amdsmi_get_gpu_bad_page_threshold_p)(amdsmi_processor_handle, uint32_t *);
+amdsmi_status_t (*amdsmi_get_power_info_v2_p)(amdsmi_processor_handle, uint32_t, amdsmi_power_info_t *);
+amdsmi_status_t (*amdsmi_init_gpu_event_notification_p)(amdsmi_processor_handle);
+amdsmi_status_t (*amdsmi_set_gpu_event_notification_mask_p)(amdsmi_processor_handle, uint64_t);
+amdsmi_status_t (*amdsmi_get_gpu_event_notification_p)(int, uint32_t *, amdsmi_evt_notification_data_t *);
+amdsmi_status_t (*amdsmi_stop_gpu_event_notification_p)(amdsmi_processor_handle);
 
 #ifndef AMDSMI_DISABLE_ESMI
 /* CPU function pointers */
@@ -260,6 +267,13 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_processor_count_from_handles_p = sym("amdsmi_get_processor_count_from_handles", NULL);
   amdsmi_get_soc_pstate_p = sym("amdsmi_get_soc_pstate", NULL);
   amdsmi_get_xgmi_plpd_p = sym("amdsmi_get_xgmi_plpd", NULL);
+  amdsmi_get_gpu_bad_page_info_p = sym("amdsmi_get_gpu_bad_page_info", NULL);
+  amdsmi_get_gpu_bad_page_threshold_p = sym("amdsmi_get_gpu_bad_page_threshold", NULL);
+  amdsmi_get_power_info_v2_p = sym("amdsmi_get_power_info_v2", NULL);
+  amdsmi_init_gpu_event_notification_p = sym("amdsmi_init_gpu_event_notification", NULL);
+  amdsmi_set_gpu_event_notification_mask_p = sym("amdsmi_set_gpu_event_notification_mask", NULL);
+  amdsmi_get_gpu_event_notification_p = sym("amdsmi_get_gpu_event_notification", NULL);
+  amdsmi_stop_gpu_event_notification_p = sym("amdsmi_stop_gpu_event_notification", NULL);
 
 #ifndef AMDSMI_DISABLE_ESMI
   /* CPU functions */
@@ -1595,6 +1609,100 @@ static int init_event_table(void) {
         htable_insert(htable, ev_xcd->name, ev_xcd);
         idx++;
       }
+    }
+
+    if (amdsmi_get_gpu_board_info_p) {
+      amdsmi_board_info_t binfo;
+      if (amdsmi_get_gpu_board_info_p(device_handles[d], &binfo) == AMDSMI_STATUS_SUCCESS) {
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "board_serial_hash:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d board serial number (hash)", d);
+        native_event_t *ev_brd = &ntv_table.events[idx];
+        ev_brd->id = idx; ev_brd->name = strdup(name_buf); ev_brd->descr = strdup(descr_buf);
+        ev_brd->device = d; ev_brd->value = 0; ev_brd->mode = PAPI_MODE_READ; ev_brd->variant = 0; ev_brd->subvariant = 0;
+        ev_brd->open_func = open_simple; ev_brd->close_func = close_simple; ev_brd->start_func = start_simple; ev_brd->stop_func = stop_simple;
+        ev_brd->access_func = access_amdsmi_board_serial_hash;
+        htable_insert(htable, ev_brd->name, ev_brd);
+        idx++;
+      }
+    }
+
+    if (amdsmi_get_gpu_vram_info_p) {
+      amdsmi_vram_info_t vinfo;
+      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) == AMDSMI_STATUS_SUCCESS) {
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "vram_max_bandwidth:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM max bandwidth (GB/s)", d);
+        native_event_t *ev_vbw = &ntv_table.events[idx];
+        ev_vbw->id = idx; ev_vbw->name = strdup(name_buf); ev_vbw->descr = strdup(descr_buf);
+        ev_vbw->device = d; ev_vbw->value = 0; ev_vbw->mode = PAPI_MODE_READ; ev_vbw->variant = 0; ev_vbw->subvariant = 0;
+        ev_vbw->open_func = open_simple; ev_vbw->close_func = close_simple; ev_vbw->start_func = start_simple; ev_vbw->stop_func = stop_simple;
+        ev_vbw->access_func = access_amdsmi_vram_max_bandwidth;
+        htable_insert(htable, ev_vbw->name, ev_vbw);
+        idx++;
+      }
+    }
+
+    if (amdsmi_get_gpu_bad_page_info_p) {
+      uint32_t nump = 0;
+      if (amdsmi_get_gpu_bad_page_info_p(device_handles[d], &nump, NULL) == AMDSMI_STATUS_SUCCESS) {
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "bad_page_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page count", d);
+        native_event_t *ev_bpc = &ntv_table.events[idx];
+        ev_bpc->id = idx; ev_bpc->name = strdup(name_buf); ev_bpc->descr = strdup(descr_buf);
+        ev_bpc->device = d; ev_bpc->value = 0; ev_bpc->mode = PAPI_MODE_READ; ev_bpc->variant = 0; ev_bpc->subvariant = 0;
+        ev_bpc->open_func = open_simple; ev_bpc->close_func = close_simple; ev_bpc->start_func = start_simple; ev_bpc->stop_func = stop_simple;
+        ev_bpc->access_func = access_amdsmi_bad_page_count;
+        htable_insert(htable, ev_bpc->name, ev_bpc);
+        idx++;
+      }
+    }
+
+    if (amdsmi_get_gpu_bad_page_threshold_p) {
+      uint32_t thr = 0;
+      if (amdsmi_get_gpu_bad_page_threshold_p(device_handles[d], &thr) == AMDSMI_STATUS_SUCCESS) {
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "bad_page_threshold:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d bad page threshold", d);
+        native_event_t *ev_bpt = &ntv_table.events[idx];
+        ev_bpt->id = idx; ev_bpt->name = strdup(name_buf); ev_bpt->descr = strdup(descr_buf);
+        ev_bpt->device = d; ev_bpt->value = 0; ev_bpt->mode = PAPI_MODE_READ; ev_bpt->variant = 0; ev_bpt->subvariant = 0;
+        ev_bpt->open_func = open_simple; ev_bpt->close_func = close_simple; ev_bpt->start_func = start_simple; ev_bpt->stop_func = stop_simple;
+        ev_bpt->access_func = access_amdsmi_bad_page_threshold;
+        htable_insert(htable, ev_bpt->name, ev_bpt);
+        idx++;
+      }
+    }
+
+    if (amdsmi_get_power_info_v2_p) {
+      amdsmi_power_info_t pinfo;
+      if (amdsmi_get_power_info_v2_p(device_handles[d], 0, &pinfo) == AMDSMI_STATUS_SUCCESS) {
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_watts:device=%d:sensor=0", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor 0 current power (W)", d);
+        native_event_t *ev_ps = &ntv_table.events[idx];
+        ev_ps->id = idx; ev_ps->name = strdup(name_buf); ev_ps->descr = strdup(descr_buf);
+        ev_ps->device = d; ev_ps->value = 0; ev_ps->mode = PAPI_MODE_READ; ev_ps->variant = 0; ev_ps->subvariant = 0;
+        ev_ps->open_func = open_simple; ev_ps->close_func = close_simple; ev_ps->start_func = start_simple; ev_ps->stop_func = stop_simple;
+        ev_ps->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_ps->name, ev_ps);
+        idx++;
+      }
+    }
+
+    if (amdsmi_init_gpu_event_notification_p && amdsmi_set_gpu_event_notification_mask_p &&
+        amdsmi_get_gpu_event_notification_p && amdsmi_stop_gpu_event_notification_p) {
+      if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+      snprintf(name_buf, sizeof(name_buf), "thermal_throttle_events:device=%d", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d thermal throttle event notifications", d);
+      native_event_t *ev_tt = &ntv_table.events[idx];
+      ev_tt->id = idx; ev_tt->name = strdup(name_buf); ev_tt->descr = strdup(descr_buf);
+      ev_tt->device = d; ev_tt->value = 0; ev_tt->mode = PAPI_MODE_READ; ev_tt->variant = AMDSMI_EVT_NOTIF_THERMAL_THROTTLE; ev_tt->subvariant = 0;
+      ev_tt->open_func = open_simple; ev_tt->close_func = close_simple; ev_tt->start_func = start_simple; ev_tt->stop_func = stop_simple;
+      ev_tt->access_func = access_amdsmi_event_notification;
+      htable_insert(htable, ev_tt->name, ev_tt);
+      idx++;
     }
   }
   /* Energy consumption counter */
