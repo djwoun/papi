@@ -447,6 +447,10 @@ int access_amdsmi_power_cap_range(int mode, void *arg) {
     event->value = (int64_t)info.min_power_cap;
   } else if (event->variant == 2) {
     event->value = (int64_t)info.max_power_cap;
+  } else if (event->variant == 3) {
+    event->value = (int64_t)info.default_power_cap;
+  } else if (event->variant == 4) {
+    event->value = (int64_t)info.dpm_cap;
   } else {
     return PAPI_EMISC;
   }

@@ -1491,6 +1491,44 @@ static int init_event_table(void) {
       ev_pcap_max->access_func = access_amdsmi_power_cap_range;
       htable_insert(htable, ev_pcap_max->name, ev_pcap_max);
       idx++;
+      // Default power cap
+      snprintf(name_buf, sizeof(name_buf), "power_cap_default:device=%d", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d default power cap (W)", d);
+      native_event_t *ev_pcap_def = &ntv_table.events[idx];
+      ev_pcap_def->id = idx;
+      ev_pcap_def->name = strdup(name_buf);
+      ev_pcap_def->descr = strdup(descr_buf);
+      ev_pcap_def->device = d;
+      ev_pcap_def->value = 0;
+      ev_pcap_def->mode = PAPI_MODE_READ;
+      ev_pcap_def->variant = 3; // variant 3 => default
+      ev_pcap_def->subvariant = 0;
+      ev_pcap_def->open_func = open_simple;
+      ev_pcap_def->close_func = close_simple;
+      ev_pcap_def->start_func = start_simple;
+      ev_pcap_def->stop_func = stop_simple;
+      ev_pcap_def->access_func = access_amdsmi_power_cap_range;
+      htable_insert(htable, ev_pcap_def->name, ev_pcap_def);
+      idx++;
+      // DPM power cap
+      snprintf(name_buf, sizeof(name_buf), "power_cap_dpm:device=%d", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d DPM power cap (MHz)", d);
+      native_event_t *ev_pcap_dpm = &ntv_table.events[idx];
+      ev_pcap_dpm->id = idx;
+      ev_pcap_dpm->name = strdup(name_buf);
+      ev_pcap_dpm->descr = strdup(descr_buf);
+      ev_pcap_dpm->device = d;
+      ev_pcap_dpm->value = 0;
+      ev_pcap_dpm->mode = PAPI_MODE_READ;
+      ev_pcap_dpm->variant = 4; // variant 4 => dpm
+      ev_pcap_dpm->subvariant = 0;
+      ev_pcap_dpm->open_func = open_simple;
+      ev_pcap_dpm->close_func = close_simple;
+      ev_pcap_dpm->start_func = start_simple;
+      ev_pcap_dpm->stop_func = stop_simple;
+      ev_pcap_dpm->access_func = access_amdsmi_power_cap_range;
+      htable_insert(htable, ev_pcap_dpm->name, ev_pcap_dpm);
+      idx++;
     }
   }
   /* PCIe throughput and replay counter metrics */
