@@ -13,6 +13,8 @@ typedef enum {
   PAPI_MODE_RDWR,
 } rocs_access_mode_e;
 
+typedef int (*amds_accessor_t)(int mode, void *arg);
+
 /* Native event descriptor */
 typedef struct native_event {
   unsigned int id;
@@ -24,7 +26,7 @@ typedef struct native_event {
   int (*close_func)(struct native_event *);
   int (*start_func)(struct native_event *);
   int (*stop_func)(struct native_event *);
-  int (*access_func)(int mode, void *arg);
+  amds_accessor_t access_func;
 } native_event_t;
 
 typedef struct {
