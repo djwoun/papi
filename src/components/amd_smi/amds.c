@@ -1939,6 +1939,38 @@ static int init_event_table(void) {
         ev_bpc->access_func = access_amdsmi_bad_page_count;
         htable_insert(htable, ev_bpc->name, ev_bpc);
         idx++;
+        for (uint32_t p = 0; p < nump; ++p) {
+          if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+          snprintf(name_buf, sizeof(name_buf), "bad_page_address:device=%d:page=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page %u address", d, p);
+          native_event_t *ev_addr = &ntv_table.events[idx];
+          ev_addr->id = idx; ev_addr->name = strdup(name_buf); ev_addr->descr = strdup(descr_buf);
+          ev_addr->device = d; ev_addr->value = 0; ev_addr->mode = PAPI_MODE_READ; ev_addr->variant = 0; ev_addr->subvariant = p;
+          ev_addr->open_func = open_simple; ev_addr->close_func = close_simple; ev_addr->start_func = start_simple; ev_addr->stop_func = stop_simple;
+          ev_addr->access_func = access_amdsmi_bad_page_record;
+          htable_insert(htable, ev_addr->name, ev_addr);
+          idx++;
+          if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+          snprintf(name_buf, sizeof(name_buf), "bad_page_size:device=%d:page=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page %u size", d, p);
+          native_event_t *ev_size = &ntv_table.events[idx];
+          ev_size->id = idx; ev_size->name = strdup(name_buf); ev_size->descr = strdup(descr_buf);
+          ev_size->device = d; ev_size->value = 0; ev_size->mode = PAPI_MODE_READ; ev_size->variant = 1; ev_size->subvariant = p;
+          ev_size->open_func = open_simple; ev_size->close_func = close_simple; ev_size->start_func = start_simple; ev_size->stop_func = stop_simple;
+          ev_size->access_func = access_amdsmi_bad_page_record;
+          htable_insert(htable, ev_size->name, ev_size);
+          idx++;
+          if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+          snprintf(name_buf, sizeof(name_buf), "bad_page_status:device=%d:page=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page %u status", d, p);
+          native_event_t *ev_stat = &ntv_table.events[idx];
+          ev_stat->id = idx; ev_stat->name = strdup(name_buf); ev_stat->descr = strdup(descr_buf);
+          ev_stat->device = d; ev_stat->value = 0; ev_stat->mode = PAPI_MODE_READ; ev_stat->variant = 2; ev_stat->subvariant = p;
+          ev_stat->open_func = open_simple; ev_stat->close_func = close_simple; ev_stat->start_func = start_simple; ev_stat->stop_func = stop_simple;
+          ev_stat->access_func = access_amdsmi_bad_page_record;
+          htable_insert(htable, ev_stat->name, ev_stat);
+          idx++;
+        }
       }
     }
 

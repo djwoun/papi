@@ -1472,6 +1472,41 @@ int access_amdsmi_bad_page_threshold(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_bad_page_record(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_bad_page_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  uint32_t num = 0;
+  amdsmi_status_t st = amdsmi_get_gpu_bad_page_info_p(device_handles[event->device], &num, NULL);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  if (event->subvariant >= num) return PAPI_EMISC;
+  amdsmi_retired_page_record_t *recs =
+      (amdsmi_retired_page_record_t *)papi_calloc(num, sizeof(amdsmi_retired_page_record_t));
+  if (!recs) return PAPI_ENOMEM;
+  st = amdsmi_get_gpu_bad_page_info_p(device_handles[event->device], &num, recs);
+  if (st != AMDSMI_STATUS_SUCCESS) {
+    papi_free(recs);
+    return PAPI_EMISC;
+  }
+  amdsmi_retired_page_record_t rec = recs[event->subvariant];
+  papi_free(recs);
+  switch (event->variant) {
+    case 0:
+      event->value = (int64_t)rec.page_address;
+      break;
+    case 1:
+      event->value = (int64_t)rec.page_size;
+      break;
+    case 2:
+      event->value = (int64_t)rec.status;
+      break;
+    default:
+      return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
+}
+
 int access_amdsmi_power_sensor(int mode, void *arg) {
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
   if (!amdsmi_get_power_info_v2_p) return PAPI_ENOSUPP;
