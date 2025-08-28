@@ -1683,70 +1683,74 @@ static int init_event_table(void) {
       idx++;
     }
   }
-  /* GPU clock frequency levels */
+  /* GPU clock frequency levels for multiple clock domains */
   for (int d = 0; d < gpu_count; ++d) {
-    amdsmi_frequencies_t f;
-    if (amdsmi_get_clk_freq_p(device_handles[d], AMDSMI_CLK_TYPE_SYS, &f) != AMDSMI_STATUS_SUCCESS || f.num_supported == 0) {
-      continue;
-    }
-    // Number of supported frequencies
-    snprintf(name_buf, sizeof(name_buf), "clk_freq_count:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d number of supported GPU clock frequencies", d);
-    native_event_t *ev_clk_count = &ntv_table.events[idx];
-    ev_clk_count->id = idx;
-    ev_clk_count->name = strdup(name_buf);
-    ev_clk_count->descr = strdup(descr_buf);
-    ev_clk_count->device = d;
-    ev_clk_count->value = 0;
-    ev_clk_count->mode = PAPI_MODE_READ;
-    ev_clk_count->variant = 0;
-    ev_clk_count->subvariant = 0;
-    ev_clk_count->open_func = open_simple;
-    ev_clk_count->close_func = close_simple;
-    ev_clk_count->start_func = start_simple;
-    ev_clk_count->stop_func = stop_simple;
-    ev_clk_count->access_func = access_amdsmi_clk_freq;
-    htable_insert(htable, ev_clk_count->name, ev_clk_count);
-    idx++;
-    // Current clock frequency
-    snprintf(name_buf, sizeof(name_buf), "clk_freq_current:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d current GPU clock frequency (MHz)", d);
-    native_event_t *ev_clk_cur = &ntv_table.events[idx];
-    ev_clk_cur->id = idx;
-    ev_clk_cur->name = strdup(name_buf);
-    ev_clk_cur->descr = strdup(descr_buf);
-    ev_clk_cur->device = d;
-    ev_clk_cur->value = 0;
-    ev_clk_cur->mode = PAPI_MODE_READ;
-    ev_clk_cur->variant = 0;
-    ev_clk_cur->subvariant = 1;
-    ev_clk_cur->open_func = open_simple;
-    ev_clk_cur->close_func = close_simple;
-    ev_clk_cur->start_func = start_simple;
-    ev_clk_cur->stop_func = stop_simple;
-    ev_clk_cur->access_func = access_amdsmi_clk_freq;
-    htable_insert(htable, ev_clk_cur->name, ev_clk_cur);
-    idx++;
-    // Supported frequency levels
-    for (uint32_t fi = 0; fi < f.num_supported; ++fi) {
-      snprintf(name_buf, sizeof(name_buf), "clk_freq_level_%u:device=%d", fi, d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d supported clock frequency level %u (MHz)", d, fi);
-      native_event_t *ev_clk_lvl = &ntv_table.events[idx];
-      ev_clk_lvl->id = idx;
-      ev_clk_lvl->name = strdup(name_buf);
-      ev_clk_lvl->descr = strdup(descr_buf);
-      ev_clk_lvl->device = d;
-      ev_clk_lvl->value = 0;
-      ev_clk_lvl->mode = PAPI_MODE_READ;
-      ev_clk_lvl->variant = 0;
-      ev_clk_lvl->subvariant = fi + 2;
-      ev_clk_lvl->open_func = open_simple;
-      ev_clk_lvl->close_func = close_simple;
-      ev_clk_lvl->start_func = start_simple;
-      ev_clk_lvl->stop_func = stop_simple;
-      ev_clk_lvl->access_func = access_amdsmi_clk_freq;
-      htable_insert(htable, ev_clk_lvl->name, ev_clk_lvl);
+    amdsmi_clk_type_t clk_types[] = {AMDSMI_CLK_TYPE_SYS, AMDSMI_CLK_TYPE_DF, AMDSMI_CLK_TYPE_DCEF};
+    const char *clk_names[] = {"sys", "df", "dcef"};
+    for (int t = 0; t < 3; ++t) {
+      amdsmi_frequencies_t f;
+      if (amdsmi_get_clk_freq_p(device_handles[d], clk_types[t], &f) != AMDSMI_STATUS_SUCCESS || f.num_supported == 0) {
+        continue;
+      }
+      // Number of supported frequencies for this clock domain
+      snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_count:device=%d", clk_names[t], d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d number of supported %s clock frequencies", d, clk_names[t]);
+      native_event_t *ev_clk_count = &ntv_table.events[idx];
+      ev_clk_count->id = idx;
+      ev_clk_count->name = strdup(name_buf);
+      ev_clk_count->descr = strdup(descr_buf);
+      ev_clk_count->device = d;
+      ev_clk_count->value = 0;
+      ev_clk_count->mode = PAPI_MODE_READ;
+      ev_clk_count->variant = t;
+      ev_clk_count->subvariant = 0;
+      ev_clk_count->open_func = open_simple;
+      ev_clk_count->close_func = close_simple;
+      ev_clk_count->start_func = start_simple;
+      ev_clk_count->stop_func = stop_simple;
+      ev_clk_count->access_func = access_amdsmi_clk_freq;
+      htable_insert(htable, ev_clk_count->name, ev_clk_count);
       idx++;
+      // Current clock frequency for this domain
+      snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_current:device=%d", clk_names[t], d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d current %s clock frequency (MHz)", d, clk_names[t]);
+      native_event_t *ev_clk_cur = &ntv_table.events[idx];
+      ev_clk_cur->id = idx;
+      ev_clk_cur->name = strdup(name_buf);
+      ev_clk_cur->descr = strdup(descr_buf);
+      ev_clk_cur->device = d;
+      ev_clk_cur->value = 0;
+      ev_clk_cur->mode = PAPI_MODE_READ;
+      ev_clk_cur->variant = t;
+      ev_clk_cur->subvariant = 1;
+      ev_clk_cur->open_func = open_simple;
+      ev_clk_cur->close_func = close_simple;
+      ev_clk_cur->start_func = start_simple;
+      ev_clk_cur->stop_func = stop_simple;
+      ev_clk_cur->access_func = access_amdsmi_clk_freq;
+      htable_insert(htable, ev_clk_cur->name, ev_clk_cur);
+      idx++;
+      // Supported frequency levels for this domain
+      for (uint32_t fi = 0; fi < f.num_supported; ++fi) {
+        snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_level_%u:device=%d", clk_names[t], fi, d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d supported %s clock frequency level %u (MHz)", d, clk_names[t], fi);
+        native_event_t *ev_clk_lvl = &ntv_table.events[idx];
+        ev_clk_lvl->id = idx;
+        ev_clk_lvl->name = strdup(name_buf);
+        ev_clk_lvl->descr = strdup(descr_buf);
+        ev_clk_lvl->device = d;
+        ev_clk_lvl->value = 0;
+        ev_clk_lvl->mode = PAPI_MODE_READ;
+        ev_clk_lvl->variant = t;
+        ev_clk_lvl->subvariant = fi + 2;
+        ev_clk_lvl->open_func = open_simple;
+        ev_clk_lvl->close_func = close_simple;
+        ev_clk_lvl->start_func = start_simple;
+        ev_clk_lvl->stop_func = stop_simple;
+        ev_clk_lvl->access_func = access_amdsmi_clk_freq;
+        htable_insert(htable, ev_clk_lvl->name, ev_clk_lvl);
+        idx++;
+      }
     }
   }
   /* GPU identification and topology metrics */

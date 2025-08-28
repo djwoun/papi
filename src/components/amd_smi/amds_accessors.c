@@ -521,7 +521,12 @@ int access_amdsmi_clk_freq(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_frequencies_t freq_info;
-  amdsmi_status_t status = amdsmi_get_clk_freq_p(device_handles[event->device], AMDSMI_CLK_TYPE_SYS, &freq_info);
+  amdsmi_clk_type_t clk_type = AMDSMI_CLK_TYPE_SYS;
+  if (event->variant == 1)
+    clk_type = AMDSMI_CLK_TYPE_DF;
+  else if (event->variant == 2)
+    clk_type = AMDSMI_CLK_TYPE_DCEF;
+  amdsmi_status_t status = amdsmi_get_clk_freq_p(device_handles[event->device], clk_type, &freq_info);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
   }
