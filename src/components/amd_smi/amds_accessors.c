@@ -562,9 +562,43 @@ int access_amdsmi_gpu_metrics(int mode, void *arg) {
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
   }
-  // Parsing of metrics is not fully implemented; just return OK.
-  // (In a full implementation, event->variant or subvariant would select a
-  // specific field of 'metrics'.)
+  switch (event->variant) {
+  case 0:
+    event->value = metrics.throttle_status;
+    break;
+  case 1:
+    event->value = (int64_t)metrics.indep_throttle_status;
+    break;
+  case 2:
+    event->value = metrics.pcie_link_width;
+    break;
+  case 3:
+    event->value = metrics.pcie_link_speed;
+    break;
+  case 4:
+    event->value = (int64_t)metrics.pcie_bandwidth_acc;
+    break;
+  case 5:
+    event->value = (int64_t)metrics.pcie_bandwidth_inst;
+    break;
+  case 6:
+    event->value = (int64_t)metrics.pcie_l0_to_recov_count_acc;
+    break;
+  case 7:
+    event->value = (int64_t)metrics.pcie_replay_count_acc;
+    break;
+  case 8:
+    event->value = (int64_t)metrics.pcie_replay_rover_count_acc;
+    break;
+  case 9:
+    event->value = metrics.pcie_nak_sent_count_acc;
+    break;
+  case 10:
+    event->value = metrics.pcie_nak_rcvd_count_acc;
+    break;
+  default:
+    return PAPI_ENOSUPP;
+  }
   return PAPI_OK;
 }
 int access_amdsmi_gpu_info(int mode, void *arg) {
