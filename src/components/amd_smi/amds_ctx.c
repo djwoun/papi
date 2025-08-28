@@ -2,6 +2,8 @@
 #include "amds_priv.h"
 #include "papi.h"
 #include "papi_memory.h"
+static int32_t device_mask = 0;
+
 static int acquire_devices(unsigned int *events_id, int num_events, int32_t *bitmask) {
   int32_t mask_acq = 0;
   for (int i = 0; i < num_events; ++i) {

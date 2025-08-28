@@ -16,6 +16,7 @@
 #include "papi_memory.h"
 #include "extras.h"
 #include "amds.h"
+#include "amds_priv.h"
 
 typedef struct {
     int initialized;
@@ -30,7 +31,6 @@ typedef struct {
     amds_ctx_t amds_ctx;
 } amdsmi_control_t;
 
-extern unsigned int _amd_smi_lock;
 papi_vector_t _amd_smi_vector;
 
 static int _amd_smi_init_private(void);
@@ -54,7 +54,7 @@ static int _amd_smi_init_component(int cidx) {
     _amd_smi_vector.cmp_info.num_native_events = -1;
     _amd_smi_vector.cmp_info.num_cntrs = -1;
     _amd_smi_vector.cmp_info.num_mpx_cntrs = -1;
-    _amd_smi_lock = PAPI_NUM_LOCK + NUM_INNER_LOCK + cidx;
+    amds_set_lock(PAPI_NUM_LOCK + NUM_INNER_LOCK + cidx);
 
     sprintf(_amd_smi_vector.cmp_info.disabled_reason,
             "Not initialized. Access an AMD SMI event to initialize.");
