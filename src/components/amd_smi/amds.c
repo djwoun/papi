@@ -950,19 +950,45 @@ static int init_event_table(void) {
     }
     // GPU voltage metrics events
     if (amdsmi_get_gpu_volt_metric_p) {
-      // Sensor 0: VDDGFX, Sensor 1: VDDBOARD
-      int sensors[2] = {0, 1};
-      const char *sensor_names[2] = {"vddgfx", "vddboard"};
-      for (int si = 0; si < 2; ++si) {
-        int64_t volt_val = 0;
-        amdsmi_status_t st = amdsmi_get_gpu_volt_metric_p(device_handles[d], (amdsmi_voltage_type_t)sensors[si], AMDSMI_VOLT_CURRENT, &volt_val);
-        if (st == AMDSMI_STATUS_SUCCESS) {
+      const char *sensor_names[] = {"vddgfx", "vddmem", "vddsoc", "vddio",
+                                   "vddmisc", "vdd", "vdd2", "vddboard"};
+      const amdsmi_voltage_metric_t metrics[] = {
+          AMDSMI_VOLT_CURRENT,   AMDSMI_VOLT_MAX,      AMDSMI_VOLT_MIN_CRIT,
+          AMDSMI_VOLT_MIN,       AMDSMI_VOLT_MAX_CRIT, AMDSMI_VOLT_AVERAGE,
+          AMDSMI_VOLT_LOWEST,    AMDSMI_VOLT_HIGHEST};
+      const char *metric_names[] = {"current",  "max",       "min_crit",
+                                    "min",      "max_crit", "average",
+                                    "lowest",   "highest"};
+      const uint32_t max_sensors = 8;
+      for (uint32_t s = 0; s < max_sensors; ++s) {
+        int64_t dummy = 0;
+        amdsmi_status_t st = amdsmi_get_gpu_volt_metric_p(
+            device_handles[d], (amdsmi_voltage_type_t)s, AMDSMI_VOLT_CURRENT,
+            &dummy);
+        if (st != AMDSMI_STATUS_SUCCESS) continue;
+        for (uint32_t m = 0; m < sizeof(metrics) / sizeof(metrics[0]); ++m) {
+          st = amdsmi_get_gpu_volt_metric_p(device_handles[d],
+                                            (amdsmi_voltage_type_t)s,
+                                            metrics[m], &dummy);
+          if (st != AMDSMI_STATUS_SUCCESS) continue;
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "voltage_%s:device=%d", sensor_names[si], d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d %s voltage (mV)", d, sensor_names[si]);
+          const char *sname =
+              (s < sizeof(sensor_names) / sizeof(sensor_names[0]))
+                  ? sensor_names[s]
+                  : "sensor";
+          char sensor_buf[32];
+          if (strcmp(sname, "sensor") == 0) {
+            snprintf(sensor_buf, sizeof(sensor_buf), "sensor%u", s);
+            sname = sensor_buf;
+          }
+          snprintf(name_buf, sizeof(name_buf), "voltage_%s_%s:device=%d",
+                   sname, metric_names[m], d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d %s %s voltage (mV)", d, sname,
+                   metric_names[m]);
           native_event_t *ev_volt = &ntv_table.events[idx];
           ev_volt->id = idx;
           ev_volt->name = strdup(name_buf);
@@ -970,8 +996,8 @@ static int init_event_table(void) {
           ev_volt->device = d;
           ev_volt->value = 0;
           ev_volt->mode = PAPI_MODE_READ;
-          ev_volt->variant = AMDSMI_VOLT_CURRENT;
-          ev_volt->subvariant = sensors[si];
+          ev_volt->variant = metrics[m];
+          ev_volt->subvariant = s;
           ev_volt->open_func = open_simple;
           ev_volt->close_func = close_simple;
           ev_volt->start_func = start_simple;
