@@ -1962,7 +1962,7 @@ static int init_event_table(void) {
       /* Probe for available power sensors. The API uses a sensor index and
        * returns AMDSMI_STATUS_SUCCESS while valid. Iterate until failure to
        * discover all sensors. */
-      for (uint32_t s = 0; s < 16; ++s) {
+      for (uint32_t s = 0; s < 2; ++s) {
         amdsmi_power_info_t pinfo;
         if (amdsmi_get_power_info_v2_p(device_handles[d], s, &pinfo) != AMDSMI_STATUS_SUCCESS)
           break;
