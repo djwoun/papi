@@ -32,18 +32,28 @@ typedef struct {
   int count;
 } native_event_table_t;
 
-/* Global state */
-extern amdsmi_processor_handle *device_handles;
-extern int32_t device_count;
-extern int32_t gpu_count;
-extern int32_t cpu_count;
-extern int32_t device_mask;
-extern amdsmi_processor_handle **cpu_core_handles;
-extern uint32_t *cores_per_socket;
-extern void *htable;
-extern native_event_table_t ntv_table;
-extern native_event_table_t *ntv_table_p;
-extern unsigned int _amd_smi_lock;
+/* Global state accessors */
+int32_t amds_get_device_count(void);
+amdsmi_processor_handle *amds_get_device_handles(void);
+int32_t amds_get_gpu_count(void);
+int32_t amds_get_cpu_count(void);
+amdsmi_processor_handle **amds_get_cpu_core_handles(void);
+uint32_t *amds_get_cores_per_socket(void);
+void *amds_get_htable(void);
+native_event_table_t *amds_get_ntv_table(void);
+unsigned int amds_get_lock(void);
+void amds_set_lock(unsigned int lock);
+
+#ifndef AMDS_PRIV_IMPL
+#define device_handles (amds_get_device_handles())
+#define device_count (amds_get_device_count())
+#define gpu_count (amds_get_gpu_count())
+#define cpu_count (amds_get_cpu_count())
+#define cpu_core_handles (amds_get_cpu_core_handles())
+#define cores_per_socket (amds_get_cores_per_socket())
+#define htable (amds_get_htable())
+#define ntv_table_p (amds_get_ntv_table())
+#endif
 
 /* AMD SMI function pointers */
 #include "amds_funcs.h"

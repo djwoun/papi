@@ -1,4 +1,5 @@
 #include "amds.h"
+#define AMDS_PRIV_IMPL
 #include "amds_priv.h"
 #include "amdsmi.h"
 #include "htable.h"
@@ -12,7 +13,7 @@
 #include <unistd.h>
 #define MAX_EVENTS_PER_DEVICE 1024
 
-unsigned int _amd_smi_lock;
+static unsigned int _amd_smi_lock;
 // Pointers to AMD SMI library functions (dynamically loaded)
 #include "amds_funcs.h"
 #define DEFINE_AMDSMI(name, ret, args) ret(*name) args;
@@ -22,15 +23,14 @@ AMD_SMI_CPU_FUNCTIONS(DEFINE_AMDSMI)
 #endif
 #undef DEFINE_AMDSMI
 // Global device list and count
-int32_t device_count = 0;
-amdsmi_processor_handle *device_handles = NULL;
-int32_t device_mask = 0;
-int32_t gpu_count = 0;
-int32_t cpu_count = 0;
-amdsmi_processor_handle **cpu_core_handles = NULL;
-uint32_t *cores_per_socket = NULL;
+static int32_t device_count = 0;
+static amdsmi_processor_handle *device_handles = NULL;
+static int32_t gpu_count = 0;
+static int32_t cpu_count = 0;
+static amdsmi_processor_handle **cpu_core_handles = NULL;
+static uint32_t *cores_per_socket = NULL;
 static void *amds_dlp = NULL;
-void *htable = NULL;
+static void *htable = NULL;
 static char error_string[PAPI_MAX_STR_LEN + 1];
 // Forward declarations for internal helpers
 static int load_amdsmi_sym(void);
@@ -38,8 +38,22 @@ static int init_device_table(void);
 static int shutdown_device_table(void);
 static int init_event_table(void);
 static int shutdown_event_table(void);
-native_event_table_t ntv_table;
-native_event_table_t *ntv_table_p = NULL;
+static native_event_table_t ntv_table;
+static native_event_table_t *ntv_table_p = NULL;
+
+/* Internal state accessors */
+unsigned int amds_get_lock(void) { return _amd_smi_lock; }
+void amds_set_lock(unsigned int lock) { _amd_smi_lock = lock; }
+int32_t amds_get_device_count(void) { return device_count; }
+amdsmi_processor_handle *amds_get_device_handles(void) { return device_handles; }
+int32_t amds_get_gpu_count(void) { return gpu_count; }
+int32_t amds_get_cpu_count(void) { return cpu_count; }
+amdsmi_processor_handle **amds_get_cpu_core_handles(void) {
+  return cpu_core_handles;
+}
+uint32_t *amds_get_cores_per_socket(void) { return cores_per_socket; }
+native_event_table_t *amds_get_ntv_table(void) { return ntv_table_p; }
+void *amds_get_htable(void) { return htable; }
 
 #define CHECK_EVENT_IDX(i)                                                     \
   do {                                                                        \
