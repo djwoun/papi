@@ -89,6 +89,9 @@ extern amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_
 extern amdsmi_status_t (*amdsmi_get_gpu_id_p)(amdsmi_processor_handle, uint16_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_revision_p)(amdsmi_processor_handle, uint16_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_subsystem_id_p)(amdsmi_processor_handle, uint16_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_virtualization_mode_p)(amdsmi_processor_handle, amdsmi_virtualization_mode_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_process_isolation_p)(amdsmi_processor_handle, uint32_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_xcd_counter_p)(amdsmi_processor_handle, uint16_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_pci_bandwidth_p)(amdsmi_processor_handle, amdsmi_pcie_bandwidth_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_bdf_id_p)(amdsmi_processor_handle, uint64_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_topo_numa_affinity_p)(amdsmi_processor_handle, int32_t *);
@@ -175,6 +178,8 @@ int access_amdsmi_voltage(int mode, void *arg);
 int access_amdsmi_vram_width(int mode, void *arg);
 int access_amdsmi_soc_pstate_id(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_id(int mode, void *arg);
+int access_amdsmi_process_isolation(int mode, void *arg);
+int access_amdsmi_xcd_counter(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);

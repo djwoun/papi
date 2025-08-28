@@ -600,14 +600,14 @@ int access_amdsmi_gpu_info(int mode, void *arg) {
     }
     break;
   }
-  /*case 4: {
-      amdsmi_virtualization_mode_t mode_val;
-      status =
-  amdsmi_get_gpu_virtualization_mode_p(device_handles[event->device],
-  &mode_val); if (status == AMDSMI_STATUS_SUCCESS) { event->value = mode_val;
-      }
-      break;
-  }*/
+  case 4: {
+    amdsmi_virtualization_mode_t mode_val;
+    status = amdsmi_get_gpu_virtualization_mode_p(device_handles[event->device], &mode_val);
+    if (status == AMDSMI_STATUS_SUCCESS) {
+      event->value = mode_val;
+    }
+    break;
+  }
   case 5: {
     int32_t numa_node = -1;
     status = amdsmi_get_gpu_topo_numa_affinity_p(device_handles[event->device], &numa_node);
@@ -1231,5 +1231,29 @@ int access_amdsmi_xgmi_plpd_id(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_xgmi_plpd_p(device_handles[event->device], &pol);
   if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
   event->value = (uint64_t)pol.current;
+  return PAPI_OK;
+}
+
+int access_amdsmi_process_isolation(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_process_isolation_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  uint32_t val = 0;
+  amdsmi_status_t st = amdsmi_get_gpu_process_isolation_p(device_handles[event->device], &val);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (int64_t)val;
+  return PAPI_OK;
+}
+
+int access_amdsmi_xcd_counter(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_xcd_counter_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device]) return PAPI_EMISC;
+  uint16_t cnt = 0;
+  amdsmi_status_t st = amdsmi_get_gpu_xcd_counter_p(device_handles[event->device], &cnt);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (int64_t)cnt;
   return PAPI_OK;
 }

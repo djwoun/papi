@@ -62,7 +62,9 @@ amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_process
 amdsmi_status_t (*amdsmi_get_gpu_id_p)(amdsmi_processor_handle, uint16_t *);
 amdsmi_status_t (*amdsmi_get_gpu_revision_p)(amdsmi_processor_handle, uint16_t *);
 amdsmi_status_t (*amdsmi_get_gpu_subsystem_id_p)(amdsmi_processor_handle, uint16_t *);
-// (*amdsmi_get_gpu_virtualization_mode_p)(amdsmi_processor_handle,amdsmi_virtualization_mode_t *);
+amdsmi_status_t (*amdsmi_get_gpu_virtualization_mode_p)(amdsmi_processor_handle, amdsmi_virtualization_mode_t *);
+amdsmi_status_t (*amdsmi_get_gpu_process_isolation_p)(amdsmi_processor_handle, uint32_t *);
+amdsmi_status_t (*amdsmi_get_gpu_xcd_counter_p)(amdsmi_processor_handle, uint16_t *);
 amdsmi_status_t (*amdsmi_get_gpu_pci_bandwidth_p)(amdsmi_processor_handle, amdsmi_pcie_bandwidth_t *);
 amdsmi_status_t (*amdsmi_get_gpu_bdf_id_p)(amdsmi_processor_handle, uint64_t *);
 amdsmi_status_t (*amdsmi_get_gpu_topo_numa_affinity_p)(amdsmi_processor_handle, int32_t *);
@@ -214,8 +216,9 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_id_p = sym("amdsmi_get_gpu_id", NULL);
   amdsmi_get_gpu_revision_p = sym("amdsmi_get_gpu_revision", NULL);
   amdsmi_get_gpu_subsystem_id_p = sym("amdsmi_get_gpu_subsystem_id", NULL);
-  //    amdsmi_get_gpu_virtualization_mode_p  =
-  //    sym("amdsmi_get_gpu_virtualization_mode", NULL);
+  amdsmi_get_gpu_virtualization_mode_p = sym("amdsmi_get_gpu_virtualization_mode", NULL);
+  amdsmi_get_gpu_process_isolation_p = sym("amdsmi_get_gpu_process_isolation", NULL);
+  amdsmi_get_gpu_xcd_counter_p = sym("amdsmi_get_gpu_xcd_counter", NULL);
   amdsmi_get_gpu_pci_bandwidth_p = sym("amdsmi_get_gpu_pci_bandwidth", NULL);
   amdsmi_get_gpu_bdf_id_p = sym("amdsmi_get_gpu_bdf_id", NULL);
   amdsmi_get_gpu_topo_numa_affinity_p = sym("amdsmi_get_gpu_topo_numa_affinity", NULL);
@@ -1501,27 +1504,29 @@ static int init_event_table(void) {
       htable_insert(htable, ev_bdf->name, ev_bdf);
       idx++;
     }
-    /*
     // GPU Virtualization Mode
-    if (amdsmi_get_gpu_virtualization_mode_p(device_handles[d], &vmode) ==
-    AMDSMI_STATUS_SUCCESS) { snprintf(name_buf, sizeof(name_buf),
-    "gpu_virtualization_mode:device=%d", d); snprintf(descr_buf,
-    sizeof(descr_buf), "Device %d GPU virtualization mode", d); native_event_t
-    *ev_vmode = &ntv_table.events[idx]; ev_vmode->id = idx; ev_vmode->name =
-    strdup(name_buf); ev_vmode->descr = strdup(descr_buf); ev_vmode->device = d;
-        ev_vmode->value = 0;
-        ev_vmode->mode = PAPI_MODE_READ;
-        ev_vmode->variant = 4;
-        ev_vmode->subvariant = 0;
-        ev_vmode->open_func = open_simple;
-        ev_vmode->close_func = close_simple;
-        ev_vmode->start_func = start_simple;
-        ev_vmode->stop_func = stop_simple;
-        ev_vmode->access_func = access_amdsmi_gpu_info;
-        htable_insert(htable, ev_vmode->name, ev_vmode);
-        idx++;
+    amdsmi_virtualization_mode_t vmode;
+    if (amdsmi_get_gpu_virtualization_mode_p &&
+        amdsmi_get_gpu_virtualization_mode_p(device_handles[d], &vmode) == AMDSMI_STATUS_SUCCESS) {
+      snprintf(name_buf, sizeof(name_buf), "gpu_virtualization_mode:device=%d", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU virtualization mode", d);
+      native_event_t *ev_vmode = &ntv_table.events[idx];
+      ev_vmode->id = idx;
+      ev_vmode->name = strdup(name_buf);
+      ev_vmode->descr = strdup(descr_buf);
+      ev_vmode->device = d;
+      ev_vmode->value = 0;
+      ev_vmode->mode = PAPI_MODE_READ;
+      ev_vmode->variant = 4;
+      ev_vmode->subvariant = 0;
+      ev_vmode->open_func = open_simple;
+      ev_vmode->close_func = close_simple;
+      ev_vmode->start_func = start_simple;
+      ev_vmode->stop_func = stop_simple;
+      ev_vmode->access_func = access_amdsmi_gpu_info;
+      htable_insert(htable, ev_vmode->name, ev_vmode);
+      idx++;
     }
-    */
     // GPU NUMA Node
     if (amdsmi_get_gpu_topo_numa_affinity_p(device_handles[d], &numa) == AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "numa_node:device=%d", d);
@@ -1542,6 +1547,54 @@ static int init_event_table(void) {
       ev_numa->access_func = access_amdsmi_gpu_info;
       htable_insert(htable, ev_numa->name, ev_numa);
       idx++;
+    }
+
+    if (amdsmi_get_gpu_process_isolation_p) {
+      uint32_t pis = 0;
+      if (amdsmi_get_gpu_process_isolation_p(device_handles[d], &pis) == AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf), "process_isolation:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d process isolation status", d);
+        native_event_t *ev_iso = &ntv_table.events[idx];
+        ev_iso->id = idx;
+        ev_iso->name = strdup(name_buf);
+        ev_iso->descr = strdup(descr_buf);
+        ev_iso->device = d;
+        ev_iso->value = 0;
+        ev_iso->mode = PAPI_MODE_READ;
+        ev_iso->variant = 0;
+        ev_iso->subvariant = 0;
+        ev_iso->open_func = open_simple;
+        ev_iso->close_func = close_simple;
+        ev_iso->start_func = start_simple;
+        ev_iso->stop_func = stop_simple;
+        ev_iso->access_func = access_amdsmi_process_isolation;
+        htable_insert(htable, ev_iso->name, ev_iso);
+        idx++;
+      }
+    }
+
+    if (amdsmi_get_gpu_xcd_counter_p) {
+      uint16_t xcd = 0;
+      if (amdsmi_get_gpu_xcd_counter_p(device_handles[d], &xcd) == AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf), "xcd_counter:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d XCD counter", d);
+        native_event_t *ev_xcd = &ntv_table.events[idx];
+        ev_xcd->id = idx;
+        ev_xcd->name = strdup(name_buf);
+        ev_xcd->descr = strdup(descr_buf);
+        ev_xcd->device = d;
+        ev_xcd->value = 0;
+        ev_xcd->mode = PAPI_MODE_READ;
+        ev_xcd->variant = 0;
+        ev_xcd->subvariant = 0;
+        ev_xcd->open_func = open_simple;
+        ev_xcd->close_func = close_simple;
+        ev_xcd->start_func = start_simple;
+        ev_xcd->stop_func = stop_simple;
+        ev_xcd->access_func = access_amdsmi_xcd_counter;
+        htable_insert(htable, ev_xcd->name, ev_xcd);
+        idx++;
+      }
     }
   }
   /* Energy consumption counter */
