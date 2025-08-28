@@ -75,13 +75,13 @@ PAPI_AMDSMI_ROOT ?= /opt/rocm
 # for disabling is shown using the papi utility,
 # papi/src/utils/papi_component_avail. 
 
-COMPSRCS += components/amd_smi/linux-amd-smi.c \
-            components/amd_smi/amds.c \
+COMPSRCS += components/amd_smi/amds.c \
+            components/amd_smi/linux-amd-smi.c \
             components/amd_smi/amds_accessors.c \
             components/amd_smi/amds_evtapi.c \
             components/amd_smi/amds_ctx.c
-COMPOBJS += linux-amd-smi.o \
-            amds.o \
+COMPOBJS += amds.o \
+            linux-amd-smi.o \
             amds_accessors.o \
             amds_evtapi.o \
             amds_ctx.o
