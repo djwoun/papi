@@ -171,6 +171,7 @@ int access_amdsmi_link_metrics(int mode, void *arg);
 int access_amdsmi_process_info(int mode, void *arg);
 int access_amdsmi_ecc_total(int mode, void *arg);
 int access_amdsmi_ecc_block(int mode, void *arg);
+int access_amdsmi_ecc_status(int mode, void *arg);
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
 int access_amdsmi_compute_partition_hash(int mode, void *arg);
 int access_amdsmi_memory_partition_hash(int mode, void *arg);

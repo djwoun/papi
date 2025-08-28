@@ -346,6 +346,24 @@ int access_amdsmi_ecc_block(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_ecc_status(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_ecc_status_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  amdsmi_ras_err_state_t st;
+  amdsmi_status_t rc = amdsmi_get_gpu_ecc_status_p(
+      device_handles[event->device], (amdsmi_gpu_block_t)event->subvariant, &st);
+  if (rc != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = (int64_t)st;
+  return PAPI_OK;
+}
+
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
