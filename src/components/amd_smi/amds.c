@@ -982,39 +982,142 @@ static int init_event_table(void) {
         }
       }
     }
-    // GPU OD voltage curve regions count event
+    // GPU OD voltage curve region events
     if (amdsmi_get_gpu_od_volt_curve_regions_p) {
       uint32_t num_regions = 0;
-      amdsmi_freq_volt_region_t *buf = NULL;
-      // Try once with small buffer to check support
-      buf = (amdsmi_freq_volt_region_t *)papi_calloc(4, sizeof(amdsmi_freq_volt_region_t));
-      if (buf) {
-        num_regions = 4;
-        amdsmi_status_t st = amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[d], &num_regions, buf);
-        papi_free(buf);
-        if (st == AMDSMI_STATUS_SUCCESS) {
-          if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
-            papi_free(ntv_table.events);
-            return PAPI_ENOSUPP;
+      amdsmi_status_t st =
+          amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[d], &num_regions,
+                                                 NULL);
+      if (st == AMDSMI_STATUS_SUCCESS && num_regions > 0) {
+        amdsmi_freq_volt_region_t *regs = (amdsmi_freq_volt_region_t *)
+            papi_calloc(num_regions, sizeof(amdsmi_freq_volt_region_t));
+        if (regs) {
+          st = amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[d],
+                                                      &num_regions, regs);
+          if (st == AMDSMI_STATUS_SUCCESS) {
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+              papi_free(ntv_table.events);
+              papi_free(regs);
+              return PAPI_ENOSUPP;
+            }
+            snprintf(name_buf, sizeof(name_buf),
+                     "volt_curve_regions:device=%d", d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d number of voltage curve regions", d);
+            native_event_t *ev_vcr = &ntv_table.events[idx];
+            ev_vcr->id = idx;
+            ev_vcr->name = strdup(name_buf);
+            ev_vcr->descr = strdup(descr_buf);
+            ev_vcr->device = d;
+            ev_vcr->value = 0;
+            ev_vcr->mode = PAPI_MODE_READ;
+            ev_vcr->variant = 0;
+            ev_vcr->subvariant = 0;
+            ev_vcr->open_func = open_simple;
+            ev_vcr->close_func = close_simple;
+            ev_vcr->start_func = start_simple;
+            ev_vcr->stop_func = stop_simple;
+            ev_vcr->access_func = access_amdsmi_od_volt_regions_count;
+            htable_insert(htable, ev_vcr->name, ev_vcr);
+            idx++;
+
+            for (uint32_t r = 0; r < num_regions; ++r) {
+              if (idx + 4 > MAX_EVENTS_PER_DEVICE * device_count) {
+                papi_free(regs);
+                papi_free(ntv_table.events);
+                return PAPI_ENOSUPP;
+              }
+
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_freq_min:device=%d:region=%u", d, r);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d voltage curve region %u frequency lower bound", d,
+                       r);
+              native_event_t *ev_fmin = &ntv_table.events[idx];
+              ev_fmin->id = idx;
+              ev_fmin->name = strdup(name_buf);
+              ev_fmin->descr = strdup(descr_buf);
+              ev_fmin->device = d;
+              ev_fmin->value = 0;
+              ev_fmin->mode = PAPI_MODE_READ;
+              ev_fmin->variant = 0; /* freq lower */
+              ev_fmin->subvariant = r;
+              ev_fmin->open_func = open_simple;
+              ev_fmin->close_func = close_simple;
+              ev_fmin->start_func = start_simple;
+              ev_fmin->stop_func = stop_simple;
+              ev_fmin->access_func = access_amdsmi_od_volt_curve_range;
+              htable_insert(htable, ev_fmin->name, ev_fmin);
+              idx++;
+
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_freq_max:device=%d:region=%u", d, r);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d voltage curve region %u frequency upper bound", d,
+                       r);
+              native_event_t *ev_fmax = &ntv_table.events[idx];
+              ev_fmax->id = idx;
+              ev_fmax->name = strdup(name_buf);
+              ev_fmax->descr = strdup(descr_buf);
+              ev_fmax->device = d;
+              ev_fmax->value = 0;
+              ev_fmax->mode = PAPI_MODE_READ;
+              ev_fmax->variant = 1; /* freq upper */
+              ev_fmax->subvariant = r;
+              ev_fmax->open_func = open_simple;
+              ev_fmax->close_func = close_simple;
+              ev_fmax->start_func = start_simple;
+              ev_fmax->stop_func = stop_simple;
+              ev_fmax->access_func = access_amdsmi_od_volt_curve_range;
+              htable_insert(htable, ev_fmax->name, ev_fmax);
+              idx++;
+
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_volt_min:device=%d:region=%u", d, r);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d voltage curve region %u voltage lower bound", d,
+                       r);
+              native_event_t *ev_vmin = &ntv_table.events[idx];
+              ev_vmin->id = idx;
+              ev_vmin->name = strdup(name_buf);
+              ev_vmin->descr = strdup(descr_buf);
+              ev_vmin->device = d;
+              ev_vmin->value = 0;
+              ev_vmin->mode = PAPI_MODE_READ;
+              ev_vmin->variant = 2; /* volt lower */
+              ev_vmin->subvariant = r;
+              ev_vmin->open_func = open_simple;
+              ev_vmin->close_func = close_simple;
+              ev_vmin->start_func = start_simple;
+              ev_vmin->stop_func = stop_simple;
+              ev_vmin->access_func = access_amdsmi_od_volt_curve_range;
+              htable_insert(htable, ev_vmin->name, ev_vmin);
+              idx++;
+
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_volt_max:device=%d:region=%u", d, r);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d voltage curve region %u voltage upper bound", d,
+                       r);
+              native_event_t *ev_vmax = &ntv_table.events[idx];
+              ev_vmax->id = idx;
+              ev_vmax->name = strdup(name_buf);
+              ev_vmax->descr = strdup(descr_buf);
+              ev_vmax->device = d;
+              ev_vmax->value = 0;
+              ev_vmax->mode = PAPI_MODE_READ;
+              ev_vmax->variant = 3; /* volt upper */
+              ev_vmax->subvariant = r;
+              ev_vmax->open_func = open_simple;
+              ev_vmax->close_func = close_simple;
+              ev_vmax->start_func = start_simple;
+              ev_vmax->stop_func = stop_simple;
+              ev_vmax->access_func = access_amdsmi_od_volt_curve_range;
+              htable_insert(htable, ev_vmax->name, ev_vmax);
+              idx++;
+            }
           }
-          snprintf(name_buf, sizeof(name_buf), "volt_curve_regions:device=%d", d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d number of voltage curve regions", d);
-          native_event_t *ev_vcr = &ntv_table.events[idx];
-          ev_vcr->id = idx;
-          ev_vcr->name = strdup(name_buf);
-          ev_vcr->descr = strdup(descr_buf);
-          ev_vcr->device = d;
-          ev_vcr->value = 0;
-          ev_vcr->mode = PAPI_MODE_READ;
-          ev_vcr->variant = 0;
-          ev_vcr->subvariant = 0;
-          ev_vcr->open_func = open_simple;
-          ev_vcr->close_func = close_simple;
-          ev_vcr->start_func = start_simple;
-          ev_vcr->stop_func = stop_simple;
-          ev_vcr->access_func = access_amdsmi_od_volt_regions_count;
-          htable_insert(htable, ev_vcr->name, ev_vcr);
-          idx++;
+          papi_free(regs);
         }
       }
     }

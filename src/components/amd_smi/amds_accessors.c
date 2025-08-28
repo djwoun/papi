@@ -1267,6 +1267,54 @@ int access_amdsmi_od_volt_regions_count(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_od_volt_curve_range(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_od_volt_curve_regions_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+
+  uint32_t num = 0;
+  amdsmi_status_t st =
+      amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[event->device],
+                                             &num, NULL);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  if (event->subvariant >= num) return PAPI_EMISC;
+
+  amdsmi_freq_volt_region_t *regs = (amdsmi_freq_volt_region_t *)
+      papi_calloc(num, sizeof(amdsmi_freq_volt_region_t));
+  if (!regs) return PAPI_ENOMEM;
+  st = amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[event->device],
+                                              &num, regs);
+  if (st != AMDSMI_STATUS_SUCCESS) {
+    papi_free(regs);
+    return PAPI_EMISC;
+  }
+
+  amdsmi_freq_volt_region_t r = regs[event->subvariant];
+  papi_free(regs);
+
+  switch (event->variant) {
+    case 0:
+      event->value = (int64_t)r.freq_range.lower_bound;
+      break;
+    case 1:
+      event->value = (int64_t)r.freq_range.upper_bound;
+      break;
+    case 2:
+      event->value = (int64_t)r.volt_range.lower_bound;
+      break;
+    case 3:
+      event->value = (int64_t)r.volt_range.upper_bound;
+      break;
+    default:
+      return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
+}
+
 int access_amdsmi_perf_level(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {

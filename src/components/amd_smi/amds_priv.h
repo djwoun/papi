@@ -181,6 +181,7 @@ int access_amdsmi_cache_stat(int mode, void *arg);
 int access_amdsmi_overdrive_level(int mode, void *arg);
 int access_amdsmi_mem_overdrive_level(int mode, void *arg);
 int access_amdsmi_od_volt_regions_count(int mode, void *arg);
+int access_amdsmi_od_volt_curve_range(int mode, void *arg);
 int access_amdsmi_perf_level(int mode, void *arg);
 int access_amdsmi_pm_metrics_count(int mode, void *arg);
 int access_amdsmi_pm_metric_value(int mode, void *arg);
