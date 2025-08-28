@@ -5,6 +5,7 @@
 #include "htable.h"
 #include "papi.h"
 #include "papi_memory.h"
+#include <stdio.h>
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -283,10 +284,273 @@ static int load_amdsmi_sym(void) {
   return PAPI_OK;
 }
 
+static int shutdown_event_table(void) {
+  // Remove all events from hash table and free their names/descr
+  for (int i = 0; i < ntv_table.count; ++i) {
+    htable_delete(htable, ntv_table.events[i].name);
+    papi_free(ntv_table.events[i].name);
+    papi_free(ntv_table.events[i].descr);
+  }
+  papi_free(ntv_table.events);
+  ntv_table.events = NULL;
+  ntv_table.count = 0;
+  return PAPI_OK;
+}
+
+static int init_device_table(void) {
+  // Nothing to do (device_handles and device_count already set in amds_init)
+  return PAPI_OK;
+}
+
+static int shutdown_device_table(void) {
+  if (device_handles) {
+    papi_free(device_handles);
+    device_handles = NULL;
+  }
+  if (cpu_core_handles) {
+    for (int s = 0; s < cpu_count; ++s) {
+      if (cpu_core_handles[s])
+        papi_free(cpu_core_handles[s]);
+    }
+    papi_free(cpu_core_handles);
+    cpu_core_handles = NULL;
+  }
+  if (cores_per_socket) {
+    papi_free(cores_per_socket);
+    cores_per_socket = NULL;
+  }
+  device_count = 0;
+  gpu_count = 0;
+  cpu_count = 0;
+  return PAPI_OK;
+}
+
+int amds_init(void) {
+  // Check if already initialized to avoid expensive re-initialization
+  if (device_handles != NULL && device_count > 0) {
+    return PAPI_OK; // Already initialized
+  }
+  int papi_errno = load_amdsmi_sym();
+  if (papi_errno != PAPI_OK) {
+    return papi_errno;
+  }
+  // AMDSMI_INIT_AMD_CPUS
+  amdsmi_status_t status = amdsmi_init_p(AMDSMI_INIT_AMD_GPUS);
+  if (status != AMDSMI_STATUS_SUCCESS) {
+    strcpy(error_string, "amdsmi_init failed");
+    return PAPI_ENOSUPP;
+  }
+  htable_init(&htable);
+  // Discover GPU and CPU devices
+  uint32_t socket_count = 0;
+  status = amdsmi_get_socket_handles_p(&socket_count, NULL);
+  if (status != AMDSMI_STATUS_SUCCESS || socket_count == 0) {
+    snprintf(error_string, sizeof(error_string),
+             "Error discovering sockets or no AMD socket found.");
+    papi_errno = PAPI_ENOEVNT;
+    goto fn_fail;
+  }
+  amdsmi_socket_handle *sockets = (amdsmi_socket_handle *)papi_calloc(
+      socket_count, sizeof(amdsmi_socket_handle));
+  if (!sockets) {
+    papi_errno = PAPI_ENOMEM;
+    goto fn_fail;
+  }
+  status = amdsmi_get_socket_handles_p(&socket_count, sockets);
+  if (status != AMDSMI_STATUS_SUCCESS) {
+    snprintf(error_string, sizeof(error_string),
+             "Error getting socket handles.");
+    papi_free(sockets);
+    papi_errno = PAPI_ENOSUPP;
+    goto fn_fail;
+  }
+  device_count = 0;
+  uint32_t total_gpu_count = 0;
+  for (uint32_t s = 0; s < socket_count; ++s) {
+    uint32_t gpu_count_local = 0;
+    processor_type_t proc_type = AMDSMI_PROCESSOR_TYPE_AMD_GPU;
+    amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(
+        sockets[s], proc_type, NULL, &gpu_count_local);
+    if (st == AMDSMI_STATUS_SUCCESS) {
+      total_gpu_count += gpu_count_local;
+    }
+  }
+  uint32_t total_cpu_count = 0;
+#ifndef AMDSMI_DISABLE_ESMI
+  status = amdsmi_get_cpu_handles_p(&total_cpu_count, NULL);
+  if (status != AMDSMI_STATUS_SUCCESS) {
+    total_cpu_count = 0;
+  }
+#endif
+  if (total_gpu_count == 0 && total_cpu_count == 0) {
+    snprintf(error_string, sizeof(error_string),
+             "No AMD GPU or CPU devices found.");
+    papi_errno = PAPI_ENOEVNT;
+    papi_free(sockets);
+    goto fn_fail;
+  }
+  device_handles = (amdsmi_processor_handle *)papi_calloc(
+      total_gpu_count + total_cpu_count, sizeof(*device_handles));
+  if (!device_handles) {
+    papi_errno = PAPI_ENOMEM;
+    snprintf(error_string, sizeof(error_string),
+             "Memory allocation error for device handles.");
+    papi_free(sockets);
+    goto fn_fail;
+  }
+  // Retrieve GPU processor handles for each socket - optimized to reduce
+  // allocations
+  for (uint32_t s = 0; s < socket_count; ++s) {
+    uint32_t gpu_count_local = 0;
+    processor_type_t proc_type = AMDSMI_PROCESSOR_TYPE_AMD_GPU;
+    status = amdsmi_get_processor_handles_by_type_p(sockets[s], proc_type, NULL,
+                                                    &gpu_count_local);
+    if (status != AMDSMI_STATUS_SUCCESS || gpu_count_local == 0) {
+      continue; // no GPU on this socket or error
+    }
+    // Use the main device_handles array directly to avoid extra allocation
+    amdsmi_processor_handle *gpu_handles = &device_handles[device_count];
+    status = amdsmi_get_processor_handles_by_type_p(
+        sockets[s], proc_type, gpu_handles, &gpu_count_local);
+    if (status == AMDSMI_STATUS_SUCCESS) {
+      device_count += gpu_count_local;
+    }
+  }
+  papi_free(sockets);
+  // Set gpu_count for use in event table initialization
+  gpu_count = device_count; // All devices added so far are GPUs
+#ifndef AMDSMI_DISABLE_ESMI
+  // Retrieve CPU socket handles
+  amdsmi_processor_handle *cpu_handles = NULL;
+  if (total_cpu_count > 0) {
+    cpu_handles = (amdsmi_processor_handle *)papi_calloc(
+        total_cpu_count, sizeof(amdsmi_processor_handle));
+    if (!cpu_handles) {
+      papi_errno = PAPI_ENOMEM;
+      snprintf(error_string, sizeof(error_string),
+               "Memory allocation error for CPU handles.");
+      goto fn_fail;
+    }
+    status = amdsmi_get_cpu_handles_p(&total_cpu_count, cpu_handles);
+    if (status != AMDSMI_STATUS_SUCCESS) {
+      papi_free(cpu_handles);
+      cpu_handles = NULL;
+      total_cpu_count = 0;
+    }
+  }
+  if (cpu_handles) {
+    for (uint32_t i = 0; i < total_cpu_count; ++i) {
+      device_handles[device_count++] = cpu_handles[i];
+    }
+    papi_free(cpu_handles);
+  }
+#endif
+  // Set global GPU/CPU counts
+  gpu_count = total_gpu_count;
+  cpu_count = total_cpu_count;
+  // Retrieve CPU core handles for each CPU socket
+  if (cpu_count > 0) {
+    cpu_core_handles = (amdsmi_processor_handle **)papi_calloc(
+        cpu_count, sizeof(amdsmi_processor_handle *));
+    cores_per_socket = (uint32_t *)papi_calloc(cpu_count, sizeof(uint32_t));
+    if (!cpu_core_handles || !cores_per_socket) {
+      papi_errno = PAPI_ENOMEM;
+      snprintf(error_string, sizeof(error_string),
+               "Memory allocation error for CPU core handles.");
+      if (cpu_core_handles)
+        papi_free(cpu_core_handles);
+      if (cores_per_socket)
+        papi_free(cores_per_socket);
+      goto fn_fail;
+    }
+    for (uint32_t s = 0; s < cpu_count; ++s) {
+      uint32_t core_count = 0;
+      amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(
+          device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE,
+          NULL, &core_count);
+      if (st != AMDSMI_STATUS_SUCCESS || core_count == 0) {
+        cores_per_socket[s] = 0;
+        cpu_core_handles[s] = NULL;
+        continue;
+      }
+      cpu_core_handles[s] = (amdsmi_processor_handle *)papi_calloc(
+          core_count, sizeof(amdsmi_processor_handle));
+      if (!cpu_core_handles[s]) {
+        papi_errno = PAPI_ENOMEM;
+        snprintf(error_string, sizeof(error_string),
+                 "Memory allocation error for CPU core handles on socket %u.",
+                 s);
+        for (uint32_t t = 0; t < s; ++t) {
+          if (cpu_core_handles[t])
+            papi_free(cpu_core_handles[t]);
+        }
+        papi_free(cpu_core_handles);
+        papi_free(cores_per_socket);
+        goto fn_fail;
+      }
+      st = amdsmi_get_processor_handles_by_type_p(
+          device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE,
+          cpu_core_handles[s], &core_count);
+      if (st != AMDSMI_STATUS_SUCCESS) {
+        papi_free(cpu_core_handles[s]);
+        cpu_core_handles[s] = NULL;
+        cores_per_socket[s] = 0;
+      } else {
+        cores_per_socket[s] = core_count;
+      }
+    }
+  }
+  // Initialize the native event table for all discovered metrics
+  papi_errno = init_event_table();
+  if (papi_errno != PAPI_OK) {
+    snprintf(error_string, sizeof(error_string),
+             "Error while initializing the native event table.");
+    goto fn_fail;
+  }
+  ntv_table_p = &ntv_table;
+  return PAPI_OK;
+fn_fail:
+  htable_shutdown(htable);
+  if (device_handles) {
+    papi_free(device_handles);
+    device_handles = NULL;
+    device_count = 0;
+  }
+  // sockets already freed if allocated
+  if (cpu_core_handles) {
+    for (int s = 0; s < cpu_count; ++s) {
+      if (cpu_core_handles[s])
+        papi_free(cpu_core_handles[s]);
+    }
+    papi_free(cpu_core_handles);
+    cpu_core_handles = NULL;
+  }
+  if (cores_per_socket) {
+    papi_free(cores_per_socket);
+    cores_per_socket = NULL;
+  }
+  amdsmi_shut_down_p();
+  return papi_errno;
+}
+
+int amds_shutdown(void) {
+  shutdown_event_table();
+  shutdown_device_table();
+  htable_shutdown(htable);
+
+  return amdsmi_shut_down_p();
+}
+
+int amds_err_get_last(const char **err_string) {
+  if (err_string)
+    *err_string = error_string;
+  return PAPI_OK;
+}
+
 // Helper to add a new event entry to ntv_table
 static int add_event(int *idx_ptr, const char *name, const char *descr, int device,
                      uint32_t variant, uint32_t subvariant, int mode,
-                     int (*access_func)(native_event_t *)) {
+                     amds_accessor_t access_func) {
   native_event_t *ev = &ntv_table.events[*idx_ptr];
   ev->id = *idx_ptr;
   ev->name = strdup(name);
@@ -2337,3 +2601,4 @@ static int init_event_table(void) {
   ntv_table.count = idx;
   return PAPI_OK;
 }
+
