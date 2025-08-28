@@ -14,108 +14,13 @@
 
 unsigned int _amd_smi_lock;
 /* Pointers to AMD SMI library functions (dynamically loaded) */
-amdsmi_status_t (*amdsmi_init_p)(uint64_t);
-amdsmi_status_t (*amdsmi_shut_down_p)(void);
-amdsmi_status_t (*amdsmi_get_socket_handles_p)(uint32_t *, amdsmi_socket_handle *);
-amdsmi_status_t (*amdsmi_get_processor_handles_by_type_p)(amdsmi_socket_handle, processor_type_t, amdsmi_processor_handle *, uint32_t *);
-amdsmi_status_t (*amdsmi_get_temp_metric_p)(amdsmi_processor_handle, amdsmi_temperature_type_t, amdsmi_temperature_metric_t, int64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_fan_rpms_p)(amdsmi_processor_handle, uint32_t, int64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_fan_speed_p)(amdsmi_processor_handle, uint32_t, int64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_fan_speed_max_p)(amdsmi_processor_handle, uint32_t, int64_t *);
-amdsmi_status_t (*amdsmi_get_total_memory_p)(amdsmi_processor_handle, amdsmi_memory_type_t, uint64_t *);
-amdsmi_status_t (*amdsmi_get_memory_usage_p)(amdsmi_processor_handle, amdsmi_memory_type_t, uint64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_activity_p)(amdsmi_processor_handle, amdsmi_engine_usage_t *);
-amdsmi_status_t (*amdsmi_get_power_cap_info_p)(amdsmi_processor_handle, uint32_t, amdsmi_power_cap_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_power_cap_set_p)(amdsmi_processor_handle, uint32_t, uint64_t);
-amdsmi_status_t (*amdsmi_get_power_info_p)(amdsmi_processor_handle, amdsmi_power_info_t *);
-amdsmi_status_t (*amdsmi_set_power_cap_p)(amdsmi_processor_handle, uint32_t, uint64_t);
-amdsmi_status_t (*amdsmi_get_gpu_pci_throughput_p)(amdsmi_processor_handle, uint64_t *, uint64_t *, uint64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_pci_replay_counter_p)(amdsmi_processor_handle, uint64_t *);
-amdsmi_status_t (*amdsmi_get_clk_freq_p)(amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_frequencies_t *);
-amdsmi_status_t (*amdsmi_set_clk_freq_p)(amdsmi_processor_handle, amdsmi_clk_type_t, uint64_t);
-amdsmi_status_t (*amdsmi_get_gpu_metrics_info_p)(amdsmi_processor_handle, amdsmi_gpu_metrics_t *);
-
-/* Additional read-only AMD SMI function pointers */
-amdsmi_status_t (*amdsmi_get_lib_version_p)(amdsmi_version_t *);
-amdsmi_status_t (*amdsmi_get_gpu_driver_info_p)(amdsmi_processor_handle, amdsmi_driver_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_asic_info_p)(amdsmi_processor_handle, amdsmi_asic_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_board_info_p)(amdsmi_processor_handle, amdsmi_board_info_t *);
-amdsmi_status_t (*amdsmi_get_fw_info_p)(amdsmi_processor_handle, amdsmi_fw_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_vbios_info_p)(amdsmi_processor_handle, amdsmi_vbios_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_device_uuid_p)(amdsmi_processor_handle, unsigned int *, char *);
-amdsmi_status_t (*amdsmi_get_gpu_enumeration_info_p)(amdsmi_processor_handle, amdsmi_enumeration_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_vendor_name_p)(amdsmi_processor_handle, char *, size_t);
-amdsmi_status_t (*amdsmi_get_gpu_vram_vendor_p)(amdsmi_processor_handle, char *, uint32_t);
-amdsmi_status_t (*amdsmi_get_gpu_subsystem_name_p)(amdsmi_processor_handle, char *, size_t);
-amdsmi_status_t (*amdsmi_get_link_metrics_p)(amdsmi_processor_handle, amdsmi_link_metrics_t *);
-amdsmi_status_t (*amdsmi_get_gpu_process_list_p)(amdsmi_processor_handle, uint32_t *, amdsmi_proc_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_ecc_enabled_p)(amdsmi_processor_handle, uint64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_total_ecc_count_p)(amdsmi_processor_handle, amdsmi_error_count_t *);
-amdsmi_status_t (*amdsmi_get_gpu_ecc_count_p)(amdsmi_processor_handle, amdsmi_gpu_block_t, amdsmi_error_count_t *);
-amdsmi_status_t (*amdsmi_get_gpu_ecc_status_p)(amdsmi_processor_handle, amdsmi_gpu_block_t, amdsmi_ras_err_state_t *);
-amdsmi_status_t (*amdsmi_get_gpu_compute_partition_p)(amdsmi_processor_handle, char *, uint32_t);
-amdsmi_status_t (*amdsmi_get_gpu_memory_partition_p)(amdsmi_processor_handle, char *, uint32_t);
-amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *,
-                                                                  uint32_t *);
-amdsmi_status_t (*amdsmi_get_gpu_id_p)(amdsmi_processor_handle, uint16_t *);
-amdsmi_status_t (*amdsmi_get_gpu_revision_p)(amdsmi_processor_handle, uint16_t *);
-amdsmi_status_t (*amdsmi_get_gpu_subsystem_id_p)(amdsmi_processor_handle, uint16_t *);
-amdsmi_status_t (*amdsmi_get_gpu_virtualization_mode_p)(amdsmi_processor_handle, amdsmi_virtualization_mode_t *);
-amdsmi_status_t (*amdsmi_get_gpu_process_isolation_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_gpu_xcd_counter_p)(amdsmi_processor_handle, uint16_t *);
-amdsmi_status_t (*amdsmi_get_gpu_pci_bandwidth_p)(amdsmi_processor_handle, amdsmi_pcie_bandwidth_t *);
-amdsmi_status_t (*amdsmi_get_gpu_bdf_id_p)(amdsmi_processor_handle, uint64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_topo_numa_affinity_p)(amdsmi_processor_handle, int32_t *);
-amdsmi_status_t (*amdsmi_get_energy_count_p)(amdsmi_processor_handle, uint64_t *, float *, uint64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_power_profile_presets_p)(amdsmi_processor_handle, uint32_t, amdsmi_power_profile_status_t *);
-amdsmi_status_t (*amdsmi_get_gpu_cache_info_p)(amdsmi_processor_handle, amdsmi_gpu_cache_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_mem_overdrive_level_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_gpu_od_volt_curve_regions_p)(amdsmi_processor_handle, uint32_t *, amdsmi_freq_volt_region_t *);
-amdsmi_status_t (*amdsmi_get_gpu_od_volt_info_p)(amdsmi_processor_handle, amdsmi_od_volt_freq_data_t *);
-amdsmi_status_t (*amdsmi_get_gpu_overdrive_level_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_gpu_perf_level_p)(amdsmi_processor_handle, amdsmi_dev_perf_level_t *);
-amdsmi_status_t (*amdsmi_get_gpu_pm_metrics_info_p)(amdsmi_processor_handle, amdsmi_name_value_t **, uint32_t *);
-amdsmi_status_t (*amdsmi_get_gpu_ras_feature_info_p)(amdsmi_processor_handle, amdsmi_ras_feature_t *);
-amdsmi_status_t (*amdsmi_get_gpu_ras_block_features_enabled_p)(amdsmi_processor_handle, amdsmi_gpu_block_t, amdsmi_ras_err_state_t *);
-amdsmi_status_t (*amdsmi_get_gpu_reg_table_info_p)(amdsmi_processor_handle, amdsmi_reg_type_t, amdsmi_name_value_t **, uint32_t *);
-amdsmi_status_t (*amdsmi_get_gpu_volt_metric_p)(amdsmi_processor_handle, amdsmi_voltage_type_t, amdsmi_voltage_metric_t, int64_t *);
-amdsmi_status_t (*amdsmi_get_gpu_vram_info_p)(amdsmi_processor_handle, amdsmi_vram_info_t *);
-amdsmi_status_t (*amdsmi_get_gpu_vram_usage_p)(amdsmi_processor_handle, amdsmi_vram_usage_t *);
-amdsmi_status_t (*amdsmi_get_pcie_info_p)(amdsmi_processor_handle, amdsmi_pcie_info_t *);
-amdsmi_status_t (*amdsmi_get_processor_count_from_handles_p)(amdsmi_processor_handle *, uint32_t *, uint32_t *, uint32_t *, uint32_t *);
-amdsmi_status_t (*amdsmi_get_soc_pstate_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
-amdsmi_status_t (*amdsmi_get_xgmi_plpd_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
-amdsmi_status_t (*amdsmi_get_gpu_bad_page_info_p)(amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *);
-amdsmi_status_t (*amdsmi_get_gpu_bad_page_threshold_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_power_info_v2_p)(amdsmi_processor_handle, uint32_t, amdsmi_power_info_t *);
-amdsmi_status_t (*amdsmi_init_gpu_event_notification_p)(amdsmi_processor_handle);
-amdsmi_status_t (*amdsmi_set_gpu_event_notification_mask_p)(amdsmi_processor_handle, uint64_t);
-amdsmi_status_t (*amdsmi_get_gpu_event_notification_p)(int, uint32_t *, amdsmi_evt_notification_data_t *);
-amdsmi_status_t (*amdsmi_stop_gpu_event_notification_p)(amdsmi_processor_handle);
-
+#include "amds_funcs.h"
+#define DEFINE_AMDSMI(name, ret, args) ret(*name) args;
+AMD_SMI_GPU_FUNCTIONS(DEFINE_AMDSMI)
 #ifndef AMDSMI_DISABLE_ESMI
-/* CPU function pointers */
-amdsmi_status_t (*amdsmi_get_cpu_handles_p)(uint32_t *, amdsmi_processor_handle *);
-amdsmi_status_t (*amdsmi_get_cpucore_handles_p)(uint32_t *, amdsmi_processor_handle *);
-amdsmi_status_t (*amdsmi_get_cpu_socket_power_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_socket_power_cap_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_socket_power_cap_max_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_core_energy_p)(amdsmi_processor_handle, uint64_t *);
-amdsmi_status_t (*amdsmi_get_cpu_socket_energy_p)(amdsmi_processor_handle, uint64_t *);
-amdsmi_status_t (*amdsmi_get_cpu_smu_fw_version_p)(amdsmi_processor_handle, amdsmi_smu_fw_version_t *);
-amdsmi_status_t (*amdsmi_get_threads_per_core_p)(uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_family_p)(uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_model_p)(uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_core_boostlimit_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_cpu_socket_current_active_freq_limit_p)(amdsmi_processor_handle, uint16_t *, char **);
-amdsmi_status_t (*amdsmi_get_cpu_socket_freq_range_p)(amdsmi_processor_handle, uint16_t *, uint16_t *);
-amdsmi_status_t (*amdsmi_get_cpu_core_current_freq_limit_p)(amdsmi_processor_handle, uint32_t *);
-amdsmi_status_t (*amdsmi_get_minmax_bandwidth_between_processors_p)(amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,
-                                                                    uint64_t *);
-amdsmi_status_t (*amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p)(amdsmi_processor_handle, uint8_t, amdsmi_temp_range_refresh_rate_t *);
-amdsmi_status_t (*amdsmi_get_cpu_dimm_power_consumption_p)(amdsmi_processor_handle, uint8_t, amdsmi_dimm_power_t *);
-amdsmi_status_t (*amdsmi_get_cpu_dimm_thermal_sensor_p)(amdsmi_processor_handle, uint8_t, amdsmi_dimm_thermal_t *);
+AMD_SMI_CPU_FUNCTIONS(DEFINE_AMDSMI)
 #endif
+#undef DEFINE_AMDSMI
 /* Global device list and count */
 int32_t device_count = 0;
 amdsmi_processor_handle *device_handles = NULL;
@@ -136,7 +41,8 @@ static int shutdown_event_table(void);
 native_event_table_t ntv_table;
 native_event_table_t *ntv_table_p = NULL;
 
-/* Redirects stderr to /dev/null, returns dup of old stderr (or -1 on failure). */
+/* Redirects stderr to /dev/null, returns dup of old stderr (or -1 on failure).
+ */
 static int silence_stderr_begin(void) {
   int devnull = open("/dev/null", O_WRONLY);
   if (devnull < 0)
@@ -183,7 +89,8 @@ static void sanitize_name(const char *src, char *dst, size_t len) {
   size_t j = 0;
   for (size_t i = 0; src[i] && j < len - 1; ++i) {
     char c = src[i];
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9'))
       dst[j++] = c;
     else
       dst[j++] = '_';
@@ -199,37 +106,45 @@ static int load_amdsmi_sym(void) {
   const char *root = getenv("PAPI_AMDSMI_ROOT");
   char so_path[PATH_MAX] = {0};
   if (!root) {
-    snprintf(error_string, sizeof(error_string), "PAPI_AMDSMI_ROOT not set; cannot find libamd_smi.so");
+    snprintf(error_string, sizeof(error_string),
+             "PAPI_AMDSMI_ROOT not set; cannot find libamd_smi.so");
     return PAPI_ENOSUPP;
   }
   snprintf(so_path, sizeof(so_path), "%s/lib/libamd_smi.so", root);
   amds_dlp = dlopen(so_path, RTLD_NOW | RTLD_GLOBAL);
   if (!amds_dlp) {
-    snprintf(error_string, sizeof(error_string), "dlopen(\"%s\"): %s", so_path, dlerror());
+    snprintf(error_string, sizeof(error_string), "dlopen(\"%s\"): %s", so_path,
+             dlerror());
     return PAPI_ENOSUPP;
   }
   /* Resolve required function symbols */
   amdsmi_init_p = sym("amdsmi_init", NULL);
   amdsmi_shut_down_p = sym("amdsmi_shut_down", NULL);
   amdsmi_get_socket_handles_p = sym("amdsmi_get_socket_handles", NULL);
-  amdsmi_get_processor_handles_by_type_p = sym("amdsmi_get_processor_handles_by_type", NULL);
+  amdsmi_get_processor_handles_by_type_p =
+      sym("amdsmi_get_processor_handles_by_type", NULL);
   /* Sensors */
   amdsmi_get_temp_metric_p = sym("amdsmi_get_temp_metric", NULL);
   amdsmi_get_gpu_fan_rpms_p = sym("amdsmi_get_gpu_fan_rpms", NULL);
   amdsmi_get_gpu_fan_speed_p = sym("amdsmi_get_gpu_fan_speed", NULL);
   amdsmi_get_gpu_fan_speed_max_p = sym("amdsmi_get_gpu_fan_speed_max", NULL);
   /* Memory */
-  amdsmi_get_total_memory_p = sym("amdsmi_get_gpu_memory_total", "amdsmi_get_total_memory");
-  amdsmi_get_memory_usage_p = sym("amdsmi_get_gpu_memory_usage", "amdsmi_get_memory_usage");
+  amdsmi_get_total_memory_p =
+      sym("amdsmi_get_gpu_memory_total", "amdsmi_get_total_memory");
+  amdsmi_get_memory_usage_p =
+      sym("amdsmi_get_gpu_memory_usage", "amdsmi_get_memory_usage");
   /* Utilization / activity */
-  amdsmi_get_gpu_activity_p = sym("amdsmi_get_gpu_activity", "amdsmi_get_engine_usage");
+  amdsmi_get_gpu_activity_p =
+      sym("amdsmi_get_gpu_activity", "amdsmi_get_engine_usage");
   /* Power */
   amdsmi_get_power_info_p = sym("amdsmi_get_power_info", NULL);
   amdsmi_get_power_cap_info_p = sym("amdsmi_get_power_cap_info", NULL);
-  amdsmi_set_power_cap_p = sym("amdsmi_set_power_cap", "amdsmi_dev_set_power_cap");
+  amdsmi_set_power_cap_p =
+      sym("amdsmi_set_power_cap", "amdsmi_dev_set_power_cap");
   /* PCIe */
   amdsmi_get_gpu_pci_throughput_p = sym("amdsmi_get_gpu_pci_throughput", NULL);
-  amdsmi_get_gpu_pci_replay_counter_p = sym("amdsmi_get_gpu_pci_replay_counter", NULL);
+  amdsmi_get_gpu_pci_replay_counter_p =
+      sym("amdsmi_get_gpu_pci_replay_counter", NULL);
   /* Clocks */
   amdsmi_get_clk_freq_p = sym("amdsmi_get_clk_freq", NULL);
   amdsmi_set_clk_freq_p = sym("amdsmi_set_clk_freq", NULL);
@@ -239,14 +154,18 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_id_p = sym("amdsmi_get_gpu_id", NULL);
   amdsmi_get_gpu_revision_p = sym("amdsmi_get_gpu_revision", NULL);
   amdsmi_get_gpu_subsystem_id_p = sym("amdsmi_get_gpu_subsystem_id", NULL);
-  amdsmi_get_gpu_virtualization_mode_p = sym("amdsmi_get_gpu_virtualization_mode", NULL);
-  amdsmi_get_gpu_process_isolation_p = sym("amdsmi_get_gpu_process_isolation", NULL);
+  amdsmi_get_gpu_virtualization_mode_p =
+      sym("amdsmi_get_gpu_virtualization_mode", NULL);
+  amdsmi_get_gpu_process_isolation_p =
+      sym("amdsmi_get_gpu_process_isolation", NULL);
   amdsmi_get_gpu_xcd_counter_p = sym("amdsmi_get_gpu_xcd_counter", NULL);
   amdsmi_get_gpu_pci_bandwidth_p = sym("amdsmi_get_gpu_pci_bandwidth", NULL);
   amdsmi_get_gpu_bdf_id_p = sym("amdsmi_get_gpu_bdf_id", NULL);
-  amdsmi_get_gpu_topo_numa_affinity_p = sym("amdsmi_get_gpu_topo_numa_affinity", NULL);
+  amdsmi_get_gpu_topo_numa_affinity_p =
+      sym("amdsmi_get_gpu_topo_numa_affinity", NULL);
   amdsmi_get_energy_count_p = sym("amdsmi_get_energy_count", NULL);
-  amdsmi_get_gpu_power_profile_presets_p = sym("amdsmi_get_gpu_power_profile_presets", NULL);
+  amdsmi_get_gpu_power_profile_presets_p =
+      sym("amdsmi_get_gpu_power_profile_presets", NULL);
   /* Additional read-only queries */
   amdsmi_get_lib_version_p = sym("amdsmi_get_lib_version", NULL);
   amdsmi_get_gpu_driver_info_p = sym("amdsmi_get_gpu_driver_info", NULL);
@@ -255,65 +174,92 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_fw_info_p = sym("amdsmi_get_fw_info", NULL);
   amdsmi_get_gpu_vbios_info_p = sym("amdsmi_get_gpu_vbios_info", NULL);
   amdsmi_get_gpu_device_uuid_p = sym("amdsmi_get_gpu_device_uuid", NULL);
-  amdsmi_get_gpu_enumeration_info_p = sym("amdsmi_get_gpu_enumeration_info", NULL);
+  amdsmi_get_gpu_enumeration_info_p =
+      sym("amdsmi_get_gpu_enumeration_info", NULL);
   amdsmi_get_gpu_vendor_name_p = sym("amdsmi_get_gpu_vendor_name", NULL);
   amdsmi_get_gpu_vram_vendor_p = sym("amdsmi_get_gpu_vram_vendor", NULL);
   amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
   amdsmi_get_link_metrics_p = sym("amdsmi_get_link_metrics", NULL);
   amdsmi_get_gpu_process_list_p = sym("amdsmi_get_gpu_process_list", NULL);
   amdsmi_get_gpu_ecc_enabled_p = sym("amdsmi_get_gpu_ecc_enabled", NULL);
-  amdsmi_get_gpu_total_ecc_count_p = sym("amdsmi_get_gpu_total_ecc_count", NULL);
+  amdsmi_get_gpu_total_ecc_count_p =
+      sym("amdsmi_get_gpu_total_ecc_count", NULL);
   amdsmi_get_gpu_ecc_count_p = sym("amdsmi_get_gpu_ecc_count", NULL);
   amdsmi_get_gpu_ecc_status_p = sym("amdsmi_get_gpu_ecc_status", NULL);
-  amdsmi_get_gpu_compute_partition_p = sym("amdsmi_get_gpu_compute_partition", NULL);
-  amdsmi_get_gpu_memory_partition_p = sym("amdsmi_get_gpu_memory_partition", NULL);
-  amdsmi_get_gpu_accelerator_partition_profile_p = sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
+  amdsmi_get_gpu_compute_partition_p =
+      sym("amdsmi_get_gpu_compute_partition", NULL);
+  amdsmi_get_gpu_memory_partition_p =
+      sym("amdsmi_get_gpu_memory_partition", NULL);
+  amdsmi_get_gpu_accelerator_partition_profile_p =
+      sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
   amdsmi_get_gpu_cache_info_p = sym("amdsmi_get_gpu_cache_info", NULL);
-  amdsmi_get_gpu_mem_overdrive_level_p = sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
-  amdsmi_get_gpu_od_volt_curve_regions_p = sym("amdsmi_get_gpu_od_volt_curve_regions", NULL);
+  amdsmi_get_gpu_mem_overdrive_level_p =
+      sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
+  amdsmi_get_gpu_od_volt_curve_regions_p =
+      sym("amdsmi_get_gpu_od_volt_curve_regions", NULL);
   amdsmi_get_gpu_od_volt_info_p = sym("amdsmi_get_gpu_od_volt_info", NULL);
-  amdsmi_get_gpu_overdrive_level_p = sym("amdsmi_get_gpu_overdrive_level", NULL);
+  amdsmi_get_gpu_overdrive_level_p =
+      sym("amdsmi_get_gpu_overdrive_level", NULL);
   amdsmi_get_gpu_perf_level_p = sym("amdsmi_get_gpu_perf_level", NULL);
-  amdsmi_get_gpu_pm_metrics_info_p = sym("amdsmi_get_gpu_pm_metrics_info", NULL);
-  amdsmi_get_gpu_ras_feature_info_p = sym("amdsmi_get_gpu_ras_feature_info", NULL);
-  amdsmi_get_gpu_ras_block_features_enabled_p = sym("amdsmi_get_gpu_ras_block_features_enabled", NULL);
+  amdsmi_get_gpu_pm_metrics_info_p =
+      sym("amdsmi_get_gpu_pm_metrics_info", NULL);
+  amdsmi_get_gpu_ras_feature_info_p =
+      sym("amdsmi_get_gpu_ras_feature_info", NULL);
+  amdsmi_get_gpu_ras_block_features_enabled_p =
+      sym("amdsmi_get_gpu_ras_block_features_enabled", NULL);
   amdsmi_get_gpu_reg_table_info_p = sym("amdsmi_get_gpu_reg_table_info", NULL);
   amdsmi_get_gpu_volt_metric_p = sym("amdsmi_get_gpu_volt_metric", NULL);
   amdsmi_get_gpu_vram_info_p = sym("amdsmi_get_gpu_vram_info", NULL);
   amdsmi_get_gpu_vram_usage_p = sym("amdsmi_get_gpu_vram_usage", NULL);
   amdsmi_get_pcie_info_p = sym("amdsmi_get_pcie_info", NULL);
-  amdsmi_get_processor_count_from_handles_p = sym("amdsmi_get_processor_count_from_handles", NULL);
+  amdsmi_get_processor_count_from_handles_p =
+      sym("amdsmi_get_processor_count_from_handles", NULL);
   amdsmi_get_soc_pstate_p = sym("amdsmi_get_soc_pstate", NULL);
   amdsmi_get_xgmi_plpd_p = sym("amdsmi_get_xgmi_plpd", NULL);
   amdsmi_get_gpu_bad_page_info_p = sym("amdsmi_get_gpu_bad_page_info", NULL);
-  amdsmi_get_gpu_bad_page_threshold_p = sym("amdsmi_get_gpu_bad_page_threshold", NULL);
+  amdsmi_get_gpu_bad_page_threshold_p =
+      sym("amdsmi_get_gpu_bad_page_threshold", NULL);
   amdsmi_get_power_info_v2_p = sym("amdsmi_get_power_info_v2", NULL);
-  amdsmi_init_gpu_event_notification_p = sym("amdsmi_init_gpu_event_notification", NULL);
-  amdsmi_set_gpu_event_notification_mask_p = sym("amdsmi_set_gpu_event_notification_mask", NULL);
-  amdsmi_get_gpu_event_notification_p = sym("amdsmi_get_gpu_event_notification", NULL);
-  amdsmi_stop_gpu_event_notification_p = sym("amdsmi_stop_gpu_event_notification", NULL);
+  amdsmi_init_gpu_event_notification_p =
+      sym("amdsmi_init_gpu_event_notification", NULL);
+  amdsmi_set_gpu_event_notification_mask_p =
+      sym("amdsmi_set_gpu_event_notification_mask", NULL);
+  amdsmi_get_gpu_event_notification_p =
+      sym("amdsmi_get_gpu_event_notification", NULL);
+  amdsmi_stop_gpu_event_notification_p =
+      sym("amdsmi_stop_gpu_event_notification", NULL);
 
 #ifndef AMDSMI_DISABLE_ESMI
   /* CPU functions */
   amdsmi_get_cpu_handles_p = sym("amdsmi_get_cpu_handles", NULL);
   amdsmi_get_cpucore_handles_p = sym("amdsmi_get_cpucore_handles", NULL);
   amdsmi_get_cpu_socket_power_p = sym("amdsmi_get_cpu_socket_power", NULL);
-  amdsmi_get_cpu_socket_power_cap_p = sym("amdsmi_get_cpu_socket_power_cap", NULL);
-  amdsmi_get_cpu_socket_power_cap_max_p = sym("amdsmi_get_cpu_socket_power_cap_max", NULL);
+  amdsmi_get_cpu_socket_power_cap_p =
+      sym("amdsmi_get_cpu_socket_power_cap", NULL);
+  amdsmi_get_cpu_socket_power_cap_max_p =
+      sym("amdsmi_get_cpu_socket_power_cap_max", NULL);
   amdsmi_get_cpu_core_energy_p = sym("amdsmi_get_cpu_core_energy", NULL);
   amdsmi_get_cpu_socket_energy_p = sym("amdsmi_get_cpu_socket_energy", NULL);
   amdsmi_get_cpu_smu_fw_version_p = sym("amdsmi_get_cpu_smu_fw_version", NULL);
   amdsmi_get_threads_per_core_p = sym("amdsmi_get_threads_per_core", NULL);
   amdsmi_get_cpu_family_p = sym("amdsmi_get_cpu_family", NULL);
   amdsmi_get_cpu_model_p = sym("amdsmi_get_cpu_model", NULL);
-  amdsmi_get_cpu_core_boostlimit_p = sym("amdsmi_get_cpu_core_boostlimit", NULL);
-  amdsmi_get_cpu_socket_current_active_freq_limit_p = sym("amdsmi_get_cpu_socket_current_active_freq_limit", NULL);
-  amdsmi_get_cpu_socket_freq_range_p = sym("amdsmi_get_cpu_socket_freq_range", NULL);
-  amdsmi_get_cpu_core_current_freq_limit_p = sym("amdsmi_get_cpu_core_current_freq_limit", NULL);
-  amdsmi_get_minmax_bandwidth_between_processors_p = sym("amdsmi_get_minmax_bandwidth_between_processors", NULL);
-  amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p = sym("amdsmi_get_cpu_dimm_temp_range_and_refresh_rate", NULL);
-  amdsmi_get_cpu_dimm_power_consumption_p = sym("amdsmi_get_cpu_dimm_power_consumption", NULL);
-  amdsmi_get_cpu_dimm_thermal_sensor_p = sym("amdsmi_get_cpu_dimm_thermal_sensor", NULL);
+  amdsmi_get_cpu_core_boostlimit_p =
+      sym("amdsmi_get_cpu_core_boostlimit", NULL);
+  amdsmi_get_cpu_socket_current_active_freq_limit_p =
+      sym("amdsmi_get_cpu_socket_current_active_freq_limit", NULL);
+  amdsmi_get_cpu_socket_freq_range_p =
+      sym("amdsmi_get_cpu_socket_freq_range", NULL);
+  amdsmi_get_cpu_core_current_freq_limit_p =
+      sym("amdsmi_get_cpu_core_current_freq_limit", NULL);
+  amdsmi_get_minmax_bandwidth_between_processors_p =
+      sym("amdsmi_get_minmax_bandwidth_between_processors", NULL);
+  amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p =
+      sym("amdsmi_get_cpu_dimm_temp_range_and_refresh_rate", NULL);
+  amdsmi_get_cpu_dimm_power_consumption_p =
+      sym("amdsmi_get_cpu_dimm_power_consumption", NULL);
+  amdsmi_get_cpu_dimm_thermal_sensor_p =
+      sym("amdsmi_get_cpu_dimm_thermal_sensor", NULL);
 #endif
   return PAPI_OK;
 }
@@ -343,7 +289,8 @@ int amds_init(void) {
     papi_errno = PAPI_ENOEVNT;
     goto fn_fail;
   }
-  amdsmi_socket_handle *sockets = (amdsmi_socket_handle *)papi_calloc(socket_count, sizeof(amdsmi_socket_handle));
+  amdsmi_socket_handle *sockets = (amdsmi_socket_handle *)papi_calloc(
+      socket_count, sizeof(amdsmi_socket_handle));
   if (!sockets) {
     papi_errno = PAPI_ENOMEM;
     goto fn_fail;
@@ -360,7 +307,8 @@ int amds_init(void) {
   for (uint32_t s = 0; s < socket_count; ++s) {
     uint32_t gpu_count_local = 0;
     processor_type_t proc_type = AMDSMI_PROCESSOR_TYPE_AMD_GPU;
-    amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(sockets[s], proc_type, NULL, &gpu_count_local);
+    amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(
+        sockets[s], proc_type, NULL, &gpu_count_local);
     if (st == AMDSMI_STATUS_SUCCESS) {
       total_gpu_count += gpu_count_local;
     }
@@ -378,7 +326,8 @@ int amds_init(void) {
     papi_free(sockets);
     goto fn_fail;
   }
-  device_handles = (amdsmi_processor_handle *)papi_calloc(total_gpu_count + total_cpu_count, sizeof(*device_handles));
+  device_handles = (amdsmi_processor_handle *)papi_calloc(
+      total_gpu_count + total_cpu_count, sizeof(*device_handles));
   if (!device_handles) {
     papi_errno = PAPI_ENOMEM;
     sprintf(error_string, "Memory allocation error for device handles.");
@@ -390,13 +339,15 @@ int amds_init(void) {
   for (uint32_t s = 0; s < socket_count; ++s) {
     uint32_t gpu_count_local = 0;
     processor_type_t proc_type = AMDSMI_PROCESSOR_TYPE_AMD_GPU;
-    status = amdsmi_get_processor_handles_by_type_p(sockets[s], proc_type, NULL, &gpu_count_local);
+    status = amdsmi_get_processor_handles_by_type_p(sockets[s], proc_type, NULL,
+                                                    &gpu_count_local);
     if (status != AMDSMI_STATUS_SUCCESS || gpu_count_local == 0) {
       continue; // no GPU on this socket or error
     }
     // Use the main device_handles array directly to avoid extra allocation
     amdsmi_processor_handle *gpu_handles = &device_handles[device_count];
-    status = amdsmi_get_processor_handles_by_type_p(sockets[s], proc_type, gpu_handles, &gpu_count_local);
+    status = amdsmi_get_processor_handles_by_type_p(
+        sockets[s], proc_type, gpu_handles, &gpu_count_local);
     if (status == AMDSMI_STATUS_SUCCESS) {
       device_count += gpu_count_local;
     }
@@ -408,7 +359,8 @@ int amds_init(void) {
   // Retrieve CPU socket handles
   amdsmi_processor_handle *cpu_handles = NULL;
   if (total_cpu_count > 0) {
-    cpu_handles = (amdsmi_processor_handle *)papi_calloc(total_cpu_count, sizeof(amdsmi_processor_handle));
+    cpu_handles = (amdsmi_processor_handle *)papi_calloc(
+        total_cpu_count, sizeof(amdsmi_processor_handle));
     if (!cpu_handles) {
       papi_errno = PAPI_ENOMEM;
       sprintf(error_string, "Memory allocation error for CPU handles.");
@@ -433,7 +385,8 @@ int amds_init(void) {
   cpu_count = total_cpu_count;
   // Retrieve CPU core handles for each CPU socket
   if (cpu_count > 0) {
-    cpu_core_handles = (amdsmi_processor_handle **)papi_calloc(cpu_count, sizeof(amdsmi_processor_handle *));
+    cpu_core_handles = (amdsmi_processor_handle **)papi_calloc(
+        cpu_count, sizeof(amdsmi_processor_handle *));
     cores_per_socket = (uint32_t *)papi_calloc(cpu_count, sizeof(uint32_t));
     if (!cpu_core_handles || !cores_per_socket) {
       papi_errno = PAPI_ENOMEM;
@@ -446,17 +399,21 @@ int amds_init(void) {
     }
     for (uint32_t s = 0; s < cpu_count; ++s) {
       uint32_t core_count = 0;
-      amdsmi_status_t st =
-          amdsmi_get_processor_handles_by_type_p(device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE, NULL, &core_count);
+      amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(
+          device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE,
+          NULL, &core_count);
       if (st != AMDSMI_STATUS_SUCCESS || core_count == 0) {
         cores_per_socket[s] = 0;
         cpu_core_handles[s] = NULL;
         continue;
       }
-      cpu_core_handles[s] = (amdsmi_processor_handle *)papi_calloc(core_count, sizeof(amdsmi_processor_handle));
+      cpu_core_handles[s] = (amdsmi_processor_handle *)papi_calloc(
+          core_count, sizeof(amdsmi_processor_handle));
       if (!cpu_core_handles[s]) {
         papi_errno = PAPI_ENOMEM;
-        sprintf(error_string, "Memory allocation error for CPU core handles on socket %u.", s);
+        sprintf(error_string,
+                "Memory allocation error for CPU core handles on socket %u.",
+                s);
         for (uint32_t t = 0; t < s; ++t) {
           if (cpu_core_handles[t])
             papi_free(cpu_core_handles[t]);
@@ -465,8 +422,9 @@ int amds_init(void) {
         papi_free(cores_per_socket);
         goto fn_fail;
       }
-      st = amdsmi_get_processor_handles_by_type_p(device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE, cpu_core_handles[s],
-                                                  &core_count);
+      st = amdsmi_get_processor_handles_by_type_p(
+          device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE,
+          cpu_core_handles[s], &core_count);
       if (st != AMDSMI_STATUS_SUCCESS) {
         papi_free(cpu_core_handles[s]);
         cpu_core_handles[s] = NULL;
@@ -533,7 +491,8 @@ static int init_event_table(void) {
     return PAPI_OK;
   }
   // Keep original allocation approach
-  ntv_table.events = (native_event_t *)papi_calloc(MAX_EVENTS_PER_DEVICE * device_count, sizeof(native_event_t));
+  ntv_table.events = (native_event_t *)papi_calloc(
+      MAX_EVENTS_PER_DEVICE * device_count, sizeof(native_event_t));
   if (!ntv_table.events) {
     return PAPI_ENOMEM;
   }
@@ -541,16 +500,32 @@ static int init_event_table(void) {
   char descr_buf[PAPI_MAX_STR_LEN];
   // Define sensor arrays first
   amdsmi_temperature_type_t temp_sensors[] = {
-      AMDSMI_TEMPERATURE_TYPE_EDGE,  AMDSMI_TEMPERATURE_TYPE_JUNCTION, AMDSMI_TEMPERATURE_TYPE_VRAM,  AMDSMI_TEMPERATURE_TYPE_HBM_0,
-      AMDSMI_TEMPERATURE_TYPE_HBM_1, AMDSMI_TEMPERATURE_TYPE_HBM_2,    AMDSMI_TEMPERATURE_TYPE_HBM_3, AMDSMI_TEMPERATURE_TYPE_PLX};
+      AMDSMI_TEMPERATURE_TYPE_EDGE,  AMDSMI_TEMPERATURE_TYPE_JUNCTION,
+      AMDSMI_TEMPERATURE_TYPE_VRAM,  AMDSMI_TEMPERATURE_TYPE_HBM_0,
+      AMDSMI_TEMPERATURE_TYPE_HBM_1, AMDSMI_TEMPERATURE_TYPE_HBM_2,
+      AMDSMI_TEMPERATURE_TYPE_HBM_3, AMDSMI_TEMPERATURE_TYPE_PLX};
   const int num_temp_sensors = sizeof(temp_sensors) / sizeof(temp_sensors[0]);
   const amdsmi_temperature_metric_t temp_metrics[] = {
-      AMDSMI_TEMP_CURRENT,       AMDSMI_TEMP_MAX,           AMDSMI_TEMP_MIN,       AMDSMI_TEMP_MAX_HYST,       AMDSMI_TEMP_MIN_HYST,
-      AMDSMI_TEMP_CRITICAL,      AMDSMI_TEMP_CRITICAL_HYST, AMDSMI_TEMP_EMERGENCY, AMDSMI_TEMP_EMERGENCY_HYST, AMDSMI_TEMP_CRIT_MIN,
-      AMDSMI_TEMP_CRIT_MIN_HYST, AMDSMI_TEMP_OFFSET,        AMDSMI_TEMP_LOWEST,    AMDSMI_TEMP_HIGHEST};
-  const char *temp_metric_names[] = {"temp_current",       "temp_max",           "temp_min",       "temp_max_hyst",       "temp_min_hyst",
-                                     "temp_critical",      "temp_critical_hyst", "temp_emergency", "temp_emergency_hyst", "temp_crit_min",
-                                     "temp_crit_min_hyst", "temp_offset",        "temp_lowest",    "temp_highest"};
+      AMDSMI_TEMP_CURRENT,
+      AMDSMI_TEMP_MAX,
+      AMDSMI_TEMP_MIN,
+      AMDSMI_TEMP_MAX_HYST,
+      AMDSMI_TEMP_MIN_HYST,
+      AMDSMI_TEMP_CRITICAL,
+      AMDSMI_TEMP_CRITICAL_HYST,
+      AMDSMI_TEMP_EMERGENCY,
+      AMDSMI_TEMP_EMERGENCY_HYST,
+      AMDSMI_TEMP_CRIT_MIN,
+      AMDSMI_TEMP_CRIT_MIN_HYST,
+      AMDSMI_TEMP_OFFSET,
+      AMDSMI_TEMP_LOWEST,
+      AMDSMI_TEMP_HIGHEST};
+  const char *temp_metric_names[] = {
+      "temp_current",       "temp_max",           "temp_min",
+      "temp_max_hyst",      "temp_min_hyst",      "temp_critical",
+      "temp_critical_hyst", "temp_emergency",     "temp_emergency_hyst",
+      "temp_crit_min",      "temp_crit_min_hyst", "temp_offset",
+      "temp_lowest",        "temp_highest"};
   /* Temperature sensors - device-level cache + individual testing */
   for (int d = 0; d < gpu_count; ++d) {
     // Safety check for device handle
@@ -561,7 +536,8 @@ static int init_event_table(void) {
     // GPU cache info events
     if (amdsmi_get_gpu_cache_info_p) {
       amdsmi_gpu_cache_info_t cache_info;
-      if (amdsmi_get_gpu_cache_info_p(device_handles[d], &cache_info) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_cache_info_p(device_handles[d], &cache_info) ==
+          AMDSMI_STATUS_SUCCESS) {
         for (uint32_t i = 0; i < cache_info.num_cache_types; ++i) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             papi_free(ntv_table.events);
@@ -570,16 +546,23 @@ static int init_event_table(void) {
           uint32_t level = cache_info.cache[i].cache_level;
           uint32_t prop = cache_info.cache[i].cache_properties;
           char type_str[8] = "cache";
-          if ((prop & AMDSMI_CACHE_PROPERTY_INST_CACHE) && !(prop & AMDSMI_CACHE_PROPERTY_DATA_CACHE)) {
+          if ((prop & AMDSMI_CACHE_PROPERTY_INST_CACHE) &&
+              !(prop & AMDSMI_CACHE_PROPERTY_DATA_CACHE)) {
             strcpy(type_str, "icache");
-          } else if ((prop & AMDSMI_CACHE_PROPERTY_DATA_CACHE) && !(prop & AMDSMI_CACHE_PROPERTY_INST_CACHE)) {
+          } else if ((prop & AMDSMI_CACHE_PROPERTY_DATA_CACHE) &&
+                     !(prop & AMDSMI_CACHE_PROPERTY_INST_CACHE)) {
             strcpy(type_str, "dcache");
           } else {
             strcpy(type_str, "cache");
           }
-          snprintf(name_buf, sizeof(name_buf), "L%u_%s_size:device=%d", level, type_str, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d L%u %s size (bytes)", d, level,
-                   (strcmp(type_str, "cache") == 0 ? "cache" : (strcmp(type_str, "icache") == 0 ? "instruction cache" : "data cache")));
+          snprintf(name_buf, sizeof(name_buf), "L%u_%s_size:device=%d", level,
+                   type_str, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d L%u %s size (bytes)", d, level,
+                   (strcmp(type_str, "cache") == 0
+                        ? "cache"
+                        : (strcmp(type_str, "icache") == 0 ? "instruction cache"
+                                                           : "data cache")));
           native_event_t *ev_cache = &ntv_table.events[idx];
           ev_cache->id = idx;
           ev_cache->name = strdup(name_buf);
@@ -601,8 +584,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "L%u_%s_cu_shared:device=%d", level, type_str, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d L%u %s max CUs sharing", d, level, type_str);
+          snprintf(name_buf, sizeof(name_buf), "L%u_%s_cu_shared:device=%d",
+                   level, type_str, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d L%u %s max CUs sharing", d, level, type_str);
           native_event_t *ev_cache_cu = &ntv_table.events[idx];
           ev_cache_cu->id = idx;
           ev_cache_cu->name = strdup(name_buf);
@@ -624,8 +609,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "L%u_%s_instances:device=%d", level, type_str, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d L%u %s instances", d, level, type_str);
+          snprintf(name_buf, sizeof(name_buf), "L%u_%s_instances:device=%d",
+                   level, type_str, d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d L%u %s instances",
+                   d, level, type_str);
           native_event_t *ev_cache_inst = &ntv_table.events[idx];
           ev_cache_inst->id = idx;
           ev_cache_inst->name = strdup(name_buf);
@@ -648,13 +635,15 @@ static int init_event_table(void) {
     // GPU VRAM info events
     if (amdsmi_get_gpu_vram_info_p) {
       amdsmi_vram_info_t vram_info;
-      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vram_info) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vram_info) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "vram_bus_width:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM bus width (bits)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d VRAM bus width (bits)", d);
         native_event_t *ev_vram_width = &ntv_table.events[idx];
         ev_vram_width->id = idx;
         ev_vram_width->name = strdup(name_buf);
@@ -677,7 +666,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "vram_size_bytes:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM size (bytes)", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM size (bytes)",
+                 d);
         native_event_t *ev_vram_size = &ntv_table.events[idx];
         ev_vram_size->id = idx;
         ev_vram_size->name = strdup(name_buf);
@@ -745,13 +735,15 @@ static int init_event_table(void) {
     // PCIe information events
     if (amdsmi_get_pcie_info_p) {
       amdsmi_pcie_info_t pcie_info;
-      if (amdsmi_get_pcie_info_p(device_handles[d], &pcie_info) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_pcie_info_p(device_handles[d], &pcie_info) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_max_width:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum PCIe link width (lanes)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d maximum PCIe link width (lanes)", d);
         native_event_t *ev_pw = &ntv_table.events[idx];
         ev_pw->id = idx;
         ev_pw->name = strdup(name_buf);
@@ -774,7 +766,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_max_speed:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum PCIe link speed (GT/s)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d maximum PCIe link speed (GT/s)", d);
         native_event_t *ev_ps = &ntv_table.events[idx];
         ev_ps->id = idx;
         ev_ps->name = strdup(name_buf);
@@ -796,8 +789,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_interface_version:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe interface version", d);
+        snprintf(name_buf, sizeof(name_buf), "pcie_interface_version:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe interface version", d);
         native_event_t *ev_piv = &ntv_table.events[idx];
         ev_piv->id = idx;
         ev_piv->name = strdup(name_buf);
@@ -842,8 +837,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_max_interface_version:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum PCIe interface version", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_max_interface_version:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d maximum PCIe interface version", d);
         native_event_t *ev_pmiv = &ntv_table.events[idx];
         ev_pmiv->id = idx;
         ev_pmiv->name = strdup(name_buf);
@@ -866,7 +863,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_width:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current PCIe link width (lanes)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current PCIe link width (lanes)", d);
         native_event_t *ev_cw = &ntv_table.events[idx];
         ev_cw->id = idx;
         ev_cw->name = strdup(name_buf);
@@ -889,7 +887,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_speed:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current PCIe link speed (MT/s)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current PCIe link speed (MT/s)", d);
         native_event_t *ev_cs = &ntv_table.events[idx];
         ev_cs->id = idx;
         ev_cs->name = strdup(name_buf);
@@ -912,7 +911,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_bandwidth:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d instantaneous PCIe bandwidth (Mb/s)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d instantaneous PCIe bandwidth (Mb/s)", d);
         native_event_t *ev_cb = &ntv_table.events[idx];
         ev_cb->id = idx;
         ev_cb->name = strdup(name_buf);
@@ -935,7 +935,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_replay_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay count", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay count",
+                 d);
         native_event_t *ev_pr = &ntv_table.events[idx];
         ev_pr->id = idx;
         ev_pr->name = strdup(name_buf);
@@ -957,8 +958,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_l0_to_recovery_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe L0->recovery count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_l0_to_recovery_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe L0->recovery count", d);
         native_event_t *ev_pl0 = &ntv_table.events[idx];
         ev_pl0->id = idx;
         ev_pl0->name = strdup(name_buf);
@@ -980,8 +983,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_replay_rollover_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay rollover count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_replay_rollover_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe replay rollover count", d);
         native_event_t *ev_prr = &ntv_table.events[idx];
         ev_prr->id = idx;
         ev_prr->name = strdup(name_buf);
@@ -1003,8 +1008,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_nak_sent_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK sent count", d);
+        snprintf(name_buf, sizeof(name_buf), "pcie_nak_sent_count:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK sent count",
+                 d);
         native_event_t *ev_pns = &ntv_table.events[idx];
         ev_pns->id = idx;
         ev_pns->name = strdup(name_buf);
@@ -1026,8 +1033,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_nak_received_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK received count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_nak_received_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe NAK received count", d);
         native_event_t *ev_pnr = &ntv_table.events[idx];
         ev_pnr->id = idx;
         ev_pnr->name = strdup(name_buf);
@@ -1049,8 +1058,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_other_end_recovery_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe other-end recovery count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_other_end_recovery_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe other-end recovery count", d);
         native_event_t *ev_poer = &ntv_table.events[idx];
         ev_poer->id = idx;
         ev_poer->name = strdup(name_buf);
@@ -1072,13 +1083,16 @@ static int init_event_table(void) {
     // GPU Overdrive level events
     if (amdsmi_get_gpu_overdrive_level_p) {
       uint32_t od_val;
-      if (amdsmi_get_gpu_overdrive_level_p(device_handles[d], &od_val) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_overdrive_level_p(device_handles[d], &od_val) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "gpu_overdrive_percent:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU core clock overdrive (%%)", d);
+        snprintf(name_buf, sizeof(name_buf), "gpu_overdrive_percent:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d GPU core clock overdrive (%%)", d);
         native_event_t *ev_od = &ntv_table.events[idx];
         ev_od->id = idx;
         ev_od->name = strdup(name_buf);
@@ -1099,13 +1113,16 @@ static int init_event_table(void) {
     }
     if (amdsmi_get_gpu_mem_overdrive_level_p) {
       uint32_t od_val;
-      if (amdsmi_get_gpu_mem_overdrive_level_p(device_handles[d], &od_val) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_mem_overdrive_level_p(device_handles[d], &od_val) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "gpu_mem_overdrive_percent:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU memory clock overdrive (%%)", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "gpu_mem_overdrive_percent:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d GPU memory clock overdrive (%%)", d);
         native_event_t *ev_mod = &ntv_table.events[idx];
         ev_mod->id = idx;
         ev_mod->name = strdup(name_buf);
@@ -1127,13 +1144,15 @@ static int init_event_table(void) {
     // GPU performance level event
     if (amdsmi_get_gpu_perf_level_p) {
       amdsmi_dev_perf_level_t perf;
-      if (amdsmi_get_gpu_perf_level_p(device_handles[d], &perf) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_perf_level_p(device_handles[d], &perf) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "perf_level:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current performance level", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current performance level", d);
         native_event_t *ev_perf = &ntv_table.events[idx];
         ev_perf->id = idx;
         ev_perf->name = strdup(name_buf);
@@ -1159,7 +1178,8 @@ static int init_event_table(void) {
       uint32_t mcount = 0;
 
       int saved_stderr = silence_stderr_begin();
-      amdsmi_status_t st = amdsmi_get_gpu_pm_metrics_info_p(device_handles[d], &metrics, &mcount);
+      amdsmi_status_t st = amdsmi_get_gpu_pm_metrics_info_p(device_handles[d],
+                                                            &metrics, &mcount);
       silence_stderr_end(saved_stderr);
 
       if (st == AMDSMI_STATUS_SUCCESS && mcount > 0) {
@@ -1170,7 +1190,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pm_metrics_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d number of PM metrics available", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d number of PM metrics available", d);
         native_event_t *ev_pmcount = &ntv_table.events[idx];
         ev_pmcount->id = idx;
         ev_pmcount->name = strdup(name_buf);
@@ -1196,8 +1217,10 @@ static int init_event_table(void) {
           }
           char metric_name[MAX_AMDSMI_NAME_LENGTH];
           sanitize_name(metrics[i].name, metric_name, sizeof(metric_name));
-          snprintf(name_buf, sizeof(name_buf), "pm_%s:device=%d", metric_name, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %s", d, metrics[i].name);
+          snprintf(name_buf, sizeof(name_buf), "pm_%s:device=%d", metric_name,
+                   d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %s", d,
+                   metrics[i].name);
           native_event_t *ev_pm = &ntv_table.events[idx];
           ev_pm->id = idx;
           ev_pm->name = strdup(name_buf);
@@ -1222,13 +1245,16 @@ static int init_event_table(void) {
     // GPU RAS feature (ECC schema) event
     if (amdsmi_get_gpu_ras_feature_info_p) {
       amdsmi_ras_feature_t ras;
-      if (amdsmi_get_gpu_ras_feature_info_p(device_handles[d], &ras) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_ras_feature_info_p(device_handles[d], &ras) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "ecc_correction_mask:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d ECC correction features mask", d);
+        snprintf(name_buf, sizeof(name_buf), "ecc_correction_mask:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d ECC correction features mask", d);
         native_event_t *ev_ras = &ntv_table.events[idx];
         ev_ras->id = idx;
         ev_ras->name = strdup(name_buf);
@@ -1251,7 +1277,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "ras_eeprom_version:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d RAS EEPROM version", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d RAS EEPROM version",
+                 d);
         native_event_t *ev_ras_ver = &ntv_table.events[idx];
         ev_ras_ver->id = idx;
         ev_ras_ver->name = strdup(name_buf);
@@ -1271,23 +1298,34 @@ static int init_event_table(void) {
       }
     }
     if (amdsmi_get_gpu_ras_block_features_enabled_p) {
-      amdsmi_gpu_block_t blocks[] = {AMDSMI_GPU_BLOCK_UMC,   AMDSMI_GPU_BLOCK_SDMA,     AMDSMI_GPU_BLOCK_GFX, AMDSMI_GPU_BLOCK_MMHUB,
-                                     AMDSMI_GPU_BLOCK_ATHUB, AMDSMI_GPU_BLOCK_PCIE_BIF, AMDSMI_GPU_BLOCK_HDP, AMDSMI_GPU_BLOCK_XGMI_WAFL,
-                                     AMDSMI_GPU_BLOCK_DF,    AMDSMI_GPU_BLOCK_SMN,      AMDSMI_GPU_BLOCK_SEM, AMDSMI_GPU_BLOCK_MP0,
-                                     AMDSMI_GPU_BLOCK_MP1,   AMDSMI_GPU_BLOCK_FUSE,     AMDSMI_GPU_BLOCK_MCA, AMDSMI_GPU_BLOCK_VCN,
-                                     AMDSMI_GPU_BLOCK_JPEG,  AMDSMI_GPU_BLOCK_IH,       AMDSMI_GPU_BLOCK_MPIO};
-      const char *block_names[] = {"umc", "sdma", "gfx", "mmhub", "athub", "pcie_bif", "hdp",  "xgmi_wafl", "df",  "smn",
-                                   "sem", "mp0",  "mp1", "fuse",  "mca",   "vcn",      "jpeg", "ih",        "mpio"};
+      amdsmi_gpu_block_t blocks[] = {
+          AMDSMI_GPU_BLOCK_UMC,   AMDSMI_GPU_BLOCK_SDMA,
+          AMDSMI_GPU_BLOCK_GFX,   AMDSMI_GPU_BLOCK_MMHUB,
+          AMDSMI_GPU_BLOCK_ATHUB, AMDSMI_GPU_BLOCK_PCIE_BIF,
+          AMDSMI_GPU_BLOCK_HDP,   AMDSMI_GPU_BLOCK_XGMI_WAFL,
+          AMDSMI_GPU_BLOCK_DF,    AMDSMI_GPU_BLOCK_SMN,
+          AMDSMI_GPU_BLOCK_SEM,   AMDSMI_GPU_BLOCK_MP0,
+          AMDSMI_GPU_BLOCK_MP1,   AMDSMI_GPU_BLOCK_FUSE,
+          AMDSMI_GPU_BLOCK_MCA,   AMDSMI_GPU_BLOCK_VCN,
+          AMDSMI_GPU_BLOCK_JPEG,  AMDSMI_GPU_BLOCK_IH,
+          AMDSMI_GPU_BLOCK_MPIO};
+      const char *block_names[] = {
+          "umc",       "sdma", "gfx",  "mmhub", "athub", "pcie_bif", "hdp",
+          "xgmi_wafl", "df",   "smn",  "sem",   "mp0",   "mp1",      "fuse",
+          "mca",       "vcn",  "jpeg", "ih",    "mpio"};
       size_t nb = sizeof(blocks) / sizeof(blocks[0]);
       for (size_t bi = 0; bi < nb; ++bi) {
         amdsmi_ras_err_state_t st;
-        if (amdsmi_get_gpu_ras_block_features_enabled_p(device_handles[d], blocks[bi], &st) == AMDSMI_STATUS_SUCCESS) {
+        if (amdsmi_get_gpu_ras_block_features_enabled_p(
+                device_handles[d], blocks[bi], &st) == AMDSMI_STATUS_SUCCESS) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "ras_block_%s_state:device=%d", block_names[bi], d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d RAS state for %s block", d, block_names[bi]);
+          snprintf(name_buf, sizeof(name_buf), "ras_block_%s_state:device=%d",
+                   block_names[bi], d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d RAS state for %s block", d, block_names[bi]);
           native_event_t *ev_blk = &ntv_table.events[idx];
           ev_blk->id = idx;
           ev_blk->name = strdup(name_buf);
@@ -1309,32 +1347,45 @@ static int init_event_table(void) {
     }
     // GPU voltage metrics events
     if (amdsmi_get_gpu_volt_metric_p) {
-      const char *sensor_names[] = {"vddgfx", "vddmem", "vddsoc", "vddio", "vddmisc", "vdd", "vdd2", "vddboard"};
-      const amdsmi_voltage_metric_t metrics[] = {AMDSMI_VOLT_CURRENT,  AMDSMI_VOLT_MAX,     AMDSMI_VOLT_MIN_CRIT, AMDSMI_VOLT_MIN,
-                                                 AMDSMI_VOLT_MAX_CRIT, AMDSMI_VOLT_AVERAGE, AMDSMI_VOLT_LOWEST,   AMDSMI_VOLT_HIGHEST};
-      const char *metric_names[] = {"current", "max", "min_crit", "min", "max_crit", "average", "lowest", "highest"};
+      const char *sensor_names[] = {"vddgfx",  "vddmem", "vddsoc", "vddio",
+                                    "vddmisc", "vdd",    "vdd2",   "vddboard"};
+      const amdsmi_voltage_metric_t metrics[] = {
+          AMDSMI_VOLT_CURRENT, AMDSMI_VOLT_MAX,      AMDSMI_VOLT_MIN_CRIT,
+          AMDSMI_VOLT_MIN,     AMDSMI_VOLT_MAX_CRIT, AMDSMI_VOLT_AVERAGE,
+          AMDSMI_VOLT_LOWEST,  AMDSMI_VOLT_HIGHEST};
+      const char *metric_names[] = {"current", "max",      "min_crit",
+                                    "min",     "max_crit", "average",
+                                    "lowest",  "highest"};
       const uint32_t max_sensors = 8;
       for (uint32_t s = 0; s < max_sensors; ++s) {
         int64_t dummy = 0;
-        amdsmi_status_t st = amdsmi_get_gpu_volt_metric_p(device_handles[d], (amdsmi_voltage_type_t)s, AMDSMI_VOLT_CURRENT, &dummy);
+        amdsmi_status_t st = amdsmi_get_gpu_volt_metric_p(
+            device_handles[d], (amdsmi_voltage_type_t)s, AMDSMI_VOLT_CURRENT,
+            &dummy);
         if (st != AMDSMI_STATUS_SUCCESS)
           continue;
         for (uint32_t m = 0; m < sizeof(metrics) / sizeof(metrics[0]); ++m) {
-          st = amdsmi_get_gpu_volt_metric_p(device_handles[d], (amdsmi_voltage_type_t)s, metrics[m], &dummy);
+          st = amdsmi_get_gpu_volt_metric_p(
+              device_handles[d], (amdsmi_voltage_type_t)s, metrics[m], &dummy);
           if (st != AMDSMI_STATUS_SUCCESS)
             continue;
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          const char *sname = (s < sizeof(sensor_names) / sizeof(sensor_names[0])) ? sensor_names[s] : "sensor";
+          const char *sname =
+              (s < sizeof(sensor_names) / sizeof(sensor_names[0]))
+                  ? sensor_names[s]
+                  : "sensor";
           char sensor_buf[32];
           if (strcmp(sname, "sensor") == 0) {
             snprintf(sensor_buf, sizeof(sensor_buf), "sensor%u", s);
             sname = sensor_buf;
           }
-          snprintf(name_buf, sizeof(name_buf), "voltage_%s_%s:device=%d", sname, metric_names[m], d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d %s %s voltage (mV)", d, sname, metric_names[m]);
+          snprintf(name_buf, sizeof(name_buf), "voltage_%s_%s:device=%d", sname,
+                   metric_names[m], d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d %s %s voltage (mV)",
+                   d, sname, metric_names[m]);
           native_event_t *ev_volt = &ntv_table.events[idx];
           ev_volt->id = idx;
           ev_volt->name = strdup(name_buf);
@@ -1357,19 +1408,25 @@ static int init_event_table(void) {
     // GPU OD voltage curve region events
     if (amdsmi_get_gpu_od_volt_curve_regions_p) {
       uint32_t num_regions = 0;
-      amdsmi_status_t st = amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[d], &num_regions, NULL);
+      amdsmi_status_t st = amdsmi_get_gpu_od_volt_curve_regions_p(
+          device_handles[d], &num_regions, NULL);
       if (st == AMDSMI_STATUS_SUCCESS && num_regions > 0) {
-        amdsmi_freq_volt_region_t *regs = (amdsmi_freq_volt_region_t *)papi_calloc(num_regions, sizeof(amdsmi_freq_volt_region_t));
+        amdsmi_freq_volt_region_t *regs =
+            (amdsmi_freq_volt_region_t *)papi_calloc(
+                num_regions, sizeof(amdsmi_freq_volt_region_t));
         if (regs) {
-          st = amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[d], &num_regions, regs);
+          st = amdsmi_get_gpu_od_volt_curve_regions_p(device_handles[d],
+                                                      &num_regions, regs);
           if (st == AMDSMI_STATUS_SUCCESS) {
             if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
               papi_free(ntv_table.events);
               papi_free(regs);
               return PAPI_ENOSUPP;
             }
-            snprintf(name_buf, sizeof(name_buf), "volt_curve_regions:device=%d", d);
-            snprintf(descr_buf, sizeof(descr_buf), "Device %d number of voltage curve regions", d);
+            snprintf(name_buf, sizeof(name_buf), "volt_curve_regions:device=%d",
+                     d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d number of voltage curve regions", d);
             native_event_t *ev_vcr = &ntv_table.events[idx];
             ev_vcr->id = idx;
             ev_vcr->name = strdup(name_buf);
@@ -1394,8 +1451,12 @@ static int init_event_table(void) {
                 return PAPI_ENOSUPP;
               }
 
-              snprintf(name_buf, sizeof(name_buf), "volt_curve_freq_min:device=%d:region=%u", d, r);
-              snprintf(descr_buf, sizeof(descr_buf), "Device %d voltage curve region %u frequency lower bound", d, r);
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_freq_min:device=%d:region=%u", d, r);
+              snprintf(
+                  descr_buf, sizeof(descr_buf),
+                  "Device %d voltage curve region %u frequency lower bound", d,
+                  r);
               native_event_t *ev_fmin = &ntv_table.events[idx];
               ev_fmin->id = idx;
               ev_fmin->name = strdup(name_buf);
@@ -1413,8 +1474,12 @@ static int init_event_table(void) {
               htable_insert(htable, ev_fmin->name, ev_fmin);
               idx++;
 
-              snprintf(name_buf, sizeof(name_buf), "volt_curve_freq_max:device=%d:region=%u", d, r);
-              snprintf(descr_buf, sizeof(descr_buf), "Device %d voltage curve region %u frequency upper bound", d, r);
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_freq_max:device=%d:region=%u", d, r);
+              snprintf(
+                  descr_buf, sizeof(descr_buf),
+                  "Device %d voltage curve region %u frequency upper bound", d,
+                  r);
               native_event_t *ev_fmax = &ntv_table.events[idx];
               ev_fmax->id = idx;
               ev_fmax->name = strdup(name_buf);
@@ -1432,8 +1497,11 @@ static int init_event_table(void) {
               htable_insert(htable, ev_fmax->name, ev_fmax);
               idx++;
 
-              snprintf(name_buf, sizeof(name_buf), "volt_curve_volt_min:device=%d:region=%u", d, r);
-              snprintf(descr_buf, sizeof(descr_buf), "Device %d voltage curve region %u voltage lower bound", d, r);
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_volt_min:device=%d:region=%u", d, r);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d voltage curve region %u voltage lower bound",
+                       d, r);
               native_event_t *ev_vmin = &ntv_table.events[idx];
               ev_vmin->id = idx;
               ev_vmin->name = strdup(name_buf);
@@ -1451,8 +1519,11 @@ static int init_event_table(void) {
               htable_insert(htable, ev_vmin->name, ev_vmin);
               idx++;
 
-              snprintf(name_buf, sizeof(name_buf), "volt_curve_volt_max:device=%d:region=%u", d, r);
-              snprintf(descr_buf, sizeof(descr_buf), "Device %d voltage curve region %u voltage upper bound", d, r);
+              snprintf(name_buf, sizeof(name_buf),
+                       "volt_curve_volt_max:device=%d:region=%u", d, r);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d voltage curve region %u voltage upper bound",
+                       d, r);
               native_event_t *ev_vmax = &ntv_table.events[idx];
               ev_vmax->id = idx;
               ev_vmax->name = strdup(name_buf);
@@ -1477,13 +1548,16 @@ static int init_event_table(void) {
     }
     if (amdsmi_get_gpu_od_volt_info_p) {
       amdsmi_od_volt_freq_data_t info;
-      if (amdsmi_get_gpu_od_volt_info_p(device_handles[d], &info) == AMDSMI_STATUS_SUCCESS) {
-        if (idx + 8 + 2 * AMDSMI_NUM_VOLTAGE_CURVE_POINTS > MAX_EVENTS_PER_DEVICE * device_count) {
+      if (amdsmi_get_gpu_od_volt_info_p(device_handles[d], &info) ==
+          AMDSMI_STATUS_SUCCESS) {
+        if (idx + 8 + 2 * AMDSMI_NUM_VOLTAGE_CURVE_POINTS >
+            MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "od_curr_sclk_min:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current SCLK frequency lower bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current SCLK frequency lower bound", d);
         native_event_t *ev_csmin = &ntv_table.events[idx];
         ev_csmin->id = idx;
         ev_csmin->name = strdup(name_buf);
@@ -1502,7 +1576,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_curr_sclk_max:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current SCLK frequency upper bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current SCLK frequency upper bound", d);
         native_event_t *ev_csmax = &ntv_table.events[idx];
         ev_csmax->id = idx;
         ev_csmax->name = strdup(name_buf);
@@ -1521,7 +1596,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_curr_mclk_min:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current MCLK frequency lower bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current MCLK frequency lower bound", d);
         native_event_t *ev_cmmin = &ntv_table.events[idx];
         ev_cmmin->id = idx;
         ev_cmmin->name = strdup(name_buf);
@@ -1540,7 +1616,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_curr_mclk_max:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current MCLK frequency upper bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current MCLK frequency upper bound", d);
         native_event_t *ev_cmmax = &ntv_table.events[idx];
         ev_cmmax->id = idx;
         ev_cmmax->name = strdup(name_buf);
@@ -1559,7 +1636,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_sclk_limit_min:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d SCLK frequency limit lower bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d SCLK frequency limit lower bound", d);
         native_event_t *ev_slmin = &ntv_table.events[idx];
         ev_slmin->id = idx;
         ev_slmin->name = strdup(name_buf);
@@ -1578,7 +1656,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_sclk_limit_max:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d SCLK frequency limit upper bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d SCLK frequency limit upper bound", d);
         native_event_t *ev_slmax = &ntv_table.events[idx];
         ev_slmax->id = idx;
         ev_slmax->name = strdup(name_buf);
@@ -1597,7 +1676,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_mclk_limit_min:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d MCLK frequency limit lower bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d MCLK frequency limit lower bound", d);
         native_event_t *ev_mlmin = &ntv_table.events[idx];
         ev_mlmin->id = idx;
         ev_mlmin->name = strdup(name_buf);
@@ -1616,7 +1696,8 @@ static int init_event_table(void) {
         idx++;
 
         snprintf(name_buf, sizeof(name_buf), "od_mclk_limit_max:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d MCLK frequency limit upper bound", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d MCLK frequency limit upper bound", d);
         native_event_t *ev_mlmax = &ntv_table.events[idx];
         ev_mlmax->id = idx;
         ev_mlmax->name = strdup(name_buf);
@@ -1639,8 +1720,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "volt_curve_point_freq:device=%d:point=%u", d, p);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d voltage curve point %u frequency", d, p);
+          snprintf(name_buf, sizeof(name_buf),
+                   "volt_curve_point_freq:device=%d:point=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d voltage curve point %u frequency", d, p);
           native_event_t *ev_pf = &ntv_table.events[idx];
           ev_pf->id = idx;
           ev_pf->name = strdup(name_buf);
@@ -1658,8 +1741,10 @@ static int init_event_table(void) {
           htable_insert(htable, ev_pf->name, ev_pf);
           idx++;
 
-          snprintf(name_buf, sizeof(name_buf), "volt_curve_point_volt:device=%d:point=%u", d, p);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d voltage curve point %u voltage", d, p);
+          snprintf(name_buf, sizeof(name_buf),
+                   "volt_curve_point_volt:device=%d:point=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d voltage curve point %u voltage", d, p);
           native_event_t *ev_pv = &ntv_table.events[idx];
           ev_pv->id = idx;
           ev_pv->name = strdup(name_buf);
@@ -1682,13 +1767,16 @@ static int init_event_table(void) {
     // GPU SoC P-state policy events
     if (amdsmi_get_soc_pstate_p) {
       amdsmi_dpm_policy_t policy;
-      if (amdsmi_get_soc_pstate_p(device_handles[d], &policy) == AMDSMI_STATUS_SUCCESS && policy.num_supported > 0) {
+      if (amdsmi_get_soc_pstate_p(device_handles[d], &policy) ==
+              AMDSMI_STATUS_SUCCESS &&
+          policy.num_supported > 0) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "soc_pstate_policy:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current SoC P-state policy id", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current SoC P-state policy id", d);
         native_event_t *ev_soc = &ntv_table.events[idx];
         ev_soc->id = idx;
         ev_soc->name = strdup(name_buf);
@@ -1709,8 +1797,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "soc_pstate_supported:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d supported SoC P-state count", d);
+        snprintf(name_buf, sizeof(name_buf), "soc_pstate_supported:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d supported SoC P-state count", d);
         native_event_t *ev_soc_sup = &ntv_table.events[idx];
         ev_soc_sup->id = idx;
         ev_soc_sup->name = strdup(name_buf);
@@ -1732,13 +1822,16 @@ static int init_event_table(void) {
     // GPU XGMI PLPD policy events
     if (amdsmi_get_xgmi_plpd_p) {
       amdsmi_dpm_policy_t policy;
-      if (amdsmi_get_xgmi_plpd_p(device_handles[d], &policy) == AMDSMI_STATUS_SUCCESS && policy.num_supported > 0) {
+      if (amdsmi_get_xgmi_plpd_p(device_handles[d], &policy) ==
+              AMDSMI_STATUS_SUCCESS &&
+          policy.num_supported > 0) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "xgmi_plpd:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d current XGMI PLPD policy id", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current XGMI PLPD policy id", d);
         native_event_t *ev_xplpd = &ntv_table.events[idx];
         ev_xplpd->id = idx;
         ev_xplpd->name = strdup(name_buf);
@@ -1759,8 +1852,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "xgmi_plpd_supported:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d supported XGMI PLPD policy count", d);
+        snprintf(name_buf, sizeof(name_buf), "xgmi_plpd_supported:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d supported XGMI PLPD policy count", d);
         native_event_t *ev_xplpd_sup = &ntv_table.events[idx];
         ev_xplpd_sup->id = idx;
         ev_xplpd_sup->name = strdup(name_buf);
@@ -1781,14 +1876,17 @@ static int init_event_table(void) {
     }
     // GPU register table metrics count events
     if (amdsmi_get_gpu_reg_table_info_p) {
-      amdsmi_reg_type_t reg_types[] = {AMDSMI_REG_XGMI, AMDSMI_REG_WAFL, AMDSMI_REG_PCIE, AMDSMI_REG_USR, AMDSMI_REG_USR1};
+      amdsmi_reg_type_t reg_types[] = {AMDSMI_REG_XGMI, AMDSMI_REG_WAFL,
+                                       AMDSMI_REG_PCIE, AMDSMI_REG_USR,
+                                       AMDSMI_REG_USR1};
       const char *reg_names[] = {"XGMI", "WAFL", "PCIE", "USR", "USR1"};
       for (int rt = 0; rt < 5; ++rt) {
         amdsmi_name_value_t *reg_metrics = NULL;
         uint32_t num_metrics = 0;
 
         int saved_stderr = silence_stderr_begin();
-        amdsmi_status_t st = amdsmi_get_gpu_reg_table_info_p(device_handles[d], reg_types[rt], &reg_metrics, &num_metrics);
+        amdsmi_status_t st = amdsmi_get_gpu_reg_table_info_p(
+            device_handles[d], reg_types[rt], &reg_metrics, &num_metrics);
         silence_stderr_end(saved_stderr);
 
         if (st == AMDSMI_STATUS_SUCCESS && num_metrics > 0) {
@@ -1798,8 +1896,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "reg_%s_count:device=%d", reg_names[rt], d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d number of %s register metrics", d, reg_names[rt]);
+          snprintf(name_buf, sizeof(name_buf), "reg_%s_count:device=%d",
+                   reg_names[rt], d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d number of %s register metrics", d, reg_names[rt]);
           native_event_t *ev_reg = &ntv_table.events[idx];
           ev_reg->id = idx;
           ev_reg->name = strdup(name_buf);
@@ -1825,9 +1925,12 @@ static int init_event_table(void) {
               return PAPI_ENOSUPP;
             }
             char reg_metric_name[MAX_AMDSMI_NAME_LENGTH];
-            sanitize_name(reg_metrics[i].name, reg_metric_name, sizeof(reg_metric_name));
-            snprintf(name_buf, sizeof(name_buf), "reg_%s_%s:device=%d", reg_names[rt], reg_metric_name, d);
-            snprintf(descr_buf, sizeof(descr_buf), "Device %d %s register %s", d, reg_names[rt], reg_metrics[i].name);
+            sanitize_name(reg_metrics[i].name, reg_metric_name,
+                          sizeof(reg_metric_name));
+            snprintf(name_buf, sizeof(name_buf), "reg_%s_%s:device=%d",
+                     reg_names[rt], reg_metric_name, d);
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d %s register %s",
+                     d, reg_names[rt], reg_metrics[i].name);
             native_event_t *ev_reg_val = &ntv_table.events[idx];
             ev_reg_val->id = idx;
             ev_reg_val->name = strdup(name_buf);
@@ -1855,23 +1958,30 @@ static int init_event_table(void) {
       // Test each sensor individually first
       int64_t sensor_test_val;
       if (!amdsmi_get_temp_metric_p ||
-          amdsmi_get_temp_metric_p(device_handles[d], temp_sensors[si], AMDSMI_TEMP_CURRENT, &sensor_test_val) != AMDSMI_STATUS_SUCCESS) {
+          amdsmi_get_temp_metric_p(device_handles[d], temp_sensors[si],
+                                   AMDSMI_TEMP_CURRENT,
+                                   &sensor_test_val) != AMDSMI_STATUS_SUCCESS) {
         continue; // Skip this specific sensor if it doesn't work
       }
       // Register metrics for this working sensor, testing each metric
       // individually
-      for (size_t mi = 0; mi < sizeof(temp_metrics) / sizeof(temp_metrics[0]); ++mi) {
+      for (size_t mi = 0; mi < sizeof(temp_metrics) / sizeof(temp_metrics[0]);
+           ++mi) {
         // Bounds check to prevent buffer overflow
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           return PAPI_ENOSUPP; // Too many events
         }
         // Test this specific metric on this specific sensor
         int64_t metric_val;
-        if (amdsmi_get_temp_metric_p(device_handles[d], temp_sensors[si], temp_metrics[mi], &metric_val) != AMDSMI_STATUS_SUCCESS) {
+        if (amdsmi_get_temp_metric_p(device_handles[d], temp_sensors[si],
+                                     temp_metrics[mi],
+                                     &metric_val) != AMDSMI_STATUS_SUCCESS) {
           continue; /* skip this specific metric if not supported */
         }
-        snprintf(name_buf, sizeof(name_buf), "%s:device=%d:sensor=%d", temp_metric_names[mi], d, (int)temp_sensors[si]);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d %s for sensor %d", d, temp_metric_names[mi], (int)temp_sensors[si]);
+        snprintf(name_buf, sizeof(name_buf), "%s:device=%d:sensor=%d",
+                 temp_metric_names[mi], d, (int)temp_sensors[si]);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d %s for sensor %d", d,
+                 temp_metric_names[mi], (int)temp_sensors[si]);
         native_event_t *ev = &ntv_table.events[idx];
         ev->id = idx;
         ev->name = strdup(name_buf);
@@ -1902,7 +2012,9 @@ static int init_event_table(void) {
     }
     /* Register Fan RPM if available */
     int64_t dummy_rpm;
-    if (amdsmi_get_gpu_fan_rpms_p && amdsmi_get_gpu_fan_rpms_p(device_handles[d], 0, &dummy_rpm) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_fan_rpms_p &&
+        amdsmi_get_gpu_fan_rpms_p(device_handles[d], 0, &dummy_rpm) ==
+            AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         return PAPI_ENOSUPP;
       }
@@ -1930,12 +2042,15 @@ static int init_event_table(void) {
     }
     /* Register Fan SPEED if available */
     int64_t dummy_speed;
-    if (amdsmi_get_gpu_fan_speed_p && amdsmi_get_gpu_fan_speed_p(device_handles[d], 0, &dummy_speed) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_fan_speed_p &&
+        amdsmi_get_gpu_fan_speed_p(device_handles[d], 0, &dummy_speed) ==
+            AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         return PAPI_ENOSUPP;
       }
       snprintf(name_buf, sizeof(name_buf), "fan_speed:device=%d:sensor=0", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d fan speed (0-255 relative)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d fan speed (0-255 relative)", d);
       native_event_t *ev_fan = &ntv_table.events[idx];
       ev_fan->id = idx;
       ev_fan->name = strdup(name_buf);
@@ -1958,12 +2073,16 @@ static int init_event_table(void) {
     }
     /* Register Fan Max Speed - always probe directly */
     int64_t dummy_max;
-    if (amdsmi_get_gpu_fan_speed_max_p && amdsmi_get_gpu_fan_speed_max_p(device_handles[d], 0, &dummy_max) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_fan_speed_max_p &&
+        amdsmi_get_gpu_fan_speed_max_p(device_handles[d], 0, &dummy_max) ==
+            AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         return PAPI_ENOSUPP;
       }
-      snprintf(name_buf, sizeof(name_buf), "fan_rpms_max:device=%d:sensor=0", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d fan maximum speed in RPM", d);
+      snprintf(name_buf, sizeof(name_buf), "fan_rpms_max:device=%d:sensor=0",
+               d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d fan maximum speed in RPM", d);
       native_event_t *ev_fanmax = &ntv_table.events[idx];
       ev_fanmax->id = idx;
       ev_fanmax->name = strdup(name_buf);
@@ -1994,12 +2113,14 @@ static int init_event_table(void) {
     /* total VRAM bytes - test directly */
     uint64_t dummy_total;
     if (amdsmi_get_total_memory_p &&
-        amdsmi_get_total_memory_p(device_handles[d], AMDSMI_MEM_TYPE_VRAM, &dummy_total) == AMDSMI_STATUS_SUCCESS) {
+        amdsmi_get_total_memory_p(device_handles[d], AMDSMI_MEM_TYPE_VRAM,
+                                  &dummy_total) == AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         return PAPI_ENOSUPP;
       }
       snprintf(name_buf, sizeof(name_buf), "mem_total_VRAM:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d total VRAM memory (bytes)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d total VRAM memory (bytes)", d);
       native_event_t *ev = &ntv_table.events[idx];
       ev->id = idx;
       ev->name = strdup(name_buf);
@@ -2023,12 +2144,14 @@ static int init_event_table(void) {
     /* used VRAM bytes - test directly */
     uint64_t dummy_usage;
     if (amdsmi_get_memory_usage_p &&
-        amdsmi_get_memory_usage_p(device_handles[d], AMDSMI_MEM_TYPE_VRAM, &dummy_usage) == AMDSMI_STATUS_SUCCESS) {
+        amdsmi_get_memory_usage_p(device_handles[d], AMDSMI_MEM_TYPE_VRAM,
+                                  &dummy_usage) == AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         return PAPI_ENOSUPP;
       }
       snprintf(name_buf, sizeof(name_buf), "mem_usage_VRAM:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM memory usage (bytes)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d VRAM memory usage (bytes)", d);
       native_event_t *ev = &ntv_table.events[idx];
       ev->id = idx;
       ev->name = strdup(name_buf);
@@ -2051,7 +2174,8 @@ static int init_event_table(void) {
     }
     if (amdsmi_get_gpu_vram_usage_p) {
       amdsmi_vram_usage_t vu;
-      if (amdsmi_get_gpu_vram_usage_p(device_handles[d], &vu) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_vram_usage_p(device_handles[d], &vu) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           return PAPI_ENOSUPP;
         }
@@ -2105,10 +2229,13 @@ static int init_event_table(void) {
     }
     // Register power average event - test directly
     amdsmi_power_info_t dummy_power;
-    if (amdsmi_get_power_info_p && amdsmi_get_power_info_p(device_handles[d], &dummy_power) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_power_info_p &&
+        amdsmi_get_power_info_p(device_handles[d], &dummy_power) ==
+            AMDSMI_STATUS_SUCCESS) {
       // Average power consumption (in Watts or microWatts)
       snprintf(name_buf, sizeof(name_buf), "power_average:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d average power consumption (W)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d average power consumption (W)", d);
       native_event_t *ev_pwr_avg = &ntv_table.events[idx];
       ev_pwr_avg->id = idx;
       ev_pwr_avg->name = strdup(name_buf);
@@ -2129,10 +2256,13 @@ static int init_event_table(void) {
     // Register power cap events (if power cap functions are available) - test
     // directly
     amdsmi_power_cap_info_t dummy_cap_info;
-    if (amdsmi_get_power_cap_info_p && amdsmi_get_power_cap_info_p(device_handles[d], 0, &dummy_cap_info) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_power_cap_info_p &&
+        amdsmi_get_power_cap_info_p(device_handles[d], 0, &dummy_cap_info) ==
+            AMDSMI_STATUS_SUCCESS) {
       // Current power cap limit
       snprintf(name_buf, sizeof(name_buf), "power_cap:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d current power cap (W)", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d current power cap (W)",
+               d);
       native_event_t *ev_pcap = &ntv_table.events[idx];
       ev_pcap->id = idx;
       ev_pcap->name = strdup(name_buf);
@@ -2151,7 +2281,8 @@ static int init_event_table(void) {
       idx++;
       // Minimum allowed power cap
       snprintf(name_buf, sizeof(name_buf), "power_cap_range_min:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d minimum allowed power cap (W)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d minimum allowed power cap (W)", d);
       native_event_t *ev_pcap_min = &ntv_table.events[idx];
       ev_pcap_min->id = idx;
       ev_pcap_min->name = strdup(name_buf);
@@ -2170,7 +2301,8 @@ static int init_event_table(void) {
       idx++;
       // Maximum allowed power cap
       snprintf(name_buf, sizeof(name_buf), "power_cap_range_max:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum allowed power cap (W)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d maximum allowed power cap (W)", d);
       native_event_t *ev_pcap_max = &ntv_table.events[idx];
       ev_pcap_max->id = idx;
       ev_pcap_max->name = strdup(name_buf);
@@ -2189,7 +2321,8 @@ static int init_event_table(void) {
       idx++;
       // Default power cap
       snprintf(name_buf, sizeof(name_buf), "power_cap_default:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d default power cap (W)", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d default power cap (W)",
+               d);
       native_event_t *ev_pcap_def = &ntv_table.events[idx];
       ev_pcap_def->id = idx;
       ev_pcap_def->name = strdup(name_buf);
@@ -2208,7 +2341,8 @@ static int init_event_table(void) {
       idx++;
       // DPM power cap
       snprintf(name_buf, sizeof(name_buf), "power_cap_dpm:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d DPM power cap (MHz)", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d DPM power cap (MHz)",
+               d);
       native_event_t *ev_pcap_dpm = &ntv_table.events[idx];
       ev_pcap_dpm->id = idx;
       ev_pcap_dpm->name = strdup(name_buf);
@@ -2229,13 +2363,15 @@ static int init_event_table(void) {
   }
   /* PCIe throughput and replay counter metrics */
   uint64_t tx = 0, rx = 0, pkt = 0;
-  amdsmi_status_t st_thr = amdsmi_get_gpu_pci_throughput_p(device_handles[0], &tx, &rx, &pkt);
+  amdsmi_status_t st_thr =
+      amdsmi_get_gpu_pci_throughput_p(device_handles[0], &tx, &rx, &pkt);
 
   for (int d = 0; d < gpu_count; ++d) {
     if (st_thr == AMDSMI_STATUS_SUCCESS) {
       /* bytes sent per second */
       snprintf(name_buf, sizeof(name_buf), "pci_throughput_sent:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe bytes sent per second", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d PCIe bytes sent per second", d);
       native_event_t *ev_tx = &ntv_table.events[idx];
       ev_tx->id = idx;
       ev_tx->name = strdup(name_buf);
@@ -2253,8 +2389,10 @@ static int init_event_table(void) {
       htable_insert(htable, ev_tx->name, ev_tx);
       ++idx;
       /* bytes received per second */
-      snprintf(name_buf, sizeof(name_buf), "pci_throughput_received:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe bytes received per second", d);
+      snprintf(name_buf, sizeof(name_buf), "pci_throughput_received:device=%d",
+               d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d PCIe bytes received per second", d);
       native_event_t *ev_rx = &ntv_table.events[idx];
       ev_rx->id = idx;
       ev_rx->name = strdup(name_buf);
@@ -2272,8 +2410,10 @@ static int init_event_table(void) {
       htable_insert(htable, ev_rx->name, ev_rx);
       ++idx;
       /* max packet size */
-      snprintf(name_buf, sizeof(name_buf), "pci_throughput_max_packet:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe max packet size (bytes)", d);
+      snprintf(name_buf, sizeof(name_buf),
+               "pci_throughput_max_packet:device=%d", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d PCIe max packet size (bytes)", d);
       native_event_t *ev_pkt = &ntv_table.events[idx];
       ev_pkt->id = idx;
       ev_pkt->name = strdup(name_buf);
@@ -2292,9 +2432,11 @@ static int init_event_table(void) {
       ++idx;
     }
     uint64_t replay = 0;
-    if (amdsmi_get_gpu_pci_replay_counter_p(device_handles[d], &replay) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_pci_replay_counter_p(device_handles[d], &replay) ==
+        AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "pci_replay_counter:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay (NAK) counter", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d PCIe replay (NAK) counter", d);
       native_event_t *ev_rep = &ntv_table.events[idx];
       ev_rep->id = idx;
       ev_rep->name = strdup(name_buf);
@@ -2322,9 +2464,12 @@ static int init_event_table(void) {
     }
     // Register GFX activity event - test directly
     amdsmi_engine_usage_t dummy_usage;
-    if (amdsmi_get_gpu_activity_p && amdsmi_get_gpu_activity_p(device_handles[d], &dummy_usage) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_activity_p &&
+        amdsmi_get_gpu_activity_p(device_handles[d], &dummy_usage) ==
+            AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gfx_activity:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d GFX engine activity (%%)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d GFX engine activity (%%)", d);
       native_event_t *ev_gfx = &ntv_table.events[idx];
       ev_gfx->id = idx;
       ev_gfx->name = strdup(name_buf);
@@ -2342,7 +2487,8 @@ static int init_event_table(void) {
       htable_insert(htable, ev_gfx->name, ev_gfx);
       idx++;
       snprintf(name_buf, sizeof(name_buf), "umc_activity:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d UMC engine activity (%%)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d UMC engine activity (%%)", d);
       native_event_t *ev_umc = &ntv_table.events[idx];
       ev_umc->id = idx;
       ev_umc->name = strdup(name_buf);
@@ -2360,7 +2506,8 @@ static int init_event_table(void) {
       htable_insert(htable, ev_umc->name, ev_umc);
       idx++;
       snprintf(name_buf, sizeof(name_buf), "mm_activity:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d MM engine activity (%%)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d MM engine activity (%%)", d);
       native_event_t *ev_mm = &ntv_table.events[idx];
       ev_mm->id = idx;
       ev_mm->name = strdup(name_buf);
@@ -2381,16 +2528,22 @@ static int init_event_table(void) {
   }
   /* GPU clock frequency levels for multiple clock domains */
   for (int d = 0; d < gpu_count; ++d) {
-    amdsmi_clk_type_t clk_types[] = {AMDSMI_CLK_TYPE_SYS, AMDSMI_CLK_TYPE_DF, AMDSMI_CLK_TYPE_DCEF};
+    amdsmi_clk_type_t clk_types[] = {AMDSMI_CLK_TYPE_SYS, AMDSMI_CLK_TYPE_DF,
+                                     AMDSMI_CLK_TYPE_DCEF};
     const char *clk_names[] = {"sys", "df", "dcef"};
     for (int t = 0; t < 3; ++t) {
       amdsmi_frequencies_t f;
-      if (amdsmi_get_clk_freq_p(device_handles[d], clk_types[t], &f) != AMDSMI_STATUS_SUCCESS || f.num_supported == 0) {
+      if (amdsmi_get_clk_freq_p(device_handles[d], clk_types[t], &f) !=
+              AMDSMI_STATUS_SUCCESS ||
+          f.num_supported == 0) {
         continue;
       }
       // Number of supported frequencies for this clock domain
-      snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_count:device=%d", clk_names[t], d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d number of supported %s clock frequencies", d, clk_names[t]);
+      snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_count:device=%d",
+               clk_names[t], d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d number of supported %s clock frequencies", d,
+               clk_names[t]);
       native_event_t *ev_clk_count = &ntv_table.events[idx];
       ev_clk_count->id = idx;
       ev_clk_count->name = strdup(name_buf);
@@ -2408,8 +2561,10 @@ static int init_event_table(void) {
       htable_insert(htable, ev_clk_count->name, ev_clk_count);
       idx++;
       // Current clock frequency for this domain
-      snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_current:device=%d", clk_names[t], d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d current %s clock frequency (MHz)", d, clk_names[t]);
+      snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_current:device=%d",
+               clk_names[t], d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d current %s clock frequency (MHz)", d, clk_names[t]);
       native_event_t *ev_clk_cur = &ntv_table.events[idx];
       ev_clk_cur->id = idx;
       ev_clk_cur->name = strdup(name_buf);
@@ -2428,8 +2583,11 @@ static int init_event_table(void) {
       idx++;
       // Supported frequency levels for this domain
       for (uint32_t fi = 0; fi < f.num_supported; ++fi) {
-        snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_level_%u:device=%d", clk_names[t], fi, d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d supported %s clock frequency level %u (MHz)", d, clk_names[t], fi);
+        snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_level_%u:device=%d",
+                 clk_names[t], fi, d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d supported %s clock frequency level %u (MHz)", d,
+                 clk_names[t], fi);
         native_event_t *ev_clk_lvl = &ntv_table.events[idx];
         ev_clk_lvl->id = idx;
         ev_clk_lvl->name = strdup(name_buf);
@@ -2456,9 +2614,11 @@ static int init_event_table(void) {
     // amdsmi_virtualization_mode_t vmode;
     int32_t numa;
     // GPU ID
-    if (amdsmi_get_gpu_id_p(device_handles[d], &id16) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_id_p(device_handles[d], &id16) ==
+        AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gpu_id:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU identifier (Device ID)", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d GPU identifier (Device ID)", d);
       native_event_t *ev_id = &ntv_table.events[idx];
       ev_id->id = idx;
       ev_id->name = strdup(name_buf);
@@ -2477,7 +2637,8 @@ static int init_event_table(void) {
       idx++;
     }
     // GPU Revision
-    if (amdsmi_get_gpu_revision_p(device_handles[d], &id16) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_revision_p(device_handles[d], &id16) ==
+        AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gpu_revision:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU revision ID", d);
       native_event_t *ev_rev = &ntv_table.events[idx];
@@ -2498,7 +2659,8 @@ static int init_event_table(void) {
       idx++;
     }
     // GPU Subsystem ID
-    if (amdsmi_get_gpu_subsystem_id_p(device_handles[d], &id16) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_subsystem_id_p(device_handles[d], &id16) ==
+        AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gpu_subsystem_id:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU subsystem ID", d);
       native_event_t *ev_subid = &ntv_table.events[idx];
@@ -2519,9 +2681,11 @@ static int init_event_table(void) {
       idx++;
     }
     // GPU BDF ID
-    if (amdsmi_get_gpu_bdf_id_p(device_handles[d], &id64) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_bdf_id_p(device_handles[d], &id64) ==
+        AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gpu_bdfid:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU PCI BDF identifier", d);
+      snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU PCI BDF identifier",
+               d);
       native_event_t *ev_bdf = &ntv_table.events[idx];
       ev_bdf->id = idx;
       ev_bdf->name = strdup(name_buf);
@@ -2541,9 +2705,13 @@ static int init_event_table(void) {
     }
     // GPU Virtualization Mode
     amdsmi_virtualization_mode_t vmode;
-    if (amdsmi_get_gpu_virtualization_mode_p && amdsmi_get_gpu_virtualization_mode_p(device_handles[d], &vmode) == AMDSMI_STATUS_SUCCESS) {
-      snprintf(name_buf, sizeof(name_buf), "gpu_virtualization_mode:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d GPU virtualization mode", d);
+    if (amdsmi_get_gpu_virtualization_mode_p &&
+        amdsmi_get_gpu_virtualization_mode_p(device_handles[d], &vmode) ==
+            AMDSMI_STATUS_SUCCESS) {
+      snprintf(name_buf, sizeof(name_buf), "gpu_virtualization_mode:device=%d",
+               d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d GPU virtualization mode", d);
       native_event_t *ev_vmode = &ntv_table.events[idx];
       ev_vmode->id = idx;
       ev_vmode->name = strdup(name_buf);
@@ -2562,7 +2730,8 @@ static int init_event_table(void) {
       idx++;
     }
     // GPU NUMA Node
-    if (amdsmi_get_gpu_topo_numa_affinity_p(device_handles[d], &numa) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_topo_numa_affinity_p(device_handles[d], &numa) ==
+        AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "numa_node:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf), "Device %d NUMA node", d);
       native_event_t *ev_numa = &ntv_table.events[idx];
@@ -2585,9 +2754,11 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_process_isolation_p) {
       uint32_t pis = 0;
-      if (amdsmi_get_gpu_process_isolation_p(device_handles[d], &pis) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_process_isolation_p(device_handles[d], &pis) ==
+          AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf), "process_isolation:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d process isolation status", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d process isolation status", d);
         native_event_t *ev_iso = &ntv_table.events[idx];
         ev_iso->id = idx;
         ev_iso->name = strdup(name_buf);
@@ -2609,7 +2780,8 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_xcd_counter_p) {
       uint16_t xcd = 0;
-      if (amdsmi_get_gpu_xcd_counter_p(device_handles[d], &xcd) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_xcd_counter_p(device_handles[d], &xcd) ==
+          AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf), "xcd_counter:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d XCD counter", d);
         native_event_t *ev_xcd = &ntv_table.events[idx];
@@ -2633,7 +2805,8 @@ static int init_event_table(void) {
 
     if (amdsmi_get_fw_info_p) {
       amdsmi_fw_info_t finfo;
-      if (amdsmi_get_fw_info_p(device_handles[d], &finfo) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_fw_info_p(device_handles[d], &finfo) ==
+          AMDSMI_STATUS_SUCCESS) {
         uint8_t n = finfo.num_fw_info;
         if (n > AMDSMI_FW_ID__MAX)
           n = AMDSMI_FW_ID__MAX;
@@ -2643,8 +2816,10 @@ static int init_event_table(void) {
             return PAPI_ENOSUPP;
           }
           uint32_t fid = finfo.fw_info_list[f].fw_id;
-          snprintf(name_buf, sizeof(name_buf), "fw_version_id%u:device=%d", fid, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d firmware id %u version", d, fid);
+          snprintf(name_buf, sizeof(name_buf), "fw_version_id%u:device=%d", fid,
+                   d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d firmware id %u version", d, fid);
           native_event_t *ev_fw = &ntv_table.events[idx];
           ev_fw->id = idx;
           ev_fw->name = strdup(name_buf);
@@ -2667,13 +2842,15 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_board_info_p) {
       amdsmi_board_info_t binfo;
-      if (amdsmi_get_gpu_board_info_p(device_handles[d], &binfo) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_board_info_p(device_handles[d], &binfo) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "board_serial_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d board serial number (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d board serial number (hash)", d);
         native_event_t *ev_brd = &ntv_table.events[idx];
         ev_brd->id = idx;
         ev_brd->name = strdup(name_buf);
@@ -2695,13 +2872,15 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_vram_info_p) {
       amdsmi_vram_info_t vinfo;
-      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "vram_max_bandwidth:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM max bandwidth (GB/s)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d VRAM max bandwidth (GB/s)", d);
         native_event_t *ev_vbw = &ntv_table.events[idx];
         ev_vbw->id = idx;
         ev_vbw->name = strdup(name_buf);
@@ -2723,13 +2902,15 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_bad_page_info_p) {
       uint32_t nump = 0;
-      if (amdsmi_get_gpu_bad_page_info_p(device_handles[d], &nump, NULL) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_bad_page_info_p(device_handles[d], &nump, NULL) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "bad_page_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page count", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page count",
+                 d);
         native_event_t *ev_bpc = &ntv_table.events[idx];
         ev_bpc->id = idx;
         ev_bpc->name = strdup(name_buf);
@@ -2751,8 +2932,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "bad_page_address:device=%d:page=%u", d, p);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page %u address", d, p);
+          snprintf(name_buf, sizeof(name_buf),
+                   "bad_page_address:device=%d:page=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d retired page %u address", d, p);
           native_event_t *ev_addr = &ntv_table.events[idx];
           ev_addr->id = idx;
           ev_addr->name = strdup(name_buf);
@@ -2773,8 +2956,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "bad_page_size:device=%d:page=%u", d, p);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page %u size", d, p);
+          snprintf(name_buf, sizeof(name_buf),
+                   "bad_page_size:device=%d:page=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d retired page %u size", d, p);
           native_event_t *ev_size = &ntv_table.events[idx];
           ev_size->id = idx;
           ev_size->name = strdup(name_buf);
@@ -2795,8 +2980,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "bad_page_status:device=%d:page=%u", d, p);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d retired page %u status", d, p);
+          snprintf(name_buf, sizeof(name_buf),
+                   "bad_page_status:device=%d:page=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d retired page %u status", d, p);
           native_event_t *ev_stat = &ntv_table.events[idx];
           ev_stat->id = idx;
           ev_stat->name = strdup(name_buf);
@@ -2819,13 +3006,15 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_bad_page_threshold_p) {
       uint32_t thr = 0;
-      if (amdsmi_get_gpu_bad_page_threshold_p(device_handles[d], &thr) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_bad_page_threshold_p(device_handles[d], &thr) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "bad_page_threshold:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d bad page threshold", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d bad page threshold",
+                 d);
         native_event_t *ev_bpt = &ntv_table.events[idx];
         ev_bpt->id = idx;
         ev_bpt->name = strdup(name_buf);
@@ -2851,7 +3040,8 @@ static int init_event_table(void) {
        * discover all sensors. */
       for (uint32_t s = 0; s < 2; ++s) {
         amdsmi_power_info_t pinfo;
-        if (amdsmi_get_power_info_v2_p(device_handles[d], s, &pinfo) != AMDSMI_STATUS_SUCCESS)
+        if (amdsmi_get_power_info_v2_p(device_handles[d], s, &pinfo) !=
+            AMDSMI_STATUS_SUCCESS)
           break;
 
         /* Register current socket power in Watts */
@@ -2859,8 +3049,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_current_watts:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u current socket power (W)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_current_watts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u current socket power (W)", d, s);
         native_event_t *ev_cur = &ntv_table.events[idx];
         ev_cur->id = idx;
         ev_cur->name = strdup(name_buf);
@@ -2883,8 +3075,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_average_watts:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u average socket power (W)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_average_watts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u average socket power (W)", d, s);
         native_event_t *ev_avg = &ntv_table.events[idx];
         ev_avg->id = idx;
         ev_avg->name = strdup(name_buf);
@@ -2907,8 +3101,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_socket_microwatts:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u socket power (uW)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_socket_microwatts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u socket power (uW)", d, s);
         native_event_t *ev_sock = &ntv_table.events[idx];
         ev_sock->id = idx;
         ev_sock->name = strdup(name_buf);
@@ -2931,8 +3127,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_gfx_voltage_mv:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u GFX voltage (mV)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_gfx_voltage_mv:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u GFX voltage (mV)", d, s);
         native_event_t *ev_gfx = &ntv_table.events[idx];
         ev_gfx->id = idx;
         ev_gfx->name = strdup(name_buf);
@@ -2955,8 +3153,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_soc_voltage_mv:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u SOC voltage (mV)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_soc_voltage_mv:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u SOC voltage (mV)", d, s);
         native_event_t *ev_soc = &ntv_table.events[idx];
         ev_soc->id = idx;
         ev_soc->name = strdup(name_buf);
@@ -2979,8 +3179,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_mem_voltage_mv:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u MEM voltage (mV)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_mem_voltage_mv:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u MEM voltage (mV)", d, s);
         native_event_t *ev_mem = &ntv_table.events[idx];
         ev_mem->id = idx;
         ev_mem->name = strdup(name_buf);
@@ -3003,8 +3205,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_limit_watts:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u power limit (W)", d, s);
+        snprintf(name_buf, sizeof(name_buf),
+                 "power_sensor_limit_watts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d power sensor %u power limit (W)", d, s);
         native_event_t *ev_lim = &ntv_table.events[idx];
         ev_lim->id = idx;
         ev_lim->name = strdup(name_buf);
@@ -3026,13 +3230,15 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_metrics_info_p) {
       amdsmi_gpu_metrics_t metrics;
-      if (amdsmi_get_gpu_metrics_info_p(device_handles[d], &metrics) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_metrics_info_p(device_handles[d], &metrics) ==
+          AMDSMI_STATUS_SUCCESS) {
         /* Register throttle status */
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "gpu_throttle_status:device=%d", d);
+        snprintf(name_buf, sizeof(name_buf), "gpu_throttle_status:device=%d",
+                 d);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d throttle status", d);
         native_event_t *ev_throttle = &ntv_table.events[idx];
         ev_throttle->id = idx;
@@ -3056,8 +3262,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "gpu_indep_throttle_status:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d independent throttle status", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "gpu_indep_throttle_status:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d independent throttle status", d);
         native_event_t *ev_ithrottle = &ntv_table.events[idx];
         ev_ithrottle->id = idx;
         ev_ithrottle->name = strdup(name_buf);
@@ -3081,7 +3289,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_link_width:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe link width (lanes)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe link width (lanes)", d);
         native_event_t *ev_lw = &ntv_table.events[idx];
         ev_lw->id = idx;
         ev_lw->name = strdup(name_buf);
@@ -3105,7 +3314,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_link_speed:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe link speed (0.1 GT/s)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe link speed (0.1 GT/s)", d);
         native_event_t *ev_ls = &ntv_table.events[idx];
         ev_ls->id = idx;
         ev_ls->name = strdup(name_buf);
@@ -3129,7 +3339,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "pcie_bandwidth_acc:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe accumulated bandwidth (GB/s)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe accumulated bandwidth (GB/s)", d);
         native_event_t *ev_bwacc = &ntv_table.events[idx];
         ev_bwacc->id = idx;
         ev_bwacc->name = strdup(name_buf);
@@ -3151,8 +3362,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_bandwidth_inst:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe instantaneous bandwidth (GB/s)", d);
+        snprintf(name_buf, sizeof(name_buf), "pcie_bandwidth_inst:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe instantaneous bandwidth (GB/s)", d);
         native_event_t *ev_bwin = &ntv_table.events[idx];
         ev_bwin->id = idx;
         ev_bwin->name = strdup(name_buf);
@@ -3174,8 +3387,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_l0_to_recov_count_acc:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe L0->recovery count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_l0_to_recov_count_acc:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe L0->recovery count", d);
         native_event_t *ev_l0 = &ntv_table.events[idx];
         ev_l0->id = idx;
         ev_l0->name = strdup(name_buf);
@@ -3197,8 +3412,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_replay_count_acc:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay count", d);
+        snprintf(name_buf, sizeof(name_buf), "pcie_replay_count_acc:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay count",
+                 d);
         native_event_t *ev_replay = &ntv_table.events[idx];
         ev_replay->id = idx;
         ev_replay->name = strdup(name_buf);
@@ -3220,8 +3437,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_replay_rover_count_acc:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay rollover count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_replay_rover_count_acc:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe replay rollover count", d);
         native_event_t *ev_replay_ro = &ntv_table.events[idx];
         ev_replay_ro->id = idx;
         ev_replay_ro->name = strdup(name_buf);
@@ -3243,8 +3462,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_nak_sent_count_acc:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK sent count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_nak_sent_count_acc:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK sent count",
+                 d);
         native_event_t *ev_nak_sent = &ntv_table.events[idx];
         ev_nak_sent->id = idx;
         ev_nak_sent->name = strdup(name_buf);
@@ -3266,8 +3487,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_nak_rcvd_count_acc:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK received count", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_nak_rcvd_count_acc:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe NAK received count", d);
         native_event_t *ev_nak_rcv = &ntv_table.events[idx];
         ev_nak_rcv->id = idx;
         ev_nak_rcv->name = strdup(name_buf);
@@ -3287,14 +3510,18 @@ static int init_event_table(void) {
       }
     }
 
-    if (amdsmi_init_gpu_event_notification_p && amdsmi_set_gpu_event_notification_mask_p && amdsmi_get_gpu_event_notification_p &&
+    if (amdsmi_init_gpu_event_notification_p &&
+        amdsmi_set_gpu_event_notification_mask_p &&
+        amdsmi_get_gpu_event_notification_p &&
         amdsmi_stop_gpu_event_notification_p) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         papi_free(ntv_table.events);
         return PAPI_ENOSUPP;
       }
-      snprintf(name_buf, sizeof(name_buf), "thermal_throttle_events:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d thermal throttle event notifications", d);
+      snprintf(name_buf, sizeof(name_buf), "thermal_throttle_events:device=%d",
+               d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d thermal throttle event notifications", d);
       native_event_t *ev_tt = &ntv_table.events[idx];
       ev_tt->id = idx;
       ev_tt->name = strdup(name_buf);
@@ -3318,11 +3545,13 @@ static int init_event_table(void) {
     uint64_t energy = 0;
     float resolution = 0.0;
     uint64_t timestamp = 0;
-    if (amdsmi_get_energy_count_p(device_handles[d], &energy, &resolution, &timestamp) != AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_energy_count_p(device_handles[d], &energy, &resolution,
+                                  &timestamp) != AMDSMI_STATUS_SUCCESS) {
       continue;
     }
     snprintf(name_buf, sizeof(name_buf), "energy_consumed:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d energy consumed (microJoules)", d);
+    snprintf(descr_buf, sizeof(descr_buf),
+             "Device %d energy consumed (microJoules)", d);
     native_event_t *ev_energy = &ntv_table.events[idx];
     ev_energy->id = idx;
     ev_energy->name = strdup(name_buf);
@@ -3341,7 +3570,8 @@ static int init_event_table(void) {
     idx++;
 
     snprintf(name_buf, sizeof(name_buf), "energy_resolution:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d energy counter resolution (microJoules)", d);
+    snprintf(descr_buf, sizeof(descr_buf),
+             "Device %d energy counter resolution (microJoules)", d);
     native_event_t *ev_res = &ntv_table.events[idx];
     ev_res->id = idx;
     ev_res->name = strdup(name_buf);
@@ -3360,7 +3590,8 @@ static int init_event_table(void) {
     idx++;
 
     snprintf(name_buf, sizeof(name_buf), "energy_timestamp:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d energy counter timestamp (ns)", d);
+    snprintf(descr_buf, sizeof(descr_buf),
+             "Device %d energy counter timestamp (ns)", d);
     native_event_t *ev_ts = &ntv_table.events[idx];
     ev_ts->id = idx;
     ev_ts->name = strdup(name_buf);
@@ -3381,11 +3612,13 @@ static int init_event_table(void) {
   /* GPU power profile information */
   for (int d = 0; d < gpu_count; ++d) {
     amdsmi_power_profile_status_t profile_status;
-    if (amdsmi_get_gpu_power_profile_presets_p(device_handles[d], 0, &profile_status) != AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_gpu_power_profile_presets_p(
+            device_handles[d], 0, &profile_status) != AMDSMI_STATUS_SUCCESS) {
       continue;
     }
     snprintf(name_buf, sizeof(name_buf), "power_profiles_count:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d number of supported power profiles", d);
+    snprintf(descr_buf, sizeof(descr_buf),
+             "Device %d number of supported power profiles", d);
     native_event_t *ev_prof_count = &ntv_table.events[idx];
     ev_prof_count->id = idx;
     ev_prof_count->name = strdup(name_buf);
@@ -3403,7 +3636,8 @@ static int init_event_table(void) {
     htable_insert(htable, ev_prof_count->name, ev_prof_count);
     idx++;
     snprintf(name_buf, sizeof(name_buf), "power_profile_current:device=%d", d);
-    snprintf(descr_buf, sizeof(descr_buf), "Device %d current power profile mask", d);
+    snprintf(descr_buf, sizeof(descr_buf),
+             "Device %d current power profile mask", d);
     native_event_t *ev_prof_curr = &ntv_table.events[idx];
     ev_prof_curr->id = idx;
     ev_prof_curr->name = strdup(name_buf);
@@ -3428,7 +3662,8 @@ static int init_event_table(void) {
     for (int s = 0; s < cpu_count; ++s) {
       int dev = gpu_count + s;
       uint32_t pwr;
-      if (amdsmi_get_cpu_socket_power_p(device_handles[dev], &pwr) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_cpu_socket_power_p(device_handles[dev], &pwr) ==
+          AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf), "power:socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf), "Socket %d power (W)", s);
         native_event_t *ev_pwr = &ntv_table.events[idx];
@@ -3449,9 +3684,11 @@ static int init_event_table(void) {
         idx++;
       }
       uint64_t sock_energy;
-      if (amdsmi_get_cpu_socket_energy_p(device_handles[dev], &sock_energy) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_cpu_socket_energy_p(device_handles[dev], &sock_energy) ==
+          AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf), "energy:socket=%d", s);
-        snprintf(descr_buf, sizeof(descr_buf), "Socket %d energy consumed (uJ)", s);
+        snprintf(descr_buf, sizeof(descr_buf), "Socket %d energy consumed (uJ)",
+                 s);
         native_event_t *ev_sock_energy = &ntv_table.events[idx];
         ev_sock_energy->id = idx;
         ev_sock_energy->name = strdup(name_buf);
@@ -3470,9 +3707,11 @@ static int init_event_table(void) {
         idx++;
       }
       uint16_t fmax, fmin;
-      if (amdsmi_get_cpu_socket_freq_range_p(device_handles[dev], &fmax, &fmin) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_cpu_socket_freq_range_p(device_handles[dev], &fmax,
+                                             &fmin) == AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf), "freq_max:socket=%d", s);
-        snprintf(descr_buf, sizeof(descr_buf), "Socket %d maximum frequency (MHz)", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d maximum frequency (MHz)", s);
         native_event_t *ev_fmax = &ntv_table.events[idx];
         ev_fmax->id = idx;
         ev_fmax->name = strdup(name_buf);
@@ -3490,7 +3729,8 @@ static int init_event_table(void) {
         htable_insert(htable, ev_fmax->name, ev_fmax);
         idx++;
         snprintf(name_buf, sizeof(name_buf), "freq_min:socket=%d", s);
-        snprintf(descr_buf, sizeof(descr_buf), "Socket %d minimum frequency (MHz)", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d minimum frequency (MHz)", s);
         native_event_t *ev_fmin = &ntv_table.events[idx];
         ev_fmin->id = idx;
         ev_fmin->name = strdup(name_buf);
@@ -3509,13 +3749,17 @@ static int init_event_table(void) {
         idx++;
       }
       uint32_t cap;
-      amdsmi_status_t st_cap = amdsmi_get_cpu_socket_power_cap_p(device_handles[dev], &cap);
+      amdsmi_status_t st_cap =
+          amdsmi_get_cpu_socket_power_cap_p(device_handles[dev], &cap);
       uint32_t cap_max;
-      amdsmi_status_t st_capmax = amdsmi_get_cpu_socket_power_cap_max_p(device_handles[dev], &cap_max);
-      if (st_cap == AMDSMI_STATUS_SUCCESS || st_capmax == AMDSMI_STATUS_SUCCESS) {
+      amdsmi_status_t st_capmax =
+          amdsmi_get_cpu_socket_power_cap_max_p(device_handles[dev], &cap_max);
+      if (st_cap == AMDSMI_STATUS_SUCCESS ||
+          st_capmax == AMDSMI_STATUS_SUCCESS) {
         if (st_cap == AMDSMI_STATUS_SUCCESS) {
           snprintf(name_buf, sizeof(name_buf), "power_cap:socket=%d", s);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d current power cap (W)", s);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d current power cap (W)", s);
           native_event_t *ev_cap = &ntv_table.events[idx];
           ev_cap->id = idx;
           ev_cap->name = strdup(name_buf);
@@ -3535,7 +3779,8 @@ static int init_event_table(void) {
         }
         if (st_capmax == AMDSMI_STATUS_SUCCESS) {
           snprintf(name_buf, sizeof(name_buf), "power_cap_max:socket=%d", s);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d max power cap (W)", s);
+          snprintf(descr_buf, sizeof(descr_buf), "Socket %d max power cap (W)",
+                   s);
           native_event_t *ev_capmax = &ntv_table.events[idx];
           ev_capmax->id = idx;
           ev_capmax->name = strdup(name_buf);
@@ -3556,11 +3801,13 @@ static int init_event_table(void) {
       }
       uint16_t freq;
       char *src_type = NULL;
-      if (amdsmi_get_cpu_socket_current_active_freq_limit_p(device_handles[dev], &freq, &src_type) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_cpu_socket_current_active_freq_limit_p(
+              device_handles[dev], &freq, &src_type) == AMDSMI_STATUS_SUCCESS) {
         if (src_type)
           free(src_type);
         snprintf(name_buf, sizeof(name_buf), "freq_limit:socket=%d", s);
-        snprintf(descr_buf, sizeof(descr_buf), "Socket %d current frequency limit (MHz)", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d current frequency limit (MHz)", s);
         native_event_t *ev_flim = &ntv_table.events[idx];
         ev_flim->id = idx;
         ev_flim->name = strdup(name_buf);
@@ -3579,9 +3826,11 @@ static int init_event_table(void) {
         idx++;
       }
       amdsmi_smu_fw_version_t fw;
-      if (amdsmi_get_cpu_smu_fw_version_p(device_handles[dev], &fw) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_cpu_smu_fw_version_p(device_handles[dev], &fw) ==
+          AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf), "smu_fw_version:socket=%d", s);
-        snprintf(descr_buf, sizeof(descr_buf), "Socket %d SMU firmware version (encoded)", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d SMU firmware version (encoded)", s);
         native_event_t *ev_fw = &ntv_table.events[idx];
         ev_fw->id = idx;
         ev_fw->name = strdup(name_buf);
@@ -3605,9 +3854,12 @@ static int init_event_table(void) {
       int dev = gpu_count + s;
       for (uint32_t c = 0; c < cores_per_socket[s]; ++c) {
         uint64_t energy;
-        if (amdsmi_get_cpu_core_energy_p(cpu_core_handles[s][c], &energy) == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "energy:socket=%d:core=%d", s, c);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d Core %d energy (uJ)", s, c);
+        if (amdsmi_get_cpu_core_energy_p(cpu_core_handles[s][c], &energy) ==
+            AMDSMI_STATUS_SUCCESS) {
+          snprintf(name_buf, sizeof(name_buf), "energy:socket=%d:core=%d", s,
+                   c);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d Core %d energy (uJ)", s, c);
           native_event_t *ev_core_energy = &ntv_table.events[idx];
           ev_core_energy->id = idx;
           ev_core_energy->name = strdup(name_buf);
@@ -3626,9 +3878,12 @@ static int init_event_table(void) {
           idx++;
         }
         uint32_t freq;
-        if (amdsmi_get_cpu_core_current_freq_limit_p(cpu_core_handles[s][c], &freq) == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "freq_limit:socket=%d:core=%d", s, c);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d Core %d frequency limit (MHz)", s, c);
+        if (amdsmi_get_cpu_core_current_freq_limit_p(
+                cpu_core_handles[s][c], &freq) == AMDSMI_STATUS_SUCCESS) {
+          snprintf(name_buf, sizeof(name_buf), "freq_limit:socket=%d:core=%d",
+                   s, c);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d Core %d frequency limit (MHz)", s, c);
           native_event_t *ev_core_flim = &ntv_table.events[idx];
           ev_core_flim->id = idx;
           ev_core_flim->name = strdup(name_buf);
@@ -3647,9 +3902,12 @@ static int init_event_table(void) {
           idx++;
         }
         uint32_t boost;
-        if (amdsmi_get_cpu_core_boostlimit_p(cpu_core_handles[s][c], &boost) == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "boostlimit:socket=%d:core=%d", s, c);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d Core %d boost limit (MHz)", s, c);
+        if (amdsmi_get_cpu_core_boostlimit_p(cpu_core_handles[s][c], &boost) ==
+            AMDSMI_STATUS_SUCCESS) {
+          snprintf(name_buf, sizeof(name_buf), "boostlimit:socket=%d:core=%d",
+                   s, c);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d Core %d boost limit (MHz)", s, c);
           native_event_t *ev_boost = &ntv_table.events[idx];
           ev_boost->id = idx;
           ev_boost->name = strdup(name_buf);
@@ -3676,15 +3934,23 @@ static int init_event_table(void) {
         amdsmi_dimm_thermal_t dimm_temp;
         amdsmi_dimm_power_t dimm_pow;
         amdsmi_temp_range_refresh_rate_t range_info;
-        amdsmi_status_t st_temp = amdsmi_get_cpu_dimm_thermal_sensor_p(device_handles[dev], dimm, &dimm_temp);
-        amdsmi_status_t st_power = amdsmi_get_cpu_dimm_power_consumption_p(device_handles[dev], dimm, &dimm_pow);
-        amdsmi_status_t st_range = amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p(device_handles[dev], dimm, &range_info);
-        if (st_temp != AMDSMI_STATUS_SUCCESS && st_power != AMDSMI_STATUS_SUCCESS && st_range != AMDSMI_STATUS_SUCCESS) {
+        amdsmi_status_t st_temp = amdsmi_get_cpu_dimm_thermal_sensor_p(
+            device_handles[dev], dimm, &dimm_temp);
+        amdsmi_status_t st_power = amdsmi_get_cpu_dimm_power_consumption_p(
+            device_handles[dev], dimm, &dimm_pow);
+        amdsmi_status_t st_range =
+            amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p(
+                device_handles[dev], dimm, &range_info);
+        if (st_temp != AMDSMI_STATUS_SUCCESS &&
+            st_power != AMDSMI_STATUS_SUCCESS &&
+            st_range != AMDSMI_STATUS_SUCCESS) {
           continue;
         }
         if (st_temp == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "dimm_temp:socket=%d:dimm=%d", s, dimm);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d DIMM %d temperature (C)", s, dimm);
+          snprintf(name_buf, sizeof(name_buf), "dimm_temp:socket=%d:dimm=%d", s,
+                   dimm);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d DIMM %d temperature (C)", s, dimm);
           native_event_t *ev_dimm_temp = &ntv_table.events[idx];
           ev_dimm_temp->id = idx;
           ev_dimm_temp->name = strdup(name_buf);
@@ -3703,8 +3969,10 @@ static int init_event_table(void) {
           idx++;
         }
         if (st_power == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "dimm_power:socket=%d:dimm=%d", s, dimm);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d DIMM %d power (mW)", s, dimm);
+          snprintf(name_buf, sizeof(name_buf), "dimm_power:socket=%d:dimm=%d",
+                   s, dimm);
+          snprintf(descr_buf, sizeof(descr_buf), "Socket %d DIMM %d power (mW)",
+                   s, dimm);
           native_event_t *ev_dimm_pow = &ntv_table.events[idx];
           ev_dimm_pow->id = idx;
           ev_dimm_pow->name = strdup(name_buf);
@@ -3723,8 +3991,10 @@ static int init_event_table(void) {
           idx++;
         }
         if (st_range == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "dimm_temp_range:socket=%d:dimm=%d", s, dimm);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d DIMM %d temperature range", s, dimm);
+          snprintf(name_buf, sizeof(name_buf),
+                   "dimm_temp_range:socket=%d:dimm=%d", s, dimm);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d DIMM %d temperature range", s, dimm);
           native_event_t *ev_range = &ntv_table.events[idx];
           ev_range->id = idx;
           ev_range->name = strdup(name_buf);
@@ -3741,8 +4011,10 @@ static int init_event_table(void) {
           ev_range->access_func = access_amdsmi_dimm_range_refresh;
           htable_insert(htable, ev_range->name, ev_range);
           idx++;
-          snprintf(name_buf, sizeof(name_buf), "dimm_refresh_rate:socket=%d:dimm=%d", s, dimm);
-          snprintf(descr_buf, sizeof(descr_buf), "Socket %d DIMM %d refresh rate mode", s, dimm);
+          snprintf(name_buf, sizeof(name_buf),
+                   "dimm_refresh_rate:socket=%d:dimm=%d", s, dimm);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Socket %d DIMM %d refresh rate mode", s, dimm);
           native_event_t *ev_ref = &ntv_table.events[idx];
           ev_ref->id = idx;
           ev_ref->name = strdup(name_buf);
@@ -3883,7 +4155,8 @@ static int init_event_table(void) {
         return PAPI_ENOSUPP;
       }
       snprintf(name_buf, sizeof(name_buf), "lib_version_release");
-      snprintf(descr_buf, sizeof(descr_buf), "AMD SMI library release/patch version");
+      snprintf(descr_buf, sizeof(descr_buf),
+               "AMD SMI library release/patch version");
       native_event_t *ev_lrel = &ntv_table.events[idx];
       ev_lrel->id = idx;
       ev_lrel->name = strdup(name_buf);
@@ -3908,7 +4181,8 @@ static int init_event_table(void) {
     /* Device UUID (hash) */
     if (amdsmi_get_gpu_device_uuid_p) {
       unsigned int uuid_len = 0;
-      amdsmi_status_t st = amdsmi_get_gpu_device_uuid_p(device_handles[d], &uuid_len, NULL);
+      amdsmi_status_t st =
+          amdsmi_get_gpu_device_uuid_p(device_handles[d], &uuid_len, NULL);
       /* Some builds require preflight to get length; we just attempt a fixed
        * buffer */
       char uuid_buf[128];
@@ -3920,7 +4194,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "uuid_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d UUID (djb2 64-bit hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d UUID (djb2 64-bit hash)", d);
         native_event_t *ev_uuid = &ntv_table.events[idx];
         ev_uuid->id = idx;
         ev_uuid->name = strdup(name_buf);
@@ -3964,13 +4239,15 @@ static int init_event_table(void) {
     /* Vendor / VRAM vendor / Subsystem name (hash) */
     if (amdsmi_get_gpu_vendor_name_p) {
       char tmp[256] = {0};
-      if (amdsmi_get_gpu_vendor_name_p(device_handles[d], tmp, sizeof(tmp)) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_vendor_name_p(device_handles[d], tmp, sizeof(tmp)) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "vendor_name_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d vendor name (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d vendor name (hash)",
+                 d);
         native_event_t *ev_vn = &ntv_table.events[idx];
         ev_vn->id = idx;
         ev_vn->name = strdup(name_buf);
@@ -3994,13 +4271,16 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_vram_vendor_p) {
       char tmp[256] = {0};
-      if (amdsmi_get_gpu_vram_vendor_p(device_handles[d], tmp, (uint32_t)sizeof(tmp)) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_vram_vendor_p(device_handles[d], tmp,
+                                       (uint32_t)sizeof(tmp)) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "vram_vendor_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM vendor (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM vendor (hash)",
+                 d);
         native_event_t *ev_vrv = &ntv_table.events[idx];
         ev_vrv->id = idx;
         ev_vrv->name = strdup(name_buf);
@@ -4024,13 +4304,16 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_subsystem_name_p) {
       char tmp[256] = {0};
-      if (amdsmi_get_gpu_subsystem_name_p(device_handles[d], tmp, sizeof(tmp)) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_subsystem_name_p(
+              device_handles[d], tmp, sizeof(tmp)) == AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "subsystem_name_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d subsystem name (hash)", d);
+        snprintf(name_buf, sizeof(name_buf), "subsystem_name_hash:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d subsystem name (hash)", d);
         native_event_t *ev_ssn = &ntv_table.events[idx];
         ev_ssn->id = idx;
         ev_ssn->name = strdup(name_buf);
@@ -4040,7 +4323,8 @@ static int init_event_table(void) {
         ev_ssn->device = d;
         ev_ssn->value = 0;
         ev_ssn->mode = PAPI_MODE_READ;
-        ev_ssn->variant = 2; /* access_amdsmi_gpu_string_hash -> subsystem name */
+        ev_ssn->variant =
+            2; /* access_amdsmi_gpu_string_hash -> subsystem name */
         ev_ssn->subvariant = 0;
         ev_ssn->open_func = open_simple;
         ev_ssn->close_func = close_simple;
@@ -4055,7 +4339,8 @@ static int init_event_table(void) {
     /* Enumeration info (drm render/card, hsa/hip ids) */
     if (amdsmi_get_gpu_enumeration_info_p) {
       amdsmi_enumeration_info_t einfo;
-      if (amdsmi_get_gpu_enumeration_info_p(device_handles[d], &einfo) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_enumeration_info_p(device_handles[d], &einfo) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
@@ -4149,7 +4434,8 @@ static int init_event_table(void) {
     /* ASIC info (numeric IDs & CU count) */
     if (amdsmi_get_gpu_asic_info_p) {
       amdsmi_asic_info_t ainfo;
-      if (amdsmi_get_gpu_asic_info_p(device_handles[d], &ainfo) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_asic_info_p(device_handles[d], &ainfo) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
@@ -4198,8 +4484,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "asic_subsystem_vendor_id:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d ASIC subsystem vendor id", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "asic_subsystem_vendor_id:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d ASIC subsystem vendor id", d);
         native_event_t *ev_asv = &ntv_table.events[idx];
         ev_asv->id = idx;
         ev_asv->name = strdup(name_buf);
@@ -4221,7 +4509,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "asic_subsystem_id:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d ASIC subsystem id", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d ASIC subsystem id",
+                 d);
         native_event_t *ev_ass = &ntv_table.events[idx];
         ev_ass->id = idx;
         ev_ass->name = strdup(name_buf);
@@ -4265,7 +4554,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "compute_units:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d number of compute units", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d number of compute units", d);
         native_event_t *ev_cu = &ntv_table.events[idx];
         ev_cu->id = idx;
         ev_cu->name = strdup(name_buf);
@@ -4287,13 +4577,15 @@ static int init_event_table(void) {
     /* Driver info (strings hashed) */
     if (amdsmi_get_gpu_driver_info_p) {
       amdsmi_driver_info_t dinfo;
-      if (amdsmi_get_gpu_driver_info_p(device_handles[d], &dinfo) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_driver_info_p(device_handles[d], &dinfo) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "driver_name_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d driver name (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d driver name (hash)",
+                 d);
         native_event_t *ev_dname = &ntv_table.events[idx];
         ev_dname->id = idx;
         ev_dname->name = strdup(name_buf);
@@ -4315,7 +4607,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "driver_date_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d driver date (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d driver date (hash)",
+                 d);
         native_event_t *ev_dd = &ntv_table.events[idx];
         ev_dd->id = idx;
         ev_dd->name = strdup(name_buf);
@@ -4337,15 +4630,14 @@ static int init_event_table(void) {
     /* VBIOS info (strings hashed) */
     /*if (amdsmi_get_gpu_vbios_info_p) {
       amdsmi_vbios_info_t vb;
-      if (amdsmi_get_gpu_vbios_info_p(device_handles[d], &vb) == AMDSMI_STATUS_SUCCESS) {
-        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+      if (amdsmi_get_gpu_vbios_info_p(device_handles[d], &vb) ==
+    AMDSMI_STATUS_SUCCESS) { if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "vbios_version_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d vBIOS version (hash)", d);
-        native_event_t *ev_vbv = &ntv_table.events[idx];
-        ev_vbv->id = idx;
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d vBIOS version (hash)",
+    d); native_event_t *ev_vbv = &ntv_table.events[idx]; ev_vbv->id = idx;
         ev_vbv->name = strdup(name_buf);
         ev_vbv->descr = strdup(descr_buf);
         ev_vbv->device = d;
@@ -4364,12 +4656,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "vbios_part_number_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d vBIOS part number (hash)", d);
-        native_event_t *ev_vbp = &ntv_table.events[idx];
-        ev_vbp->id = idx;
-        ev_vbp->name = strdup(name_buf);
-        ev_vbp->descr = strdup(descr_buf);
+        snprintf(name_buf, sizeof(name_buf), "vbios_part_number_hash:device=%d",
+    d); snprintf(descr_buf, sizeof(descr_buf), "Device %d vBIOS part number
+    (hash)", d); native_event_t *ev_vbp = &ntv_table.events[idx]; ev_vbp->id =
+    idx; ev_vbp->name = strdup(name_buf); ev_vbp->descr = strdup(descr_buf);
         ev_vbp->device = d;
         ev_vbp->value = 0;
         ev_vbp->mode = PAPI_MODE_READ;
@@ -4386,12 +4676,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "vbios_build_date_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d vBIOS build date (hash)", d);
-        native_event_t *ev_vbd = &ntv_table.events[idx];
-        ev_vbd->id = idx;
-        ev_vbd->name = strdup(name_buf);
-        ev_vbd->descr = strdup(descr_buf);
+        snprintf(name_buf, sizeof(name_buf), "vbios_build_date_hash:device=%d",
+    d); snprintf(descr_buf, sizeof(descr_buf), "Device %d vBIOS build date
+    (hash)", d); native_event_t *ev_vbd = &ntv_table.events[idx]; ev_vbd->id =
+    idx; ev_vbd->name = strdup(name_buf); ev_vbd->descr = strdup(descr_buf);
         ev_vbd->device = d;
         ev_vbd->value = 0;
         ev_vbd->mode = PAPI_MODE_READ;
@@ -4411,7 +4699,8 @@ static int init_event_table(void) {
     amdsmi_link_metrics_t lm_probe;
     memset(&lm_probe, 0, sizeof(lm_probe));
     int has_xgmi = 0, has_pcie = 0;
-    if (amdsmi_get_link_metrics_p(device_handles[d], &lm_probe) == AMDSMI_STATUS_SUCCESS) {
+    if (amdsmi_get_link_metrics_p(device_handles[d], &lm_probe) ==
+        AMDSMI_STATUS_SUCCESS) {
       uint32_t n = lm_probe.num_links;
       if (n > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK)
         n = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
@@ -4424,8 +4713,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "xgmi_link%u_read_kB:device=%d", i, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d XGMI link %u read (kB)", d, i);
+          snprintf(name_buf, sizeof(name_buf), "xgmi_link%u_read_kB:device=%d",
+                   i, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d XGMI link %u read (kB)", d, i);
           native_event_t *ev_lr = &ntv_table.events[idx];
           ev_lr->id = idx;
           ev_lr->name = strdup(name_buf);
@@ -4449,8 +4740,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "xgmi_link%u_write_kB:device=%d", i, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d XGMI link %u write (kB)", d, i);
+          snprintf(name_buf, sizeof(name_buf), "xgmi_link%u_write_kB:device=%d",
+                   i, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d XGMI link %u write (kB)", d, i);
           native_event_t *ev_lw = &ntv_table.events[idx];
           ev_lw->id = idx;
           ev_lw->name = strdup(name_buf);
@@ -4474,8 +4767,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "xgmi_link%u_bit_rate_Gbps:device=%d", i, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d XGMI link %u speed (Gb/s)", d, i);
+          snprintf(name_buf, sizeof(name_buf),
+                   "xgmi_link%u_bit_rate_Gbps:device=%d", i, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d XGMI link %u speed (Gb/s)", d, i);
           native_event_t *ev_lb = &ntv_table.events[idx];
           ev_lb->id = idx;
           ev_lb->name = strdup(name_buf);
@@ -4499,8 +4794,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "xgmi_link%u_max_bandwidth_Gbps:device=%d", i, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d XGMI link %u max bandwidth (Gb/s)", d, i);
+          snprintf(name_buf, sizeof(name_buf),
+                   "xgmi_link%u_max_bandwidth_Gbps:device=%d", i, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d XGMI link %u max bandwidth (Gb/s)", d, i);
           native_event_t *ev_lm = &ntv_table.events[idx];
           ev_lm->id = idx;
           ev_lm->name = strdup(name_buf);
@@ -4526,8 +4823,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "pcie_link%u_bit_rate_Gbps:device=%d", i, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe link %u speed (Gb/s)", d, i);
+          snprintf(name_buf, sizeof(name_buf),
+                   "pcie_link%u_bit_rate_Gbps:device=%d", i, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d PCIe link %u speed (Gb/s)", d, i);
           native_event_t *ev_pb = &ntv_table.events[idx];
           ev_pb->id = idx;
           ev_pb->name = strdup(name_buf);
@@ -4551,8 +4850,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "pcie_link%u_max_bandwidth_Gbps:device=%d", i, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe link %u max bandwidth (Gb/s)", d, i);
+          snprintf(name_buf, sizeof(name_buf),
+                   "pcie_link%u_max_bandwidth_Gbps:device=%d", i, d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d PCIe link %u max bandwidth (Gb/s)", d, i);
           native_event_t *ev_pm = &ntv_table.events[idx];
           ev_pm->id = idx;
           ev_pm->name = strdup(name_buf);
@@ -4581,7 +4882,8 @@ static int init_event_table(void) {
           return PAPI_ENOSUPP;
         }
         snprintf(name_buf, sizeof(name_buf), "xgmi_total_read_kB:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d total XGMI read across links (kB)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d total XGMI read across links (kB)", d);
         native_event_t *ev_xr = &ntv_table.events[idx];
         ev_xr->id = idx;
         ev_xr->name = strdup(name_buf);
@@ -4605,8 +4907,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "xgmi_total_write_kB:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d total XGMI write across links (kB)", d);
+        snprintf(name_buf, sizeof(name_buf), "xgmi_total_write_kB:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d total XGMI write across links (kB)", d);
         native_event_t *ev_xw = &ntv_table.events[idx];
         ev_xw->id = idx;
         ev_xw->name = strdup(name_buf);
@@ -4630,8 +4934,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "xgmi_total_bit_rate_Gbps:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d aggregate XGMI link speed (Gb/s)", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "xgmi_total_bit_rate_Gbps:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d aggregate XGMI link speed (Gb/s)", d);
         native_event_t *ev_xb = &ntv_table.events[idx];
         ev_xb->id = idx;
         ev_xb->name = strdup(name_buf);
@@ -4655,8 +4961,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "xgmi_total_max_bandwidth_Gbps:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d aggregate XGMI max bandwidth (Gb/s)", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "xgmi_total_max_bandwidth_Gbps:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d aggregate XGMI max bandwidth (Gb/s)", d);
         native_event_t *ev_xm = &ntv_table.events[idx];
         ev_xm->id = idx;
         ev_xm->name = strdup(name_buf);
@@ -4682,8 +4990,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_total_bit_rate_Gbps:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d aggregate PCIe link speed (Gb/s)", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_total_bit_rate_Gbps:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d aggregate PCIe link speed (Gb/s)", d);
         native_event_t *ev_pb = &ntv_table.events[idx];
         ev_pb->id = idx;
         ev_pb->name = strdup(name_buf);
@@ -4707,8 +5017,10 @@ static int init_event_table(void) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "pcie_total_max_bandwidth_Gbps:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d aggregate PCIe max bandwidth (Gb/s)", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "pcie_total_max_bandwidth_Gbps:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d aggregate PCIe max bandwidth (Gb/s)", d);
         native_event_t *ev_pm = &ntv_table.events[idx];
         ev_pm->id = idx;
         ev_pm->name = strdup(name_buf);
@@ -4752,8 +5064,10 @@ static int init_event_table(void) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "process%d_%s:device=%d", p, pf[f].suffix, d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d process %d %s", d, p, pf[f].descr);
+          snprintf(name_buf, sizeof(name_buf), "process%d_%s:device=%d", p,
+                   pf[f].suffix, d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d process %d %s", d,
+                   p, pf[f].descr);
           native_event_t *ev = &ntv_table.events[idx];
           ev->id = idx;
           ev->name = strdup(name_buf);
@@ -4781,8 +5095,10 @@ static int init_event_table(void) {
         papi_free(ntv_table.events);
         return PAPI_ENOSUPP;
       }
-      snprintf(name_buf, sizeof(name_buf), "ecc_total_correctable:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d total ECC correctable errors", d);
+      snprintf(name_buf, sizeof(name_buf), "ecc_total_correctable:device=%d",
+               d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d total ECC correctable errors", d);
       native_event_t *ev_ecct = &ntv_table.events[idx];
       ev_ecct->id = idx;
       ev_ecct->name = strdup(name_buf);
@@ -4803,8 +5119,10 @@ static int init_event_table(void) {
         papi_free(ntv_table.events);
         return PAPI_ENOSUPP;
       }
-      snprintf(name_buf, sizeof(name_buf), "ecc_total_uncorrectable:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d total ECC uncorrectable errors", d);
+      snprintf(name_buf, sizeof(name_buf), "ecc_total_uncorrectable:device=%d",
+               d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d total ECC uncorrectable errors", d);
       native_event_t *ev_ecctu = &ntv_table.events[idx];
       ev_ecctu->id = idx;
       ev_ecctu->name = strdup(name_buf);
@@ -4826,7 +5144,8 @@ static int init_event_table(void) {
         return PAPI_ENOSUPP;
       }
       snprintf(name_buf, sizeof(name_buf), "ecc_total_deferred:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d total ECC deferred errors", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d total ECC deferred errors", d);
       native_event_t *ev_ecctd = &ntv_table.events[idx];
       ev_ecctd->id = idx;
       ev_ecctd->name = strdup(name_buf);
@@ -4845,25 +5164,37 @@ static int init_event_table(void) {
       idx++;
     }
     if (amdsmi_get_gpu_ecc_count_p) {
-      amdsmi_gpu_block_t blocks[] = {AMDSMI_GPU_BLOCK_UMC,   AMDSMI_GPU_BLOCK_SDMA,     AMDSMI_GPU_BLOCK_GFX, AMDSMI_GPU_BLOCK_MMHUB,
-                                     AMDSMI_GPU_BLOCK_ATHUB, AMDSMI_GPU_BLOCK_PCIE_BIF, AMDSMI_GPU_BLOCK_HDP, AMDSMI_GPU_BLOCK_XGMI_WAFL,
-                                     AMDSMI_GPU_BLOCK_DF,    AMDSMI_GPU_BLOCK_SMN,      AMDSMI_GPU_BLOCK_SEM, AMDSMI_GPU_BLOCK_MP0,
-                                     AMDSMI_GPU_BLOCK_MP1,   AMDSMI_GPU_BLOCK_FUSE,     AMDSMI_GPU_BLOCK_MCA, AMDSMI_GPU_BLOCK_VCN,
-                                     AMDSMI_GPU_BLOCK_JPEG,  AMDSMI_GPU_BLOCK_IH,       AMDSMI_GPU_BLOCK_MPIO};
-      const char *block_names[] = {"umc", "sdma", "gfx", "mmhub", "athub", "pcie_bif", "hdp",  "xgmi_wafl", "df",  "smn",
-                                   "sem", "mp0",  "mp1", "fuse",  "mca",   "vcn",      "jpeg", "ih",        "mpio"};
+      amdsmi_gpu_block_t blocks[] = {
+          AMDSMI_GPU_BLOCK_UMC,   AMDSMI_GPU_BLOCK_SDMA,
+          AMDSMI_GPU_BLOCK_GFX,   AMDSMI_GPU_BLOCK_MMHUB,
+          AMDSMI_GPU_BLOCK_ATHUB, AMDSMI_GPU_BLOCK_PCIE_BIF,
+          AMDSMI_GPU_BLOCK_HDP,   AMDSMI_GPU_BLOCK_XGMI_WAFL,
+          AMDSMI_GPU_BLOCK_DF,    AMDSMI_GPU_BLOCK_SMN,
+          AMDSMI_GPU_BLOCK_SEM,   AMDSMI_GPU_BLOCK_MP0,
+          AMDSMI_GPU_BLOCK_MP1,   AMDSMI_GPU_BLOCK_FUSE,
+          AMDSMI_GPU_BLOCK_MCA,   AMDSMI_GPU_BLOCK_VCN,
+          AMDSMI_GPU_BLOCK_JPEG,  AMDSMI_GPU_BLOCK_IH,
+          AMDSMI_GPU_BLOCK_MPIO};
+      const char *block_names[] = {
+          "umc",       "sdma", "gfx",  "mmhub", "athub", "pcie_bif", "hdp",
+          "xgmi_wafl", "df",   "smn",  "sem",   "mp0",   "mp1",      "fuse",
+          "mca",       "vcn",  "jpeg", "ih",    "mpio"};
       const char *cnt_names[] = {"correctable", "uncorrectable", "deferred"};
       size_t nb = sizeof(blocks) / sizeof(blocks[0]);
       for (size_t bi = 0; bi < nb; ++bi) {
         amdsmi_error_count_t ec;
-        if (amdsmi_get_gpu_ecc_count_p(device_handles[d], blocks[bi], &ec) == AMDSMI_STATUS_SUCCESS) {
+        if (amdsmi_get_gpu_ecc_count_p(device_handles[d], blocks[bi], &ec) ==
+            AMDSMI_STATUS_SUCCESS) {
           for (int t = 0; t < 3; ++t) {
             if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
               papi_free(ntv_table.events);
               return PAPI_ENOSUPP;
             }
-            snprintf(name_buf, sizeof(name_buf), "ecc_%s_%s:device=%d", block_names[bi], cnt_names[t], d);
-            snprintf(descr_buf, sizeof(descr_buf), "Device %d %s block ECC %s errors", d, block_names[bi], cnt_names[t]);
+            snprintf(name_buf, sizeof(name_buf), "ecc_%s_%s:device=%d",
+                     block_names[bi], cnt_names[t], d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d %s block ECC %s errors", d, block_names[bi],
+                     cnt_names[t]);
             native_event_t *ev_blk = &ntv_table.events[idx];
             ev_blk->id = idx;
             ev_blk->name = strdup(name_buf);
@@ -4885,23 +5216,34 @@ static int init_event_table(void) {
       }
     }
     if (amdsmi_get_gpu_ecc_status_p) {
-      amdsmi_gpu_block_t blocks[] = {AMDSMI_GPU_BLOCK_UMC,   AMDSMI_GPU_BLOCK_SDMA,     AMDSMI_GPU_BLOCK_GFX, AMDSMI_GPU_BLOCK_MMHUB,
-                                     AMDSMI_GPU_BLOCK_ATHUB, AMDSMI_GPU_BLOCK_PCIE_BIF, AMDSMI_GPU_BLOCK_HDP, AMDSMI_GPU_BLOCK_XGMI_WAFL,
-                                     AMDSMI_GPU_BLOCK_DF,    AMDSMI_GPU_BLOCK_SMN,      AMDSMI_GPU_BLOCK_SEM, AMDSMI_GPU_BLOCK_MP0,
-                                     AMDSMI_GPU_BLOCK_MP1,   AMDSMI_GPU_BLOCK_FUSE,     AMDSMI_GPU_BLOCK_MCA, AMDSMI_GPU_BLOCK_VCN,
-                                     AMDSMI_GPU_BLOCK_JPEG,  AMDSMI_GPU_BLOCK_IH,       AMDSMI_GPU_BLOCK_MPIO};
-      const char *block_names[] = {"umc", "sdma", "gfx", "mmhub", "athub", "pcie_bif", "hdp",  "xgmi_wafl", "df",  "smn",
-                                   "sem", "mp0",  "mp1", "fuse",  "mca",   "vcn",      "jpeg", "ih",        "mpio"};
+      amdsmi_gpu_block_t blocks[] = {
+          AMDSMI_GPU_BLOCK_UMC,   AMDSMI_GPU_BLOCK_SDMA,
+          AMDSMI_GPU_BLOCK_GFX,   AMDSMI_GPU_BLOCK_MMHUB,
+          AMDSMI_GPU_BLOCK_ATHUB, AMDSMI_GPU_BLOCK_PCIE_BIF,
+          AMDSMI_GPU_BLOCK_HDP,   AMDSMI_GPU_BLOCK_XGMI_WAFL,
+          AMDSMI_GPU_BLOCK_DF,    AMDSMI_GPU_BLOCK_SMN,
+          AMDSMI_GPU_BLOCK_SEM,   AMDSMI_GPU_BLOCK_MP0,
+          AMDSMI_GPU_BLOCK_MP1,   AMDSMI_GPU_BLOCK_FUSE,
+          AMDSMI_GPU_BLOCK_MCA,   AMDSMI_GPU_BLOCK_VCN,
+          AMDSMI_GPU_BLOCK_JPEG,  AMDSMI_GPU_BLOCK_IH,
+          AMDSMI_GPU_BLOCK_MPIO};
+      const char *block_names[] = {
+          "umc",       "sdma", "gfx",  "mmhub", "athub", "pcie_bif", "hdp",
+          "xgmi_wafl", "df",   "smn",  "sem",   "mp0",   "mp1",      "fuse",
+          "mca",       "vcn",  "jpeg", "ih",    "mpio"};
       size_t nb = sizeof(blocks) / sizeof(blocks[0]);
       for (size_t bi = 0; bi < nb; ++bi) {
         amdsmi_ras_err_state_t st;
-        if (amdsmi_get_gpu_ecc_status_p(device_handles[d], blocks[bi], &st) == AMDSMI_STATUS_SUCCESS) {
+        if (amdsmi_get_gpu_ecc_status_p(device_handles[d], blocks[bi], &st) ==
+            AMDSMI_STATUS_SUCCESS) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             papi_free(ntv_table.events);
             return PAPI_ENOSUPP;
           }
-          snprintf(name_buf, sizeof(name_buf), "ecc_%s_status:device=%d", block_names[bi], d);
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d %s block ECC status", d, block_names[bi]);
+          snprintf(name_buf, sizeof(name_buf), "ecc_%s_status:device=%d",
+                   block_names[bi], d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d %s block ECC status", d, block_names[bi]);
           native_event_t *ev_blk = &ntv_table.events[idx];
           ev_blk->id = idx;
           ev_blk->name = strdup(name_buf);
@@ -4927,7 +5269,8 @@ static int init_event_table(void) {
         return PAPI_ENOSUPP;
       }
       snprintf(name_buf, sizeof(name_buf), "ecc_enabled_mask:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d ECC enabled block bitmask", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d ECC enabled block bitmask", d);
       native_event_t *ev_eccm = &ntv_table.events[idx];
       ev_eccm->id = idx;
       ev_eccm->name = strdup(name_buf);
@@ -4948,13 +5291,17 @@ static int init_event_table(void) {
     /* Partitioning state (hash/enumeration) */
     if (amdsmi_get_gpu_compute_partition_p) {
       char dummy[128] = {0};
-      if (amdsmi_get_gpu_compute_partition_p(device_handles[d], dummy, sizeof(dummy)) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_compute_partition_p(device_handles[d], dummy,
+                                             sizeof(dummy)) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "compute_partition_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d compute partition (hash)", d);
+        snprintf(name_buf, sizeof(name_buf), "compute_partition_hash:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d compute partition (hash)", d);
         native_event_t *ev_cpart = &ntv_table.events[idx];
         ev_cpart->id = idx;
         ev_cpart->name = strdup(name_buf);
@@ -4978,13 +5325,17 @@ static int init_event_table(void) {
     }
     if (amdsmi_get_gpu_memory_partition_p) {
       char dummy[128] = {0};
-      if (amdsmi_get_gpu_memory_partition_p(device_handles[d], dummy, sizeof(dummy)) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_memory_partition_p(device_handles[d], dummy,
+                                            sizeof(dummy)) ==
+          AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d memory partition (hash)", d);
+        snprintf(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d",
+                 d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d memory partition (hash)", d);
         native_event_t *ev_mpart = &ntv_table.events[idx];
         ev_mpart->id = idx;
         ev_mpart->name = strdup(name_buf);
@@ -5009,13 +5360,16 @@ static int init_event_table(void) {
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
       amdsmi_accelerator_partition_profile_t prof;
       uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
-      if (amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], &prof, ids) == AMDSMI_STATUS_SUCCESS) {
+      if (amdsmi_get_gpu_accelerator_partition_profile_p(
+              device_handles[d], &prof, ids) == AMDSMI_STATUS_SUCCESS) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           papi_free(ntv_table.events);
           return PAPI_ENOSUPP;
         }
-        snprintf(name_buf, sizeof(name_buf), "accelerator_num_partitions:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d accelerator profile partitions", d);
+        snprintf(name_buf, sizeof(name_buf),
+                 "accelerator_num_partitions:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d accelerator profile partitions", d);
         native_event_t *ev_anp = &ntv_table.events[idx];
         ev_anp->id = idx;
         ev_anp->name = strdup(name_buf);
