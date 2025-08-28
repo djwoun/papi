@@ -1046,7 +1046,7 @@ static int init_event_table(void) {
         idx++;
       }
     }
-    // GPU XGMI PLPD policy event
+    // GPU XGMI PLPD policy events
     if (amdsmi_get_xgmi_plpd_p) {
       amdsmi_dpm_policy_t policy;
       if (amdsmi_get_xgmi_plpd_p(device_handles[d], &policy) == AMDSMI_STATUS_SUCCESS && policy.num_supported > 0) {
@@ -1071,6 +1071,28 @@ static int init_event_table(void) {
         ev_xplpd->stop_func = stop_simple;
         ev_xplpd->access_func = access_amdsmi_xgmi_plpd_id;
         htable_insert(htable, ev_xplpd->name, ev_xplpd);
+        idx++;
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+          papi_free(ntv_table.events);
+          return PAPI_ENOSUPP;
+        }
+        snprintf(name_buf, sizeof(name_buf), "xgmi_plpd_supported:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d supported XGMI PLPD policy count", d);
+        native_event_t *ev_xplpd_sup = &ntv_table.events[idx];
+        ev_xplpd_sup->id = idx;
+        ev_xplpd_sup->name = strdup(name_buf);
+        ev_xplpd_sup->descr = strdup(descr_buf);
+        ev_xplpd_sup->device = d;
+        ev_xplpd_sup->value = 0;
+        ev_xplpd_sup->mode = PAPI_MODE_READ;
+        ev_xplpd_sup->variant = 0;
+        ev_xplpd_sup->subvariant = 0;
+        ev_xplpd_sup->open_func = open_simple;
+        ev_xplpd_sup->close_func = close_simple;
+        ev_xplpd_sup->start_func = start_simple;
+        ev_xplpd_sup->stop_func = stop_simple;
+        ev_xplpd_sup->access_func = access_amdsmi_xgmi_plpd_supported;
+        htable_insert(htable, ev_xplpd_sup->name, ev_xplpd_sup);
         idx++;
       }
     }

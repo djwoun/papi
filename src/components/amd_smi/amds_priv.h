@@ -195,6 +195,7 @@ int access_amdsmi_vram_vendor(int mode, void *arg);
 int access_amdsmi_vram_usage(int mode, void *arg);
 int access_amdsmi_soc_pstate_id(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_id(int mode, void *arg);
+int access_amdsmi_xgmi_plpd_supported(int mode, void *arg);
 int access_amdsmi_process_isolation(int mode, void *arg);
 int access_amdsmi_xcd_counter(int mode, void *arg);
 int access_amdsmi_board_serial_hash(int mode, void *arg);

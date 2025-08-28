@@ -1385,6 +1385,21 @@ int access_amdsmi_xgmi_plpd_id(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_xgmi_plpd_supported(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_xgmi_plpd_p) return PAPI_ENOSUPP;
+
+  amdsmi_dpm_policy_t pol = {0};
+  amdsmi_status_t st = amdsmi_get_xgmi_plpd_p(device_handles[event->device], &pol);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (uint64_t)pol.num_supported;
+  return PAPI_OK;
+}
+
 int access_amdsmi_process_isolation(int mode, void *arg) {
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
   if (!amdsmi_get_gpu_process_isolation_p) return PAPI_ENOSUPP;
