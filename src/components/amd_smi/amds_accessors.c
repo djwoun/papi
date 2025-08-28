@@ -1315,6 +1315,62 @@ int access_amdsmi_od_volt_curve_range(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_od_volt_info(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_od_volt_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+
+  amdsmi_od_volt_freq_data_t info;
+  amdsmi_status_t st =
+      amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+
+  switch (event->variant) {
+    case 0:
+      event->value = (int64_t)info.curr_sclk_range.lower_bound;
+      break;
+    case 1:
+      event->value = (int64_t)info.curr_sclk_range.upper_bound;
+      break;
+    case 2:
+      event->value = (int64_t)info.curr_mclk_range.lower_bound;
+      break;
+    case 3:
+      event->value = (int64_t)info.curr_mclk_range.upper_bound;
+      break;
+    case 4:
+      event->value = (int64_t)info.sclk_freq_limits.lower_bound;
+      break;
+    case 5:
+      event->value = (int64_t)info.sclk_freq_limits.upper_bound;
+      break;
+    case 6:
+      event->value = (int64_t)info.mclk_freq_limits.lower_bound;
+      break;
+    case 7:
+      event->value = (int64_t)info.mclk_freq_limits.upper_bound;
+      break;
+    case 8:
+      if (event->subvariant >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS)
+        return PAPI_EMISC;
+      event->value =
+          (int64_t)info.curve.vc_points[event->subvariant].frequency;
+      break;
+    case 9:
+      if (event->subvariant >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS)
+        return PAPI_EMISC;
+      event->value =
+          (int64_t)info.curve.vc_points[event->subvariant].voltage;
+      break;
+    default:
+      return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
+}
+
 int access_amdsmi_perf_level(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {

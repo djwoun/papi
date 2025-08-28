@@ -1121,6 +1121,232 @@ static int init_event_table(void) {
         }
       }
     }
+    if (amdsmi_get_gpu_od_volt_info_p) {
+      amdsmi_od_volt_freq_data_t info;
+      if (amdsmi_get_gpu_od_volt_info_p(device_handles[d], &info) ==
+          AMDSMI_STATUS_SUCCESS) {
+        if (idx + 8 + 2 * AMDSMI_NUM_VOLTAGE_CURVE_POINTS >
+            MAX_EVENTS_PER_DEVICE * device_count) {
+          papi_free(ntv_table.events);
+          return PAPI_ENOSUPP;
+        }
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_curr_sclk_min:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current SCLK frequency lower bound", d);
+        native_event_t *ev_csmin = &ntv_table.events[idx];
+        ev_csmin->id = idx;
+        ev_csmin->name = strdup(name_buf);
+        ev_csmin->descr = strdup(descr_buf);
+        ev_csmin->device = d;
+        ev_csmin->value = 0;
+        ev_csmin->mode = PAPI_MODE_READ;
+        ev_csmin->variant = 0;
+        ev_csmin->subvariant = 0;
+        ev_csmin->open_func = open_simple;
+        ev_csmin->close_func = close_simple;
+        ev_csmin->start_func = start_simple;
+        ev_csmin->stop_func = stop_simple;
+        ev_csmin->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_csmin->name, ev_csmin);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_curr_sclk_max:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current SCLK frequency upper bound", d);
+        native_event_t *ev_csmax = &ntv_table.events[idx];
+        ev_csmax->id = idx;
+        ev_csmax->name = strdup(name_buf);
+        ev_csmax->descr = strdup(descr_buf);
+        ev_csmax->device = d;
+        ev_csmax->value = 0;
+        ev_csmax->mode = PAPI_MODE_READ;
+        ev_csmax->variant = 1;
+        ev_csmax->subvariant = 0;
+        ev_csmax->open_func = open_simple;
+        ev_csmax->close_func = close_simple;
+        ev_csmax->start_func = start_simple;
+        ev_csmax->stop_func = stop_simple;
+        ev_csmax->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_csmax->name, ev_csmax);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_curr_mclk_min:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current MCLK frequency lower bound", d);
+        native_event_t *ev_cmmin = &ntv_table.events[idx];
+        ev_cmmin->id = idx;
+        ev_cmmin->name = strdup(name_buf);
+        ev_cmmin->descr = strdup(descr_buf);
+        ev_cmmin->device = d;
+        ev_cmmin->value = 0;
+        ev_cmmin->mode = PAPI_MODE_READ;
+        ev_cmmin->variant = 2;
+        ev_cmmin->subvariant = 0;
+        ev_cmmin->open_func = open_simple;
+        ev_cmmin->close_func = close_simple;
+        ev_cmmin->start_func = start_simple;
+        ev_cmmin->stop_func = stop_simple;
+        ev_cmmin->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_cmmin->name, ev_cmmin);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_curr_mclk_max:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d current MCLK frequency upper bound", d);
+        native_event_t *ev_cmmax = &ntv_table.events[idx];
+        ev_cmmax->id = idx;
+        ev_cmmax->name = strdup(name_buf);
+        ev_cmmax->descr = strdup(descr_buf);
+        ev_cmmax->device = d;
+        ev_cmmax->value = 0;
+        ev_cmmax->mode = PAPI_MODE_READ;
+        ev_cmmax->variant = 3;
+        ev_cmmax->subvariant = 0;
+        ev_cmmax->open_func = open_simple;
+        ev_cmmax->close_func = close_simple;
+        ev_cmmax->start_func = start_simple;
+        ev_cmmax->stop_func = stop_simple;
+        ev_cmmax->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_cmmax->name, ev_cmmax);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_sclk_limit_min:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d SCLK frequency limit lower bound", d);
+        native_event_t *ev_slmin = &ntv_table.events[idx];
+        ev_slmin->id = idx;
+        ev_slmin->name = strdup(name_buf);
+        ev_slmin->descr = strdup(descr_buf);
+        ev_slmin->device = d;
+        ev_slmin->value = 0;
+        ev_slmin->mode = PAPI_MODE_READ;
+        ev_slmin->variant = 4;
+        ev_slmin->subvariant = 0;
+        ev_slmin->open_func = open_simple;
+        ev_slmin->close_func = close_simple;
+        ev_slmin->start_func = start_simple;
+        ev_slmin->stop_func = stop_simple;
+        ev_slmin->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_slmin->name, ev_slmin);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_sclk_limit_max:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d SCLK frequency limit upper bound", d);
+        native_event_t *ev_slmax = &ntv_table.events[idx];
+        ev_slmax->id = idx;
+        ev_slmax->name = strdup(name_buf);
+        ev_slmax->descr = strdup(descr_buf);
+        ev_slmax->device = d;
+        ev_slmax->value = 0;
+        ev_slmax->mode = PAPI_MODE_READ;
+        ev_slmax->variant = 5;
+        ev_slmax->subvariant = 0;
+        ev_slmax->open_func = open_simple;
+        ev_slmax->close_func = close_simple;
+        ev_slmax->start_func = start_simple;
+        ev_slmax->stop_func = stop_simple;
+        ev_slmax->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_slmax->name, ev_slmax);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_mclk_limit_min:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d MCLK frequency limit lower bound", d);
+        native_event_t *ev_mlmin = &ntv_table.events[idx];
+        ev_mlmin->id = idx;
+        ev_mlmin->name = strdup(name_buf);
+        ev_mlmin->descr = strdup(descr_buf);
+        ev_mlmin->device = d;
+        ev_mlmin->value = 0;
+        ev_mlmin->mode = PAPI_MODE_READ;
+        ev_mlmin->variant = 6;
+        ev_mlmin->subvariant = 0;
+        ev_mlmin->open_func = open_simple;
+        ev_mlmin->close_func = close_simple;
+        ev_mlmin->start_func = start_simple;
+        ev_mlmin->stop_func = stop_simple;
+        ev_mlmin->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_mlmin->name, ev_mlmin);
+        idx++;
+
+        snprintf(name_buf, sizeof(name_buf),
+                 "od_mclk_limit_max:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d MCLK frequency limit upper bound", d);
+        native_event_t *ev_mlmax = &ntv_table.events[idx];
+        ev_mlmax->id = idx;
+        ev_mlmax->name = strdup(name_buf);
+        ev_mlmax->descr = strdup(descr_buf);
+        ev_mlmax->device = d;
+        ev_mlmax->value = 0;
+        ev_mlmax->mode = PAPI_MODE_READ;
+        ev_mlmax->variant = 7;
+        ev_mlmax->subvariant = 0;
+        ev_mlmax->open_func = open_simple;
+        ev_mlmax->close_func = close_simple;
+        ev_mlmax->start_func = start_simple;
+        ev_mlmax->stop_func = stop_simple;
+        ev_mlmax->access_func = access_amdsmi_od_volt_info;
+        htable_insert(htable, ev_mlmax->name, ev_mlmax);
+        idx++;
+
+        for (uint32_t p = 0; p < AMDSMI_NUM_VOLTAGE_CURVE_POINTS; ++p) {
+          if (idx + 2 > MAX_EVENTS_PER_DEVICE * device_count) {
+            papi_free(ntv_table.events);
+            return PAPI_ENOSUPP;
+          }
+          snprintf(name_buf, sizeof(name_buf),
+                   "volt_curve_point_freq:device=%d:point=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d voltage curve point %u frequency", d, p);
+          native_event_t *ev_pf = &ntv_table.events[idx];
+          ev_pf->id = idx;
+          ev_pf->name = strdup(name_buf);
+          ev_pf->descr = strdup(descr_buf);
+          ev_pf->device = d;
+          ev_pf->value = 0;
+          ev_pf->mode = PAPI_MODE_READ;
+          ev_pf->variant = 8;
+          ev_pf->subvariant = p;
+          ev_pf->open_func = open_simple;
+          ev_pf->close_func = close_simple;
+          ev_pf->start_func = start_simple;
+          ev_pf->stop_func = stop_simple;
+          ev_pf->access_func = access_amdsmi_od_volt_info;
+          htable_insert(htable, ev_pf->name, ev_pf);
+          idx++;
+
+          snprintf(name_buf, sizeof(name_buf),
+                   "volt_curve_point_volt:device=%d:point=%u", d, p);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d voltage curve point %u voltage", d, p);
+          native_event_t *ev_pv = &ntv_table.events[idx];
+          ev_pv->id = idx;
+          ev_pv->name = strdup(name_buf);
+          ev_pv->descr = strdup(descr_buf);
+          ev_pv->device = d;
+          ev_pv->value = 0;
+          ev_pv->mode = PAPI_MODE_READ;
+          ev_pv->variant = 9;
+          ev_pv->subvariant = p;
+          ev_pv->open_func = open_simple;
+          ev_pv->close_func = close_simple;
+          ev_pv->start_func = start_simple;
+          ev_pv->stop_func = stop_simple;
+          ev_pv->access_func = access_amdsmi_od_volt_info;
+          htable_insert(htable, ev_pv->name, ev_pv);
+          idx++;
+        }
+      }
+    }
     // GPU SoC P-state policy event
     if (amdsmi_get_soc_pstate_p) {
       amdsmi_dpm_policy_t policy;
