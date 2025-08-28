@@ -3684,6 +3684,55 @@ static int init_event_table(void) {
       htable_insert(htable, ev_ecctd->name, ev_ecctd);
       idx++;
     }
+    if (amdsmi_get_gpu_ecc_count_p) {
+      amdsmi_gpu_block_t blocks[] = {
+          AMDSMI_GPU_BLOCK_UMC,      AMDSMI_GPU_BLOCK_SDMA,    AMDSMI_GPU_BLOCK_GFX,
+          AMDSMI_GPU_BLOCK_MMHUB,    AMDSMI_GPU_BLOCK_ATHUB,   AMDSMI_GPU_BLOCK_PCIE_BIF,
+          AMDSMI_GPU_BLOCK_HDP,      AMDSMI_GPU_BLOCK_XGMI_WAFL, AMDSMI_GPU_BLOCK_DF,
+          AMDSMI_GPU_BLOCK_SMN,      AMDSMI_GPU_BLOCK_SEM,     AMDSMI_GPU_BLOCK_MP0,
+          AMDSMI_GPU_BLOCK_MP1,      AMDSMI_GPU_BLOCK_FUSE,    AMDSMI_GPU_BLOCK_MCA,
+          AMDSMI_GPU_BLOCK_VCN,      AMDSMI_GPU_BLOCK_JPEG,    AMDSMI_GPU_BLOCK_IH,
+          AMDSMI_GPU_BLOCK_MPIO};
+      const char *block_names[] = {
+          "umc", "sdma", "gfx", "mmhub", "athub", "pcie_bif", "hdp", "xgmi_wafl",
+          "df",  "smn",  "sem", "mp0",  "mp1",  "fuse",    "mca", "vcn",
+          "jpeg", "ih",  "mpio"};
+      const char *cnt_names[] = {"correctable", "uncorrectable", "deferred"};
+      size_t nb = sizeof(blocks) / sizeof(blocks[0]);
+      for (size_t bi = 0; bi < nb; ++bi) {
+        amdsmi_error_count_t ec;
+        if (amdsmi_get_gpu_ecc_count_p(device_handles[d], blocks[bi], &ec) ==
+            AMDSMI_STATUS_SUCCESS) {
+          for (int t = 0; t < 3; ++t) {
+            if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+              papi_free(ntv_table.events);
+              return PAPI_ENOSUPP;
+            }
+            snprintf(name_buf, sizeof(name_buf), "ecc_%s_%s:device=%d",
+                     block_names[bi], cnt_names[t], d);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Device %d %s block ECC %s errors", d, block_names[bi],
+                     cnt_names[t]);
+            native_event_t *ev_blk = &ntv_table.events[idx];
+            ev_blk->id = idx;
+            ev_blk->name = strdup(name_buf);
+            ev_blk->descr = strdup(descr_buf);
+            ev_blk->device = d;
+            ev_blk->value = 0;
+            ev_blk->mode = PAPI_MODE_READ;
+            ev_blk->variant = t;
+            ev_blk->subvariant = (uint32_t)blocks[bi];
+            ev_blk->open_func = open_simple;
+            ev_blk->close_func = close_simple;
+            ev_blk->start_func = start_simple;
+            ev_blk->stop_func = stop_simple;
+            ev_blk->access_func = access_amdsmi_ecc_block;
+            htable_insert(htable, ev_blk->name, ev_blk);
+            idx++;
+          }
+        }
+      }
+    }
     if (amdsmi_get_gpu_ecc_enabled_p) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
         papi_free(ntv_table.events);

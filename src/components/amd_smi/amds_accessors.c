@@ -320,6 +320,32 @@ int access_amdsmi_ecc_total(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_ecc_block(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_ecc_count_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+    return PAPI_EMISC;
+
+  amdsmi_error_count_t ec;
+  memset(&ec, 0, sizeof(ec));
+  amdsmi_status_t st =
+      amdsmi_get_gpu_ecc_count_p(device_handles[event->device],
+                                 (amdsmi_gpu_block_t)event->subvariant, &ec);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+
+  uint64_t v = (event->variant == 0)   ? ec.correctable_count
+               : (event->variant == 1) ? ec.uncorrectable_count
+                                       : ec.deferred_count;
+  if ((int64_t)v < 0)
+    return PAPI_ENOSUPP;
+  event->value = (v > (uint64_t)INT64_MAX) ? INT64_MAX : (int64_t)v;
+  return PAPI_OK;
+}
+
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
