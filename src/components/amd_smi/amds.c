@@ -3569,30 +3569,51 @@ static int init_event_table(void) {
         }
     }
 
-    /* Process list size (count of running GPU processes) */
+    /* Per-process metrics (up to two processes) */
     if (amdsmi_get_gpu_process_list_p) {
-      if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
-        papi_free(ntv_table.events);
-        return PAPI_ENOSUPP;
-      }
-      snprintf(name_buf, sizeof(name_buf), "process_count:device=%d", d);
-      snprintf(descr_buf, sizeof(descr_buf), "Device %d active GPU process count", d);
-      native_event_t *ev_pc = &ntv_table.events[idx];
-      ev_pc->id = idx;
-      ev_pc->name = strdup(name_buf);
-      ev_pc->descr = strdup(descr_buf);
-      ev_pc->device = d;
-      ev_pc->value = 0;
-      ev_pc->mode = PAPI_MODE_READ;
-      ev_pc->variant = 0;
-      ev_pc->subvariant = 0;
-      ev_pc->open_func = open_simple;
-      ev_pc->close_func = close_simple;
-      ev_pc->start_func = start_simple;
-      ev_pc->stop_func = stop_simple;
-      ev_pc->access_func = access_amdsmi_process_count;
-      htable_insert(htable, ev_pc->name, ev_pc);
-      idx++;
+        const struct {
+            const char *suffix;
+            const char *descr;
+            uint32_t variant;
+        } pf[] = {
+            {"pid", "PID", 0},
+            {"mem_bytes", "memory usage (bytes)", 1},
+            {"engine_gfx_ns", "GFX engine time (ns)", 2},
+            {"engine_enc_ns", "ENC engine time (ns)", 3},
+            {"gtt_mem_MB", "GTT memory (MB)", 4},
+            {"cpu_mem_MB", "CPU memory (MB)", 5},
+            {"vram_mem_MB", "VRAM memory (MB)", 6},
+        };
+
+        for (int p = 0; p < 2; ++p) {
+            for (size_t f = 0; f < sizeof(pf) / sizeof(pf[0]); ++f) {
+                if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+                    papi_free(ntv_table.events);
+                    return PAPI_ENOSUPP;
+                }
+                snprintf(name_buf, sizeof(name_buf),
+                         "process%d_%s:device=%d", p, pf[f].suffix, d);
+                snprintf(descr_buf, sizeof(descr_buf),
+                         "Device %d process %d %s", d, p, pf[f].descr);
+                native_event_t *ev = &ntv_table.events[idx];
+                ev->id = idx;
+                ev->name = strdup(name_buf);
+                ev->descr = strdup(descr_buf);
+                if (!ev->name || !ev->descr) return PAPI_ENOMEM;
+                ev->device = d;
+                ev->value = 0;
+                ev->mode = PAPI_MODE_READ;
+                ev->variant = pf[f].variant;
+                ev->subvariant = p;
+                ev->open_func = open_simple;
+                ev->close_func = close_simple;
+                ev->start_func = start_simple;
+                ev->stop_func = stop_simple;
+                ev->access_func = access_amdsmi_process_info;
+                htable_insert(htable, ev->name, ev);
+                idx++;
+            }
+        }
     }
     /* ECC totals & enabled mask (where supported) */
     if (amdsmi_get_gpu_total_ecc_count_p) {

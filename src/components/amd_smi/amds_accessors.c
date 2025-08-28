@@ -241,7 +241,7 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
     return PAPI_OK;
 }
 
-int access_amdsmi_process_count(int mode, void *arg) {
+int access_amdsmi_process_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   if (!amdsmi_get_gpu_process_list_p)
@@ -249,30 +249,52 @@ int access_amdsmi_process_count(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
-  uint32_t cap = 32;
-  int tries = 0;
-  amdsmi_proc_info_t *list = NULL;
-  amdsmi_status_t st;
-  while (tries++ < 4) {
-    list = (amdsmi_proc_info_t *)papi_calloc(cap, sizeof(amdsmi_proc_info_t));
-    if (!list)
-      return PAPI_ENOMEM;
-    uint32_t maxp = cap;
-    st = amdsmi_get_gpu_process_list_p(device_handles[event->device], &maxp, list);
-    if (st == AMDSMI_STATUS_OUT_OF_RESOURCES) {
-      papi_free(list);
-      cap *= 2;
-      continue;
-    }
-    if (st != AMDSMI_STATUS_SUCCESS) {
-      papi_free(list);
-      return PAPI_EMISC;
-    }
-    event->value = (int64_t)maxp;
-    papi_free(list);
+
+  amdsmi_proc_info_t list[2];
+  uint32_t maxp = 2;
+  amdsmi_status_t st =
+      amdsmi_get_gpu_process_list_p(device_handles[event->device], &maxp, list);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+
+  uint32_t proc = event->subvariant;
+  if (proc >= 2) {
+    event->value = 0;
     return PAPI_OK;
   }
-  return PAPI_EMISC;
+
+  if (proc >= maxp) {
+    event->value = 0;
+    return PAPI_OK;
+  }
+
+  amdsmi_proc_info_t *p = &list[proc];
+  switch (event->variant) {
+  case 0:
+    event->value = (int64_t)p->pid;
+    break;
+  case 1:
+    event->value = (int64_t)p->mem;
+    break;
+  case 2:
+    event->value = (int64_t)p->engine_usage.gfx;
+    break;
+  case 3:
+    event->value = (int64_t)p->engine_usage.enc;
+    break;
+  case 4:
+    event->value = (int64_t)p->memory_usage.gtt_mem;
+    break;
+  case 5:
+    event->value = (int64_t)p->memory_usage.cpu_mem;
+    break;
+  case 6:
+    event->value = (int64_t)p->memory_usage.vram_mem;
+    break;
+  default:
+    return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
 }
 int access_amdsmi_ecc_total(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)

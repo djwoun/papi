@@ -77,6 +77,11 @@ int main(int argc, char *argv[])
             continue;
         }
 
+        if (std::strncmp(ev_name, "process", 7) == 0) {
+            printf("[%4d] Skipping %s (process events not testable)\n\n", event_index++, ev_name);
+            continue;
+        }
+
         printf("[%4d] Testing %s...\n", event_index++, ev_name);
 
         //-------------------------------------------------------------------

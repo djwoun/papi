@@ -168,7 +168,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg);
 int access_amdsmi_enumeration_info(int mode, void *arg);
 int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
-int access_amdsmi_process_count(int mode, void *arg);
+int access_amdsmi_process_info(int mode, void *arg);
 int access_amdsmi_ecc_total(int mode, void *arg);
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
 int access_amdsmi_compute_partition_hash(int mode, void *arg);
