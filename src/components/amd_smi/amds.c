@@ -1504,7 +1504,7 @@ static int init_event_table(void) {
         }
       }
     }
-    // GPU SoC P-state policy event
+    // GPU SoC P-state policy events
     if (amdsmi_get_soc_pstate_p) {
       amdsmi_dpm_policy_t policy;
       if (amdsmi_get_soc_pstate_p(device_handles[d], &policy) == AMDSMI_STATUS_SUCCESS && policy.num_supported > 0) {
@@ -1529,6 +1529,28 @@ static int init_event_table(void) {
         ev_soc->stop_func = stop_simple;
         ev_soc->access_func = access_amdsmi_soc_pstate_id;
         htable_insert(htable, ev_soc->name, ev_soc);
+        idx++;
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+          papi_free(ntv_table.events);
+          return PAPI_ENOSUPP;
+        }
+        snprintf(name_buf, sizeof(name_buf), "soc_pstate_supported:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d supported SoC P-state count", d);
+        native_event_t *ev_soc_sup = &ntv_table.events[idx];
+        ev_soc_sup->id = idx;
+        ev_soc_sup->name = strdup(name_buf);
+        ev_soc_sup->descr = strdup(descr_buf);
+        ev_soc_sup->device = d;
+        ev_soc_sup->value = 0;
+        ev_soc_sup->mode = PAPI_MODE_READ;
+        ev_soc_sup->variant = 0;
+        ev_soc_sup->subvariant = 0;
+        ev_soc_sup->open_func = open_simple;
+        ev_soc_sup->close_func = close_simple;
+        ev_soc_sup->start_func = start_simple;
+        ev_soc_sup->stop_func = stop_simple;
+        ev_soc_sup->access_func = access_amdsmi_soc_pstate_supported;
+        htable_insert(htable, ev_soc_sup->name, ev_soc_sup);
         idx++;
       }
     }
