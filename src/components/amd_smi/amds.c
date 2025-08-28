@@ -2861,6 +2861,28 @@ static int init_event_table(void) {
         ev_uuid->access_func = access_amdsmi_uuid_hash;
         htable_insert(htable, ev_uuid->name, ev_uuid);
         idx++;
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
+          papi_free(ntv_table.events);
+          return PAPI_ENOSUPP;
+        }
+        snprintf(name_buf, sizeof(name_buf), "uuid_length:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d UUID length", d);
+        native_event_t *ev_uuid_len = &ntv_table.events[idx];
+        ev_uuid_len->id = idx;
+        ev_uuid_len->name = strdup(name_buf);
+        ev_uuid_len->descr = strdup(descr_buf);
+        ev_uuid_len->device = d;
+        ev_uuid_len->value = 0;
+        ev_uuid_len->mode = PAPI_MODE_READ;
+        ev_uuid_len->variant = 1;
+        ev_uuid_len->subvariant = 0;
+        ev_uuid_len->open_func = open_simple;
+        ev_uuid_len->close_func = close_simple;
+        ev_uuid_len->start_func = start_simple;
+        ev_uuid_len->stop_func = stop_simple;
+        ev_uuid_len->access_func = access_amdsmi_uuid_hash;
+        htable_insert(htable, ev_uuid_len->name, ev_uuid_len);
+        idx++;
       }
     }
     /* Vendor / VRAM vendor / Subsystem name (hash) */

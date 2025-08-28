@@ -54,7 +54,16 @@ int access_amdsmi_uuid_hash(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_device_uuid_p(device_handles[event->device], &len, buf);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  event->value = (int64_t)_str_to_u64_hash(buf);
+  switch (event->variant) {
+  case 0: /* hash */
+    event->value = (int64_t)_str_to_u64_hash(buf);
+    break;
+  case 1: /* length */
+    event->value = (int64_t)len;
+    break;
+  default:
+    return PAPI_EMISC;
+  }
   return PAPI_OK;
 }
 int access_amdsmi_gpu_string_hash(int mode, void *arg) {
