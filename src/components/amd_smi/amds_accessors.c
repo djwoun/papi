@@ -1201,6 +1201,23 @@ int access_amdsmi_ras_eeprom_version(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_ras_block_state(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_ras_block_features_enabled_p) return PAPI_ENOSUPP;
+
+  amdsmi_ras_err_state_t state;
+  amdsmi_status_t st = amdsmi_get_gpu_ras_block_features_enabled_p(device_handles[event->device],
+                                                                  (amdsmi_gpu_block_t)event->variant,
+                                                                  &state);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  event->value = (uint64_t)state;
+  return PAPI_OK;
+}
+
 int access_amdsmi_reg_count(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
@@ -1315,6 +1332,26 @@ int access_amdsmi_vram_vendor(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
   event->value = (uint64_t)info.vram_vendor;
+  return PAPI_OK;
+}
+
+int access_amdsmi_vram_usage(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_gpu_vram_usage_p) return PAPI_ENOSUPP;
+
+  amdsmi_vram_usage_t info;
+  amdsmi_status_t st = amdsmi_get_gpu_vram_usage_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  if (event->variant == 0)
+    event->value = (uint64_t)info.vram_total;
+  else if (event->variant == 1)
+    event->value = (uint64_t)info.vram_used;
+  else
+    return PAPI_EMISC;
   return PAPI_OK;
 }
 
