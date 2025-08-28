@@ -49,8 +49,10 @@ extern unsigned int _amd_smi_lock;
 extern amdsmi_status_t (*amdsmi_init_p)(uint64_t);
 extern amdsmi_status_t (*amdsmi_shut_down_p)(void);
 extern amdsmi_status_t (*amdsmi_get_socket_handles_p)(uint32_t *, amdsmi_socket_handle *);
-extern amdsmi_status_t (*amdsmi_get_processor_handles_by_type_p)(amdsmi_socket_handle, processor_type_t, amdsmi_processor_handle *, uint32_t *);
-extern amdsmi_status_t (*amdsmi_get_temp_metric_p)(amdsmi_processor_handle, amdsmi_temperature_type_t, amdsmi_temperature_metric_t, int64_t *);
+extern amdsmi_status_t (*amdsmi_get_processor_handles_by_type_p)(amdsmi_socket_handle, processor_type_t, amdsmi_processor_handle *,
+                                                                 uint32_t *);
+extern amdsmi_status_t (*amdsmi_get_temp_metric_p)(amdsmi_processor_handle, amdsmi_temperature_type_t, amdsmi_temperature_metric_t,
+                                                   int64_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_fan_rpms_p)(amdsmi_processor_handle, uint32_t, int64_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_fan_speed_p)(amdsmi_processor_handle, uint32_t, int64_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_fan_speed_max_p)(amdsmi_processor_handle, uint32_t, int64_t *);
@@ -85,7 +87,8 @@ extern amdsmi_status_t (*amdsmi_get_gpu_ecc_count_p)(amdsmi_processor_handle, am
 extern amdsmi_status_t (*amdsmi_get_gpu_ecc_status_p)(amdsmi_processor_handle, amdsmi_gpu_block_t, amdsmi_ras_err_state_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_compute_partition_p)(amdsmi_processor_handle, char *, uint32_t);
 extern amdsmi_status_t (*amdsmi_get_gpu_memory_partition_p)(amdsmi_processor_handle, char *, uint32_t);
-extern amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *, uint32_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_accelerator_partition_profile_p)(amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *,
+                                                                         uint32_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_id_p)(amdsmi_processor_handle, uint16_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_revision_p)(amdsmi_processor_handle, uint16_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_subsystem_id_p)(amdsmi_processor_handle, uint16_t *);
@@ -105,13 +108,15 @@ extern amdsmi_status_t (*amdsmi_get_gpu_overdrive_level_p)(amdsmi_processor_hand
 extern amdsmi_status_t (*amdsmi_get_gpu_perf_level_p)(amdsmi_processor_handle, amdsmi_dev_perf_level_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_pm_metrics_info_p)(amdsmi_processor_handle, amdsmi_name_value_t **, uint32_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_ras_feature_info_p)(amdsmi_processor_handle, amdsmi_ras_feature_t *);
-extern amdsmi_status_t (*amdsmi_get_gpu_ras_block_features_enabled_p)(amdsmi_processor_handle, amdsmi_gpu_block_t, amdsmi_ras_err_state_t *);
+extern amdsmi_status_t (*amdsmi_get_gpu_ras_block_features_enabled_p)(amdsmi_processor_handle, amdsmi_gpu_block_t,
+                                                                      amdsmi_ras_err_state_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_reg_table_info_p)(amdsmi_processor_handle, amdsmi_reg_type_t, amdsmi_name_value_t **, uint32_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_volt_metric_p)(amdsmi_processor_handle, amdsmi_voltage_type_t, amdsmi_voltage_metric_t, int64_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_vram_info_p)(amdsmi_processor_handle, amdsmi_vram_info_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_vram_usage_p)(amdsmi_processor_handle, amdsmi_vram_usage_t *);
 extern amdsmi_status_t (*amdsmi_get_pcie_info_p)(amdsmi_processor_handle, amdsmi_pcie_info_t *);
-extern amdsmi_status_t (*amdsmi_get_processor_count_from_handles_p)(amdsmi_processor_handle *, uint32_t *, uint32_t *, uint32_t *, uint32_t *);
+extern amdsmi_status_t (*amdsmi_get_processor_count_from_handles_p)(amdsmi_processor_handle *, uint32_t *, uint32_t *, uint32_t *,
+                                                                    uint32_t *);
 extern amdsmi_status_t (*amdsmi_get_soc_pstate_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
 extern amdsmi_status_t (*amdsmi_get_xgmi_plpd_p)(amdsmi_processor_handle, amdsmi_dpm_policy_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_bad_page_info_p)(amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *);
@@ -138,8 +143,10 @@ extern amdsmi_status_t (*amdsmi_get_cpu_core_boostlimit_p)(amdsmi_processor_hand
 extern amdsmi_status_t (*amdsmi_get_cpu_socket_current_active_freq_limit_p)(amdsmi_processor_handle, uint16_t *, char **);
 extern amdsmi_status_t (*amdsmi_get_cpu_socket_freq_range_p)(amdsmi_processor_handle, uint16_t *, uint16_t *);
 extern amdsmi_status_t (*amdsmi_get_cpu_core_current_freq_limit_p)(amdsmi_processor_handle, uint32_t *);
-extern amdsmi_status_t (*amdsmi_get_minmax_bandwidth_between_processors_p)(amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *, uint64_t *);
-extern amdsmi_status_t (*amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p)(amdsmi_processor_handle, uint8_t, amdsmi_temp_range_refresh_rate_t *);
+extern amdsmi_status_t (*amdsmi_get_minmax_bandwidth_between_processors_p)(amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,
+                                                                           uint64_t *);
+extern amdsmi_status_t (*amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p)(amdsmi_processor_handle, uint8_t,
+                                                                            amdsmi_temp_range_refresh_rate_t *);
 extern amdsmi_status_t (*amdsmi_get_cpu_dimm_power_consumption_p)(amdsmi_processor_handle, uint8_t, amdsmi_dimm_power_t *);
 extern amdsmi_status_t (*amdsmi_get_cpu_dimm_thermal_sensor_p)(amdsmi_processor_handle, uint8_t, amdsmi_dimm_thermal_t *);
 #endif
