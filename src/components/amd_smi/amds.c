@@ -477,6 +477,47 @@ int amds_err_get_last(const char **err_string) {
     *err_string = error_string;
   return PAPI_OK;
 }
+
+static int shutdown_event_table(void) {
+  // Remove all events from hash table and free their names/descr
+  for (int i = 0; i < ntv_table.count; ++i) {
+    htable_delete(htable, ntv_table.events[i].name);
+    papi_free(ntv_table.events[i].name);
+    papi_free(ntv_table.events[i].descr);
+  }
+  papi_free(ntv_table.events);
+  ntv_table.events = NULL;
+  ntv_table.count = 0;
+  return PAPI_OK;
+}
+
+static int init_device_table(void) {
+  // Nothing to do (device_handles and device_count already set in amds_init)
+  return PAPI_OK;
+}
+
+static int shutdown_device_table(void) {
+  if (device_handles) {
+    papi_free(device_handles);
+    device_handles = NULL;
+  }
+  if (cpu_core_handles) {
+    for (int s = 0; s < cpu_count; ++s) {
+      if (cpu_core_handles[s])
+        papi_free(cpu_core_handles[s]);
+    }
+    papi_free(cpu_core_handles);
+    cpu_core_handles = NULL;
+  }
+  if (cores_per_socket) {
+    papi_free(cores_per_socket);
+    cores_per_socket = NULL;
+  }
+  device_count = 0;
+  gpu_count = 0;
+  cpu_count = 0;
+  return PAPI_OK;
+}
 /* Initialize native event table: enumerate all supported events */
 static int init_event_table(void) {
   // Check if event table is already initialized
@@ -5394,44 +5435,5 @@ static int init_event_table(void) {
   }
   // Cleanup - no device capabilities cache to free
   ntv_table.count = idx;
-  return PAPI_OK;
-}
-
-static int shutdown_event_table(void) {
-  // Remove all events from hash table and free their names/descr
-  for (int i = 0; i < ntv_table.count; ++i) {
-    htable_delete(htable, ntv_table.events[i].name);
-    papi_free(ntv_table.events[i].name);
-    papi_free(ntv_table.events[i].descr);
-  }
-  papi_free(ntv_table.events);
-  ntv_table.events = NULL;
-  ntv_table.count = 0;
-  return PAPI_OK;
-}
-static int init_device_table(void) {
-  // Nothing to do (device_handles and device_count already set in amds_init)
-  return PAPI_OK;
-}
-static int shutdown_device_table(void) {
-  if (device_handles) {
-    papi_free(device_handles);
-    device_handles = NULL;
-  }
-  if (cpu_core_handles) {
-    for (int s = 0; s < cpu_count; ++s) {
-      if (cpu_core_handles[s])
-        papi_free(cpu_core_handles[s]);
-    }
-    papi_free(cpu_core_handles);
-    cpu_core_handles = NULL;
-  }
-  if (cores_per_socket) {
-    papi_free(cores_per_socket);
-    cores_per_socket = NULL;
-  }
-  device_count = 0;
-  gpu_count = 0;
-  cpu_count = 0;
   return PAPI_OK;
 }
