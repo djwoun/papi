@@ -1937,18 +1937,90 @@ static int init_event_table(void) {
     }
 
     if (amdsmi_get_power_info_v2_p) {
-      amdsmi_power_info_t pinfo;
-      if (amdsmi_get_power_info_v2_p(device_handles[d], 0, &pinfo) == AMDSMI_STATUS_SUCCESS) {
+      /* Probe for available power sensors. The API uses a sensor index and
+       * returns AMDSMI_STATUS_SUCCESS while valid. Iterate until failure to
+       * discover all sensors. */
+      for (uint32_t s = 0; s < 16; ++s) {
+        amdsmi_power_info_t pinfo;
+        if (amdsmi_get_power_info_v2_p(device_handles[d], s, &pinfo) != AMDSMI_STATUS_SUCCESS)
+          break;
+
+        /* Register current socket power in Watts */
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
-        snprintf(name_buf, sizeof(name_buf), "power_sensor_watts:device=%d:sensor=0", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor 0 current power (W)", d);
-        native_event_t *ev_ps = &ntv_table.events[idx];
-        ev_ps->id = idx; ev_ps->name = strdup(name_buf); ev_ps->descr = strdup(descr_buf);
-        ev_ps->device = d; ev_ps->value = 0; ev_ps->mode = PAPI_MODE_READ; ev_ps->variant = 0; ev_ps->subvariant = 0;
-        ev_ps->open_func = open_simple; ev_ps->close_func = close_simple; ev_ps->start_func = start_simple; ev_ps->stop_func = stop_simple;
-        ev_ps->access_func = access_amdsmi_power_sensor;
-        htable_insert(htable, ev_ps->name, ev_ps);
-        idx++;
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_current_watts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u current socket power (W)", d, s);
+        native_event_t *ev_cur = &ntv_table.events[idx];
+        ev_cur->id = idx; ev_cur->name = strdup(name_buf); ev_cur->descr = strdup(descr_buf);
+        ev_cur->device = d; ev_cur->value = 0; ev_cur->mode = PAPI_MODE_READ; ev_cur->variant = 0; ev_cur->subvariant = s;
+        ev_cur->open_func = open_simple; ev_cur->close_func = close_simple; ev_cur->start_func = start_simple; ev_cur->stop_func = stop_simple;
+        ev_cur->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_cur->name, ev_cur); idx++;
+
+        /* Register average socket power in Watts */
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_average_watts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u average socket power (W)", d, s);
+        native_event_t *ev_avg = &ntv_table.events[idx];
+        ev_avg->id = idx; ev_avg->name = strdup(name_buf); ev_avg->descr = strdup(descr_buf);
+        ev_avg->device = d; ev_avg->value = 0; ev_avg->mode = PAPI_MODE_READ; ev_avg->variant = 1; ev_avg->subvariant = s;
+        ev_avg->open_func = open_simple; ev_avg->close_func = close_simple; ev_avg->start_func = start_simple; ev_avg->stop_func = stop_simple;
+        ev_avg->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_avg->name, ev_avg); idx++;
+
+        /* Register socket power in microwatts */
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_socket_microwatts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u socket power (uW)", d, s);
+        native_event_t *ev_sock = &ntv_table.events[idx];
+        ev_sock->id = idx; ev_sock->name = strdup(name_buf); ev_sock->descr = strdup(descr_buf);
+        ev_sock->device = d; ev_sock->value = 0; ev_sock->mode = PAPI_MODE_READ; ev_sock->variant = 2; ev_sock->subvariant = s;
+        ev_sock->open_func = open_simple; ev_sock->close_func = close_simple; ev_sock->start_func = start_simple; ev_sock->stop_func = stop_simple;
+        ev_sock->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_sock->name, ev_sock); idx++;
+
+        /* Register GFX voltage */
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_gfx_voltage_mv:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u GFX voltage (mV)", d, s);
+        native_event_t *ev_gfx = &ntv_table.events[idx];
+        ev_gfx->id = idx; ev_gfx->name = strdup(name_buf); ev_gfx->descr = strdup(descr_buf);
+        ev_gfx->device = d; ev_gfx->value = 0; ev_gfx->mode = PAPI_MODE_READ; ev_gfx->variant = 3; ev_gfx->subvariant = s;
+        ev_gfx->open_func = open_simple; ev_gfx->close_func = close_simple; ev_gfx->start_func = start_simple; ev_gfx->stop_func = stop_simple;
+        ev_gfx->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_gfx->name, ev_gfx); idx++;
+
+        /* Register SOC voltage */
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_soc_voltage_mv:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u SOC voltage (mV)", d, s);
+        native_event_t *ev_soc = &ntv_table.events[idx];
+        ev_soc->id = idx; ev_soc->name = strdup(name_buf); ev_soc->descr = strdup(descr_buf);
+        ev_soc->device = d; ev_soc->value = 0; ev_soc->mode = PAPI_MODE_READ; ev_soc->variant = 4; ev_soc->subvariant = s;
+        ev_soc->open_func = open_simple; ev_soc->close_func = close_simple; ev_soc->start_func = start_simple; ev_soc->stop_func = stop_simple;
+        ev_soc->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_soc->name, ev_soc); idx++;
+
+        /* Register MEM voltage */
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_mem_voltage_mv:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u MEM voltage (mV)", d, s);
+        native_event_t *ev_mem = &ntv_table.events[idx];
+        ev_mem->id = idx; ev_mem->name = strdup(name_buf); ev_mem->descr = strdup(descr_buf);
+        ev_mem->device = d; ev_mem->value = 0; ev_mem->mode = PAPI_MODE_READ; ev_mem->variant = 5; ev_mem->subvariant = s;
+        ev_mem->open_func = open_simple; ev_mem->close_func = close_simple; ev_mem->start_func = start_simple; ev_mem->stop_func = stop_simple;
+        ev_mem->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_mem->name, ev_mem); idx++;
+
+        /* Register power limit */
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "power_sensor_limit_watts:device=%d:sensor=%u", d, s);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d power sensor %u power limit (W)", d, s);
+        native_event_t *ev_lim = &ntv_table.events[idx];
+        ev_lim->id = idx; ev_lim->name = strdup(name_buf); ev_lim->descr = strdup(descr_buf);
+        ev_lim->device = d; ev_lim->value = 0; ev_lim->mode = PAPI_MODE_READ; ev_lim->variant = 6; ev_lim->subvariant = s;
+        ev_lim->open_func = open_simple; ev_lim->close_func = close_simple; ev_lim->start_func = start_simple; ev_lim->stop_func = stop_simple;
+        ev_lim->access_func = access_amdsmi_power_sensor;
+        htable_insert(htable, ev_lim->name, ev_lim); idx++;
       }
     }
 

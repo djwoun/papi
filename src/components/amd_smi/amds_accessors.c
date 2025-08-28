@@ -1465,12 +1465,31 @@ int access_amdsmi_power_sensor(int mode, void *arg) {
   amdsmi_power_info_t info;
   amdsmi_status_t st = amdsmi_get_power_info_v2_p(device_handles[event->device], event->subvariant, &info);
   if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
-  if (event->variant == 0)
-    event->value = (int64_t)info.current_socket_power;
-  else if (event->variant == 1)
-    event->value = (int64_t)info.average_socket_power;
-  else
-    return PAPI_ENOSUPP;
+  switch (event->variant) {
+    case 0:
+      event->value = (int64_t)info.current_socket_power;
+      break;
+    case 1:
+      event->value = (int64_t)info.average_socket_power;
+      break;
+    case 2:
+      event->value = (int64_t)info.socket_power;
+      break;
+    case 3:
+      event->value = (int64_t)info.gfx_voltage;
+      break;
+    case 4:
+      event->value = (int64_t)info.soc_voltage;
+      break;
+    case 5:
+      event->value = (int64_t)info.mem_voltage;
+      break;
+    case 6:
+      event->value = (int64_t)info.power_limit;
+      break;
+    default:
+      return PAPI_ENOSUPP;
+  }
   return PAPI_OK;
 }
 
