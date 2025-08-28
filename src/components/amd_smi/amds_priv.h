@@ -209,6 +209,7 @@ int access_amdsmi_bad_page_count(int mode, void *arg);
 int access_amdsmi_bad_page_threshold(int mode, void *arg);
 int access_amdsmi_bad_page_record(int mode, void *arg);
 int access_amdsmi_power_sensor(int mode, void *arg);
+int access_amdsmi_pcie_info(int mode, void *arg);
 int access_amdsmi_event_notification(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI

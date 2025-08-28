@@ -1818,6 +1818,64 @@ int access_amdsmi_power_sensor(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_pcie_info(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_pcie_info_p) return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+    return PAPI_EMISC;
+  amdsmi_pcie_info_t info;
+  amdsmi_status_t st = amdsmi_get_pcie_info_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
+  switch (event->variant) {
+    case 0:
+      event->value = info.pcie_static.max_pcie_width;
+      break;
+    case 1:
+      event->value = (int64_t)info.pcie_static.max_pcie_speed;
+      break;
+    case 2:
+      event->value = (int64_t)info.pcie_static.pcie_interface_version;
+      break;
+    case 3:
+      event->value = (int64_t)info.pcie_static.slot_type;
+      break;
+    case 4:
+      event->value = (int64_t)info.pcie_static.max_pcie_interface_version;
+      break;
+    case 5:
+      event->value = info.pcie_metric.pcie_width;
+      break;
+    case 6:
+      event->value = (int64_t)info.pcie_metric.pcie_speed;
+      break;
+    case 7:
+      event->value = (int64_t)info.pcie_metric.pcie_bandwidth;
+      break;
+    case 8:
+      event->value = (int64_t)info.pcie_metric.pcie_replay_count;
+      break;
+    case 9:
+      event->value = (int64_t)info.pcie_metric.pcie_l0_to_recovery_count;
+      break;
+    case 10:
+      event->value = (int64_t)info.pcie_metric.pcie_replay_roll_over_count;
+      break;
+    case 11:
+      event->value = (int64_t)info.pcie_metric.pcie_nak_sent_count;
+      break;
+    case 12:
+      event->value = (int64_t)info.pcie_metric.pcie_nak_received_count;
+      break;
+    case 13:
+      event->value = (int64_t)info.pcie_metric.pcie_lc_perf_other_end_recovery_count;
+      break;
+    default:
+      return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
+}
+
 int access_amdsmi_event_notification(int mode, void *arg) {
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
   if (!amdsmi_init_gpu_event_notification_p || !amdsmi_set_gpu_event_notification_mask_p ||

@@ -724,6 +724,137 @@ static int init_event_table(void) {
         idx++;
       }
     }
+    // PCIe information events
+    if (amdsmi_get_pcie_info_p) {
+      amdsmi_pcie_info_t pcie_info;
+      if (amdsmi_get_pcie_info_p(device_handles[d], &pcie_info) == AMDSMI_STATUS_SUCCESS) {
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_max_width:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum PCIe link width (lanes)", d);
+        native_event_t *ev_pw = &ntv_table.events[idx];
+        ev_pw->id = idx; ev_pw->name = strdup(name_buf); ev_pw->descr = strdup(descr_buf);
+        ev_pw->device = d; ev_pw->value = 0; ev_pw->mode = PAPI_MODE_READ; ev_pw->variant = 0; ev_pw->subvariant = 0;
+        ev_pw->open_func = open_simple; ev_pw->close_func = close_simple; ev_pw->start_func = start_simple; ev_pw->stop_func = stop_simple;
+        ev_pw->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pw->name, ev_pw); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_max_speed:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum PCIe link speed (GT/s)", d);
+        native_event_t *ev_ps = &ntv_table.events[idx];
+        ev_ps->id = idx; ev_ps->name = strdup(name_buf); ev_ps->descr = strdup(descr_buf);
+        ev_ps->device = d; ev_ps->value = 0; ev_ps->mode = PAPI_MODE_READ; ev_ps->variant = 1; ev_ps->subvariant = 0;
+        ev_ps->open_func = open_simple; ev_ps->close_func = close_simple; ev_ps->start_func = start_simple; ev_ps->stop_func = stop_simple;
+        ev_ps->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_ps->name, ev_ps); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_interface_version:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe interface version", d);
+        native_event_t *ev_piv = &ntv_table.events[idx];
+        ev_piv->id = idx; ev_piv->name = strdup(name_buf); ev_piv->descr = strdup(descr_buf);
+        ev_piv->device = d; ev_piv->value = 0; ev_piv->mode = PAPI_MODE_READ; ev_piv->variant = 2; ev_piv->subvariant = 0;
+        ev_piv->open_func = open_simple; ev_piv->close_func = close_simple; ev_piv->start_func = start_simple; ev_piv->stop_func = stop_simple;
+        ev_piv->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_piv->name, ev_piv); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_slot_type:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe slot type", d);
+        native_event_t *ev_pst = &ntv_table.events[idx];
+        ev_pst->id = idx; ev_pst->name = strdup(name_buf); ev_pst->descr = strdup(descr_buf);
+        ev_pst->device = d; ev_pst->value = 0; ev_pst->mode = PAPI_MODE_READ; ev_pst->variant = 3; ev_pst->subvariant = 0;
+        ev_pst->open_func = open_simple; ev_pst->close_func = close_simple; ev_pst->start_func = start_simple; ev_pst->stop_func = stop_simple;
+        ev_pst->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pst->name, ev_pst); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_max_interface_version:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d maximum PCIe interface version", d);
+        native_event_t *ev_pmiv = &ntv_table.events[idx];
+        ev_pmiv->id = idx; ev_pmiv->name = strdup(name_buf); ev_pmiv->descr = strdup(descr_buf);
+        ev_pmiv->device = d; ev_pmiv->value = 0; ev_pmiv->mode = PAPI_MODE_READ; ev_pmiv->variant = 4; ev_pmiv->subvariant = 0;
+        ev_pmiv->open_func = open_simple; ev_pmiv->close_func = close_simple; ev_pmiv->start_func = start_simple; ev_pmiv->stop_func = stop_simple;
+        ev_pmiv->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pmiv->name, ev_pmiv); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_width:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d current PCIe link width (lanes)", d);
+        native_event_t *ev_cw = &ntv_table.events[idx];
+        ev_cw->id = idx; ev_cw->name = strdup(name_buf); ev_cw->descr = strdup(descr_buf);
+        ev_cw->device = d; ev_cw->value = 0; ev_cw->mode = PAPI_MODE_READ; ev_cw->variant = 5; ev_cw->subvariant = 0;
+        ev_cw->open_func = open_simple; ev_cw->close_func = close_simple; ev_cw->start_func = start_simple; ev_cw->stop_func = stop_simple;
+        ev_cw->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_cw->name, ev_cw); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_speed:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d current PCIe link speed (MT/s)", d);
+        native_event_t *ev_cs = &ntv_table.events[idx];
+        ev_cs->id = idx; ev_cs->name = strdup(name_buf); ev_cs->descr = strdup(descr_buf);
+        ev_cs->device = d; ev_cs->value = 0; ev_cs->mode = PAPI_MODE_READ; ev_cs->variant = 6; ev_cs->subvariant = 0;
+        ev_cs->open_func = open_simple; ev_cs->close_func = close_simple; ev_cs->start_func = start_simple; ev_cs->stop_func = stop_simple;
+        ev_cs->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_cs->name, ev_cs); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_bandwidth:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d instantaneous PCIe bandwidth (Mb/s)", d);
+        native_event_t *ev_cb = &ntv_table.events[idx];
+        ev_cb->id = idx; ev_cb->name = strdup(name_buf); ev_cb->descr = strdup(descr_buf);
+        ev_cb->device = d; ev_cb->value = 0; ev_cb->mode = PAPI_MODE_READ; ev_cb->variant = 7; ev_cb->subvariant = 0;
+        ev_cb->open_func = open_simple; ev_cb->close_func = close_simple; ev_cb->start_func = start_simple; ev_cb->stop_func = stop_simple;
+        ev_cb->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_cb->name, ev_cb); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_replay_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay count", d);
+        native_event_t *ev_pr = &ntv_table.events[idx];
+        ev_pr->id = idx; ev_pr->name = strdup(name_buf); ev_pr->descr = strdup(descr_buf);
+        ev_pr->device = d; ev_pr->value = 0; ev_pr->mode = PAPI_MODE_READ; ev_pr->variant = 8; ev_pr->subvariant = 0;
+        ev_pr->open_func = open_simple; ev_pr->close_func = close_simple; ev_pr->start_func = start_simple; ev_pr->stop_func = stop_simple;
+        ev_pr->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pr->name, ev_pr); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_l0_to_recovery_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe L0->recovery count", d);
+        native_event_t *ev_pl0 = &ntv_table.events[idx];
+        ev_pl0->id = idx; ev_pl0->name = strdup(name_buf); ev_pl0->descr = strdup(descr_buf);
+        ev_pl0->device = d; ev_pl0->value = 0; ev_pl0->mode = PAPI_MODE_READ; ev_pl0->variant = 9; ev_pl0->subvariant = 0;
+        ev_pl0->open_func = open_simple; ev_pl0->close_func = close_simple; ev_pl0->start_func = start_simple; ev_pl0->stop_func = stop_simple;
+        ev_pl0->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pl0->name, ev_pl0); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_replay_rollover_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe replay rollover count", d);
+        native_event_t *ev_prr = &ntv_table.events[idx];
+        ev_prr->id = idx; ev_prr->name = strdup(name_buf); ev_prr->descr = strdup(descr_buf);
+        ev_prr->device = d; ev_prr->value = 0; ev_prr->mode = PAPI_MODE_READ; ev_prr->variant = 10; ev_prr->subvariant = 0;
+        ev_prr->open_func = open_simple; ev_prr->close_func = close_simple; ev_prr->start_func = start_simple; ev_prr->stop_func = stop_simple;
+        ev_prr->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_prr->name, ev_prr); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_nak_sent_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK sent count", d);
+        native_event_t *ev_pns = &ntv_table.events[idx];
+        ev_pns->id = idx; ev_pns->name = strdup(name_buf); ev_pns->descr = strdup(descr_buf);
+        ev_pns->device = d; ev_pns->value = 0; ev_pns->mode = PAPI_MODE_READ; ev_pns->variant = 11; ev_pns->subvariant = 0;
+        ev_pns->open_func = open_simple; ev_pns->close_func = close_simple; ev_pns->start_func = start_simple; ev_pns->stop_func = stop_simple;
+        ev_pns->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pns->name, ev_pns); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_nak_received_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe NAK received count", d);
+        native_event_t *ev_pnr = &ntv_table.events[idx];
+        ev_pnr->id = idx; ev_pnr->name = strdup(name_buf); ev_pnr->descr = strdup(descr_buf);
+        ev_pnr->device = d; ev_pnr->value = 0; ev_pnr->mode = PAPI_MODE_READ; ev_pnr->variant = 12; ev_pnr->subvariant = 0;
+        ev_pnr->open_func = open_simple; ev_pnr->close_func = close_simple; ev_pnr->start_func = start_simple; ev_pnr->stop_func = stop_simple;
+        ev_pnr->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_pnr->name, ev_pnr); idx++;
+
+        if (idx >= MAX_EVENTS_PER_DEVICE * device_count) { papi_free(ntv_table.events); return PAPI_ENOSUPP; }
+        snprintf(name_buf, sizeof(name_buf), "pcie_other_end_recovery_count:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d PCIe other-end recovery count", d);
+        native_event_t *ev_poer = &ntv_table.events[idx];
+        ev_poer->id = idx; ev_poer->name = strdup(name_buf); ev_poer->descr = strdup(descr_buf);
+        ev_poer->device = d; ev_poer->value = 0; ev_poer->mode = PAPI_MODE_READ; ev_poer->variant = 13; ev_poer->subvariant = 0;
+        ev_poer->open_func = open_simple; ev_poer->close_func = close_simple; ev_poer->start_func = start_simple; ev_poer->stop_func = stop_simple;
+        ev_poer->access_func = access_amdsmi_pcie_info; htable_insert(htable, ev_poer->name, ev_poer); idx++;
+      }
+    }
     // GPU Overdrive level events
     if (amdsmi_get_gpu_overdrive_level_p) {
       uint32_t od_val;
