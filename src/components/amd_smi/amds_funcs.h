@@ -1,7 +1,30 @@
 #ifndef AMDS_FUNCS_H
 #define AMDS_FUNCS_H
 
+/* Ensure AMD SMI types are visible */
 #include <amd_smi/amdsmi.h>
+
+/*
+ * Some AMD SMI APIs such as GPU enumeration information and virtualization
+ * mode were introduced in newer library releases (v25 and later).  When
+ * building against older headers these entry points and associated types are
+ * not available which previously resulted in preprocessor errors when they
+ * were unconditionally listed in the AMD_SMI_GPU_FUNCTIONS macro.  To avoid
+ * embedding preprocessor directives inside the macro definition (which is
+ * ill-formed), conditionally expand those function entries via helper macros
+ * that collapse to nothing when the library version is too old.
+ */
+#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25
+#define AMD_SMI_ENUMERATION_FUNCS(_)                                           \
+  _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t,                        \
+    (amdsmi_processor_handle, amdsmi_enumeration_info_t *))
+#define AMD_SMI_VIRTUALIZATION_FUNCS(_)                                        \
+  _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_virtualization_mode_t *))
+#else
+#define AMD_SMI_ENUMERATION_FUNCS(_)
+#define AMD_SMI_VIRTUALIZATION_FUNCS(_)
+#endif
 
 #define AMD_SMI_GPU_FUNCTIONS(_)                                               \
   _(amdsmi_init_p, amdsmi_status_t, (uint64_t))                                \
@@ -57,10 +80,7 @@
     (amdsmi_processor_handle, amdsmi_vbios_info_t *))                          \
   _(amdsmi_get_gpu_device_uuid_p, amdsmi_status_t,                             \
     (amdsmi_processor_handle, unsigned int *, char *))                         \
-#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25        \
-  _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t,                        \
-    (amdsmi_processor_handle, amdsmi_enumeration_info_t *))                    \
-#endif                                                                         \
+  AMD_SMI_ENUMERATION_FUNCS(_)                                                 \
   _(amdsmi_get_gpu_vendor_name_p, amdsmi_status_t,                             \
     (amdsmi_processor_handle, char *, size_t))                                 \
   _(amdsmi_get_gpu_vram_vendor_p, amdsmi_status_t,                             \
@@ -92,10 +112,7 @@
     (amdsmi_processor_handle, uint16_t *))                                     \
   _(amdsmi_get_gpu_subsystem_id_p, amdsmi_status_t,                            \
     (amdsmi_processor_handle, uint16_t *))                                     \
-#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25        \
-  _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t,                     \
-    (amdsmi_processor_handle, amdsmi_virtualization_mode_t *))                 \
-#endif                                                                         \
+  AMD_SMI_VIRTUALIZATION_FUNCS(_)                                             \
   _(amdsmi_get_gpu_process_isolation_p, amdsmi_status_t,                       \
     (amdsmi_processor_handle, uint32_t *))                                     \
   _(amdsmi_get_gpu_xcd_counter_p, amdsmi_status_t,                             \
