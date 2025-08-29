@@ -5,14 +5,14 @@
 #include <stdio.h>
 #include <string.h>
 /* -------- Helpers and new accessors (GPU read-only additions) -------- */
-static uint64_t _str_to_u64_hash(const char *s) {
+static uint64_t _str_to_u64_hash(const void *s, size_t len) {
   /* djb2 64-bit */
+  const uint8_t *p = (const uint8_t *)s;
   uint64_t hash = 5381;
-  if (!s)
+  if (!p)
     return 0;
-  int c;
-  while ((c = *s++)) {
-    hash = ((hash << 5) + hash) + (uint8_t)c;
+  for (size_t i = 0; i < len; ++i) {
+    hash = ((hash << 5) + hash) + p[i];
   }
   return hash;
 }
@@ -56,7 +56,7 @@ int access_amdsmi_uuid_hash(int mode, void *arg) {
     return PAPI_EMISC;
   switch (event->variant) {
   case 0: /* hash */
-    event->value = (int64_t)_str_to_u64_hash(buf);
+    event->value = (int64_t)_str_to_u64_hash(buf, len);
     break;
   case 1: /* length */
     event->value = (int64_t)len;
@@ -128,7 +128,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
   }
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  event->value = (int64_t)_str_to_u64_hash(buf);
+  event->value = (int64_t)_str_to_u64_hash(buf, strnlen(buf, sizeof(buf)));
   return PAPI_OK;
 }
 #if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25
@@ -413,7 +413,8 @@ int access_amdsmi_compute_partition_hash(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_compute_partition_p(device_handles[event->device], buf, sizeof(buf));
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  event->value = (int64_t)_str_to_u64_hash(buf);
+  event->value =
+      (int64_t)_str_to_u64_hash(buf, strnlen(buf, sizeof(buf)));
   return PAPI_OK;
 }
 int access_amdsmi_memory_partition_hash(int mode, void *arg) {
@@ -428,7 +429,8 @@ int access_amdsmi_memory_partition_hash(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_memory_partition_p(device_handles[event->device], buf, sizeof(buf));
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  event->value = (int64_t)_str_to_u64_hash(buf);
+  event->value =
+      (int64_t)_str_to_u64_hash(buf, strnlen(buf, sizeof(buf)));
   return PAPI_OK;
 }
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
@@ -1806,7 +1808,9 @@ int access_amdsmi_board_serial_hash(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_board_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  event->value = (int64_t)_str_to_u64_hash(info.product_serial);
+  event->value = (int64_t)_str_to_u64_hash(
+      info.product_serial,
+      strnlen(info.product_serial, sizeof(info.product_serial)));
   return PAPI_OK;
 }
 
