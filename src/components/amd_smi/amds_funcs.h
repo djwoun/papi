@@ -1,6 +1,8 @@
 #ifndef AMDS_FUNCS_H
 #define AMDS_FUNCS_H
 
+#include <amd_smi/amdsmi.h>
+
 #define AMD_SMI_GPU_FUNCTIONS(_)                                               \
   _(amdsmi_init_p, amdsmi_status_t, (uint64_t))                                \
   _(amdsmi_shut_down_p, amdsmi_status_t, (void))                               \
@@ -55,8 +57,10 @@
     (amdsmi_processor_handle, amdsmi_vbios_info_t *))                          \
   _(amdsmi_get_gpu_device_uuid_p, amdsmi_status_t,                             \
     (amdsmi_processor_handle, unsigned int *, char *))                         \
+#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25        \
   _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t,                        \
     (amdsmi_processor_handle, amdsmi_enumeration_info_t *))                    \
+#endif                                                                         \
   _(amdsmi_get_gpu_vendor_name_p, amdsmi_status_t,                             \
     (amdsmi_processor_handle, char *, size_t))                                 \
   _(amdsmi_get_gpu_vram_vendor_p, amdsmi_status_t,                             \
@@ -88,8 +92,10 @@
     (amdsmi_processor_handle, uint16_t *))                                     \
   _(amdsmi_get_gpu_subsystem_id_p, amdsmi_status_t,                            \
     (amdsmi_processor_handle, uint16_t *))                                     \
+#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25        \
   _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t,                     \
     (amdsmi_processor_handle, amdsmi_virtualization_mode_t *))                 \
+#endif                                                                         \
   _(amdsmi_get_gpu_process_isolation_p, amdsmi_status_t,                       \
     (amdsmi_processor_handle, uint32_t *))                                     \
   _(amdsmi_get_gpu_xcd_counter_p, amdsmi_status_t,                             \

@@ -87,7 +87,9 @@ int access_amdsmi_energy_count(int mode, void *arg);
 int access_amdsmi_power_profile_status(int mode, void *arg);
 int access_amdsmi_uuid_hash(int mode, void *arg);
 int access_amdsmi_gpu_string_hash(int mode, void *arg);
+#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_enumeration_info(int mode, void *arg);
+#endif
 int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
 int access_amdsmi_process_info(int mode, void *arg);
@@ -126,7 +128,9 @@ int access_amdsmi_xgmi_plpd_supported(int mode, void *arg);
 int access_amdsmi_process_isolation(int mode, void *arg);
 int access_amdsmi_xcd_counter(int mode, void *arg);
 int access_amdsmi_board_serial_hash(int mode, void *arg);
+#if defined(AMDSMI_LIB_VERSION_MAJOR) && AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+#endif
 int access_amdsmi_fw_version(int mode, void *arg);
 int access_amdsmi_bad_page_count(int mode, void *arg);
 int access_amdsmi_bad_page_threshold(int mode, void *arg);
