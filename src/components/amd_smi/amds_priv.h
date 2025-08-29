@@ -3,7 +3,7 @@
 
 #define AMDSMI_DISABLE_ESMI
 
-#include "amdsmi.h"
+#include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
 /* Mode enumeration used by accessors */
