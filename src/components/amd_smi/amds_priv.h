@@ -6,6 +6,13 @@
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
+/* Some older AMD SMI releases do not expose amdsmi_enumeration_info_t or the
+ * associated query function.  Guard all related uses behind
+ * AMDSMI_HAVE_ENUMERATION_INFO so the component can still build when using
+ * those older headers.  Define AMDSMI_HAVE_ENUMERATION_INFO externally if the
+ * enumeration APIs are available.
+ */
+
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,
@@ -73,7 +80,9 @@ extern amdsmi_status_t (*amdsmi_get_gpu_board_info_p)(amdsmi_processor_handle, a
 extern amdsmi_status_t (*amdsmi_get_fw_info_p)(amdsmi_processor_handle, amdsmi_fw_info_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_vbios_info_p)(amdsmi_processor_handle, amdsmi_vbios_info_t *);
 extern amdsmi_status_t (*amdsmi_get_gpu_device_uuid_p)(amdsmi_processor_handle, unsigned int *, char *);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 extern amdsmi_status_t (*amdsmi_get_gpu_enumeration_info_p)(amdsmi_processor_handle, amdsmi_enumeration_info_t *);
+#endif
 extern amdsmi_status_t (*amdsmi_get_gpu_vendor_name_p)(amdsmi_processor_handle, char *, size_t);
 extern amdsmi_status_t (*amdsmi_get_gpu_vram_vendor_p)(amdsmi_processor_handle, char *, uint32_t);
 extern amdsmi_status_t (*amdsmi_get_gpu_subsystem_name_p)(amdsmi_processor_handle, char *, size_t);
@@ -153,11 +162,13 @@ int access_amdsmi_energy_count(int mode, void *arg);
 int access_amdsmi_power_profile_status(int mode, void *arg);
 int access_amdsmi_uuid_hash(int mode, void *arg);
 int access_amdsmi_gpu_string_hash(int mode, void *arg);
-int access_amdsmi_enumeration_info(int mode, void *arg);
 int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
 int access_amdsmi_process_count(int mode, void *arg);
 int access_amdsmi_ecc_total(int mode, void *arg);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
+int access_amdsmi_enumeration_info(int mode, void *arg);
+#endif
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
 int access_amdsmi_compute_partition_hash(int mode, void *arg);
 int access_amdsmi_memory_partition_hash(int mode, void *arg);

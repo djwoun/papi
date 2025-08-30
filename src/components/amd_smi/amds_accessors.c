@@ -122,6 +122,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 int access_amdsmi_enumeration_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
@@ -152,6 +153,7 @@ int access_amdsmi_enumeration_info(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif
 int access_amdsmi_asic_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;

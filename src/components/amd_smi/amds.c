@@ -45,7 +45,9 @@ amdsmi_status_t (*amdsmi_get_gpu_board_info_p)(amdsmi_processor_handle, amdsmi_b
 amdsmi_status_t (*amdsmi_get_fw_info_p)(amdsmi_processor_handle, amdsmi_fw_info_t *);
 amdsmi_status_t (*amdsmi_get_gpu_vbios_info_p)(amdsmi_processor_handle, amdsmi_vbios_info_t *);
 amdsmi_status_t (*amdsmi_get_gpu_device_uuid_p)(amdsmi_processor_handle, unsigned int *, char *);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 amdsmi_status_t (*amdsmi_get_gpu_enumeration_info_p)(amdsmi_processor_handle, amdsmi_enumeration_info_t *);
+#endif
 amdsmi_status_t (*amdsmi_get_gpu_vendor_name_p)(amdsmi_processor_handle, char *, size_t);
 amdsmi_status_t (*amdsmi_get_gpu_vram_vendor_p)(amdsmi_processor_handle, char *, uint32_t);
 amdsmi_status_t (*amdsmi_get_gpu_subsystem_name_p)(amdsmi_processor_handle, char *, size_t);
@@ -229,7 +231,9 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_fw_info_p = sym("amdsmi_get_fw_info", NULL);
   amdsmi_get_gpu_vbios_info_p = sym("amdsmi_get_gpu_vbios_info", NULL);
   amdsmi_get_gpu_device_uuid_p = sym("amdsmi_get_gpu_device_uuid", NULL);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
   amdsmi_get_gpu_enumeration_info_p = sym("amdsmi_get_gpu_enumeration_info", NULL);
+#endif
   amdsmi_get_gpu_vendor_name_p = sym("amdsmi_get_gpu_vendor_name", NULL);
   amdsmi_get_gpu_vram_vendor_p = sym("amdsmi_get_gpu_vram_vendor", NULL);
   amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
@@ -2224,6 +2228,7 @@ static int init_event_table(void) {
     }
 
     /* Enumeration info (drm render/card, hsa/hip ids) */
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
     if (amdsmi_get_gpu_enumeration_info_p) {
       amdsmi_enumeration_info_t einfo;
       if (amdsmi_get_gpu_enumeration_info_p(device_handles[d], &einfo) == AMDSMI_STATUS_SUCCESS) {
@@ -2317,6 +2322,7 @@ static int init_event_table(void) {
         idx++;
       }
     }
+#endif /* AMDSMI_HAVE_ENUMERATION_INFO */
     /* ASIC info (numeric IDs & CU count) */
     if (amdsmi_get_gpu_asic_info_p) {
       amdsmi_asic_info_t ainfo;
