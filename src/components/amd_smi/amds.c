@@ -1,6 +1,6 @@
 #include "amds.h"
 #include "amds_priv.h"
-#include "amdsmi.h"
+#include <amd_smi/amdsmi.h>
 #include "htable.h"
 #include "papi.h"
 #include "papi_memory.h"
