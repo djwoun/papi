@@ -51,16 +51,8 @@ static int _amd_smi_init_thread(hwd_context_t *ctx) {
 
 static int _amd_smi_init_component(int cidx) {
     _amd_smi_vector.cmp_info.CmpIdx = cidx;
-    _amd_smi_vector.cmp_info.num_native_events = -1;
-    _amd_smi_vector.cmp_info.num_cntrs = -1;
-    _amd_smi_vector.cmp_info.num_mpx_cntrs = -1;
     _amd_smi_lock = PAPI_NUM_LOCK + NUM_INNER_LOCK + cidx;
-
-    sprintf(_amd_smi_vector.cmp_info.disabled_reason,
-            "Not initialized. Access an AMD SMI event to initialize.");
-    _amd_smi_vector.cmp_info.disabled = PAPI_EDELAY_INIT;
-
-    return PAPI_EDELAY_INIT;
+    return _amd_smi_init_private();
 }
 
 static int evt_get_count(int *count) {
