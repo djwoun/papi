@@ -1,7 +1,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
-#include "amdsmi.h"
+#include <amd_smi/amdsmi.h>
 #include <inttypes.h>
 #include "papi.h"
 #include "papi_memory.h"
@@ -46,7 +46,9 @@ static amdsmi_status_t (*amdsmi_get_gpu_board_info_p)(amdsmi_processor_handle, a
 static amdsmi_status_t (*amdsmi_get_fw_info_p)(amdsmi_processor_handle, amdsmi_fw_info_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_vbios_info_p)(amdsmi_processor_handle, amdsmi_vbios_info_t *);
 static amdsmi_status_t (*amdsmi_get_gpu_device_uuid_p)(amdsmi_processor_handle, unsigned int *, char *);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 static amdsmi_status_t (*amdsmi_get_gpu_enumeration_info_p)(amdsmi_processor_handle, amdsmi_enumeration_info_t *);
+#endif
 static amdsmi_status_t (*amdsmi_get_gpu_vendor_name_p)(amdsmi_processor_handle, char *, size_t);
 static amdsmi_status_t (*amdsmi_get_gpu_vram_vendor_p)(amdsmi_processor_handle, char *, uint32_t);
 static amdsmi_status_t (*amdsmi_get_gpu_subsystem_name_p)(amdsmi_processor_handle, char *, size_t);
@@ -182,7 +184,9 @@ static int access_amdsmi_power_profile_status(int mode, void *arg);
 static uint64_t _str_to_u64_hash(const char *s);
 static int access_amdsmi_uuid_hash(int mode, void *arg);
 static int access_amdsmi_gpu_string_hash(int mode, void *arg);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 static int access_amdsmi_enumeration_info(int mode, void *arg);
+#endif
 static int access_amdsmi_asic_info(int mode, void *arg);
 static int access_amdsmi_link_metrics(int mode, void *arg);
 static int access_amdsmi_process_count(int mode, void *arg);
@@ -198,7 +202,9 @@ static int access_amdsmi_lib_version(int mode, void *arg);
 static uint64_t _str_to_u64_hash(const char *s);
 static int access_amdsmi_uuid_hash(int mode, void *arg);
 static int access_amdsmi_gpu_string_hash(int mode, void *arg);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 static int access_amdsmi_enumeration_info(int mode, void *arg);
+#endif
 static int access_amdsmi_asic_info(int mode, void *arg);
 static int access_amdsmi_link_metrics(int mode, void *arg);
 static int access_amdsmi_process_count(int mode, void *arg);
@@ -296,7 +302,9 @@ static int load_amdsmi_sym(void) {
     amdsmi_get_fw_info_p = sym("amdsmi_get_fw_info", NULL);
     amdsmi_get_gpu_vbios_info_p = sym("amdsmi_get_gpu_vbios_info", NULL);
     amdsmi_get_gpu_device_uuid_p = sym("amdsmi_get_gpu_device_uuid", NULL);
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
     amdsmi_get_gpu_enumeration_info_p = sym("amdsmi_get_gpu_enumeration_info", NULL);
+#endif
     amdsmi_get_gpu_vendor_name_p = sym("amdsmi_get_gpu_vendor_name", NULL);
     amdsmi_get_gpu_vram_vendor_p = sym("amdsmi_get_gpu_vram_vendor", NULL);
     amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
@@ -2069,6 +2077,7 @@ static int init_event_table(void) {
             ev_ssn->open_func=open_simple; ev_ssn->close_func=close_simple; ev_ssn->start_func=start_simple; ev_ssn->stop_func=stop_simple;
             ev_ssn->access_func=access_amdsmi_gpu_string_hash; htable_insert(htable, ev_ssn->name, ev_ssn); idx++;
         }
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
         /* Enumeration info (drm render/card, hsa/hip ids) */
         if (amdsmi_get_gpu_enumeration_info_p) {
             amdsmi_enumeration_info_t einfo;
@@ -2107,6 +2116,7 @@ static int init_event_table(void) {
                 ev_ehip->access_func=access_amdsmi_enumeration_info; htable_insert(htable, ev_ehip->name, ev_ehip); idx++;
             }
         }
+#endif
         /* ASIC info (numeric IDs & CU count) */
         if (amdsmi_get_gpu_asic_info_p) {
             amdsmi_asic_info_t ainfo;
@@ -2414,6 +2424,7 @@ static int access_amdsmi_gpu_string_hash(int mode, void *arg) {
     event->value = (int64_t)_str_to_u64_hash(buf);
     return PAPI_OK;
 }
+#ifdef AMDSMI_HAVE_ENUMERATION_INFO
 static int access_amdsmi_enumeration_info(int mode, void *arg) {
     if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
     if (!amdsmi_get_gpu_enumeration_info_p) return PAPI_ENOSUPP;
@@ -2431,6 +2442,7 @@ static int access_amdsmi_enumeration_info(int mode, void *arg) {
     }
     return PAPI_OK;
 }
+#endif
 static int access_amdsmi_asic_info(int mode, void *arg) {
     if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
     if (!amdsmi_get_gpu_asic_info_p) return PAPI_ENOSUPP;
