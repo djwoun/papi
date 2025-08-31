@@ -126,6 +126,7 @@ static uint32_t *cores_per_socket = NULL;
 static void *amds_dlp = NULL;
 static void *htable = NULL;
 static char error_string[PAPI_MAX_STR_LEN + 1];
+static uint32_t amdsmi_lib_major = 0;
 /* forward declarations for internal helpers */
 static int load_amdsmi_sym(void);
 static int init_device_table(void);
@@ -420,6 +421,12 @@ int amds_init(void) {
   if (status != AMDSMI_STATUS_SUCCESS) {
     strcpy(error_string, "amdsmi_init failed");
     return PAPI_ENOSUPP;
+  }
+  if (amdsmi_get_lib_version_p) {
+    amdsmi_version_t vinfo;
+    if (amdsmi_get_lib_version_p(&vinfo) == AMDSMI_STATUS_SUCCESS) {
+      amdsmi_lib_major = vinfo.major;
+    }
   }
   htable_init(&htable);
   // Discover GPU and CPU devices
@@ -925,8 +932,8 @@ static int init_event_table(void) {
       }
     }
     
-    // GPU PM metrics count event
-    if (amdsmi_get_gpu_pm_metrics_info_p) {
+    // GPU PM metrics count event (available in lib version 25+)
+    if (amdsmi_lib_major >= 25 && amdsmi_get_gpu_pm_metrics_info_p) {
       amdsmi_name_value_t *metrics = NULL;
       uint32_t mcount = 0;
     
@@ -1111,8 +1118,8 @@ static int init_event_table(void) {
         idx++;
       }
     }
-    // GPU register table metrics count events
-    if (amdsmi_get_gpu_reg_table_info_p) {
+    // GPU register table metrics count events (available in lib version 25+)
+    if (amdsmi_lib_major >= 25 && amdsmi_get_gpu_reg_table_info_p) {
       amdsmi_reg_type_t reg_types[] = {AMDSMI_REG_XGMI, AMDSMI_REG_WAFL, AMDSMI_REG_PCIE, AMDSMI_REG_USR, AMDSMI_REG_USR1};
       const char *reg_names[] = {"XGMI", "WAFL", "PCIE", "USR", "USR1"};
       for (int rt = 0; rt < 5; ++rt) {
@@ -4275,7 +4282,7 @@ static int access_amdsmi_pm_metrics_count(int mode, void *arg) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_pm_metrics_info_p) return PAPI_ENOSUPP;
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_pm_metrics_info_p) return PAPI_ENOSUPP;
 
   amdsmi_name_value_t *metrics = NULL;
   uint32_t count = 0;
@@ -4307,7 +4314,7 @@ static int access_amdsmi_reg_count(int mode, void *arg) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_reg_table_info_p) return PAPI_ENOSUPP;
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_reg_table_info_p) return PAPI_ENOSUPP;
 
   amdsmi_reg_type_t reg_type = (amdsmi_reg_type_t)event->variant; /* set at registration */
   amdsmi_name_value_t *regs = NULL;
