@@ -177,8 +177,10 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_id_p = sym("amdsmi_get_gpu_id", NULL);
   amdsmi_get_gpu_revision_p = sym("amdsmi_get_gpu_revision", NULL);
   amdsmi_get_gpu_subsystem_id_p = sym("amdsmi_get_gpu_subsystem_id", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_get_gpu_virtualization_mode_p =
       sym("amdsmi_get_gpu_virtualization_mode", NULL);
+#endif
   amdsmi_get_gpu_process_isolation_p =
       sym("amdsmi_get_gpu_process_isolation", NULL);
   amdsmi_get_gpu_xcd_counter_p = sym("amdsmi_get_gpu_xcd_counter", NULL);
@@ -197,8 +199,10 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_fw_info_p = sym("amdsmi_get_fw_info", NULL);
   amdsmi_get_gpu_vbios_info_p = sym("amdsmi_get_gpu_vbios_info", NULL);
   amdsmi_get_gpu_device_uuid_p = sym("amdsmi_get_gpu_device_uuid", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_get_gpu_enumeration_info_p =
       sym("amdsmi_get_gpu_enumeration_info", NULL);
+#endif
   amdsmi_get_gpu_vendor_name_p = sym("amdsmi_get_gpu_vendor_name", NULL);
   amdsmi_get_gpu_vram_vendor_p = sym("amdsmi_get_gpu_vram_vendor", NULL);
   amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
@@ -764,15 +768,19 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
         }
 
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "pcie_max_interface_version:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d maximum PCIe interface version", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
-                      access_amdsmi_pcie_info) != PAPI_OK) {
-          return PAPI_ENOMEM;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+        if (amdsmi_lib_major >= 25) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf),
+                   "pcie_max_interface_version:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d maximum PCIe interface version", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
+                        access_amdsmi_pcie_info) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
         }
+#endif
 
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "pcie_width:device=%d", d);
@@ -1721,8 +1729,9 @@ static int init_event_table(void) {
       }
     }
     // GPU Virtualization Mode
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
     amdsmi_virtualization_mode_t vmode;
-    if (amdsmi_get_gpu_virtualization_mode_p &&
+    if (amdsmi_lib_major >= 25 && amdsmi_get_gpu_virtualization_mode_p &&
         amdsmi_get_gpu_virtualization_mode_p(device_handles[d], &vmode) ==
             AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gpu_virtualization_mode:device=%d",
@@ -1734,6 +1743,7 @@ static int init_event_table(void) {
         return PAPI_ENOMEM;
       }
     }
+#endif
     // GPU NUMA Node
     if (amdsmi_get_gpu_topo_numa_affinity_p(device_handles[d], &numa) ==
         AMDSMI_STATUS_SUCCESS) {
@@ -1810,18 +1820,23 @@ static int init_event_table(void) {
     }
 
     if (amdsmi_get_gpu_vram_info_p) {
-      amdsmi_vram_info_t vinfo;
-      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) ==
-          AMDSMI_STATUS_SUCCESS) {
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf), "vram_max_bandwidth:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d VRAM max bandwidth (GB/s)", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_vram_max_bandwidth) != PAPI_OK) {
-          return PAPI_ENOMEM;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+      if (amdsmi_lib_major >= 25) {
+        amdsmi_vram_info_t vinfo;
+        if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) ==
+            AMDSMI_STATUS_SUCCESS) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf),
+                   "vram_max_bandwidth:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d VRAM max bandwidth (GB/s)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                        access_amdsmi_vram_max_bandwidth) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
         }
       }
+#endif
     }
 
     if (amdsmi_get_gpu_bad_page_info_p) {
@@ -1914,15 +1929,19 @@ static int init_event_table(void) {
         }
 
         /* Register socket power in microwatts */
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_socket_microwatts:device=%d:sensor=%u", d, s);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d power sensor %u socket power (uW)", d, s);
-        if (add_event(&idx, name_buf, descr_buf, d, 2, s, PAPI_MODE_READ,
-                      access_amdsmi_power_sensor) != PAPI_OK) {
-          return PAPI_ENOMEM;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+        if (amdsmi_lib_major >= 25) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf),
+                   "power_sensor_socket_microwatts:device=%d:sensor=%u", d, s);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d power sensor %u socket power (uW)", d, s);
+          if (add_event(&idx, name_buf, descr_buf, d, 2, s, PAPI_MODE_READ,
+                        access_amdsmi_power_sensor) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
         }
+#endif
 
         /* Register GFX voltage */
         CHECK_EVENT_IDX(idx);
@@ -2488,7 +2507,8 @@ static int init_event_table(void) {
     }
 
     /* Enumeration info (drm render/card, hsa/hip ids) */
-    if (amdsmi_get_gpu_enumeration_info_p) {
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+    if (amdsmi_lib_major >= 25 && amdsmi_get_gpu_enumeration_info_p) {
       amdsmi_enumeration_info_t einfo;
       if (amdsmi_get_gpu_enumeration_info_p(device_handles[d], &einfo) ==
           AMDSMI_STATUS_SUCCESS) {
@@ -2522,6 +2542,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     /* ASIC info (numeric IDs & CU count) */
     if (amdsmi_get_gpu_asic_info_p) {
       amdsmi_asic_info_t ainfo;

@@ -131,10 +131,11 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_enumeration_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_enumeration_info_p)
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_enumeration_info_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
@@ -161,6 +162,7 @@ int access_amdsmi_enumeration_info(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif
 int access_amdsmi_asic_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
@@ -754,7 +756,10 @@ int access_amdsmi_gpu_info(int mode, void *arg) {
     }
     break;
   }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   case 4: {
+    if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_virtualization_mode_p)
+      return PAPI_ENOSUPP;
     amdsmi_virtualization_mode_t mode_val;
     status = amdsmi_get_gpu_virtualization_mode_p(device_handles[event->device], &mode_val);
     if (status == AMDSMI_STATUS_SUCCESS) {
@@ -762,6 +767,7 @@ int access_amdsmi_gpu_info(int mode, void *arg) {
     }
     break;
   }
+#endif
   case 5: {
     int32_t numa_node = -1;
     status = amdsmi_get_gpu_topo_numa_affinity_p(device_handles[event->device], &numa_node);
@@ -1831,10 +1837,11 @@ int access_amdsmi_fw_version(int mode, void *arg) {
   return PAPI_EMISC;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_vram_info_p)
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_vram_info_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
@@ -1846,6 +1853,7 @@ int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
   event->value = (int64_t)info.vram_max_bandwidth; /* GB/s */
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_bad_page_count(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
@@ -1938,9 +1946,13 @@ int access_amdsmi_power_sensor(int mode, void *arg) {
   case 1:
     event->value = (int64_t)info.average_socket_power;
     break;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   case 2:
+    if (amdsmi_lib_major < 25)
+      return PAPI_ENOSUPP;
     event->value = (int64_t)info.socket_power;
     break;
+#endif
   case 3:
     event->value = (int64_t)info.gfx_voltage;
     break;
@@ -1984,9 +1996,13 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
   case 3:
     event->value = (int64_t)info.pcie_static.slot_type;
     break;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   case 4:
+    if (amdsmi_lib_major < 25)
+      return PAPI_ENOSUPP;
     event->value = (int64_t)info.pcie_static.max_pcie_interface_version;
     break;
+#endif
   case 5:
     event->value = info.pcie_metric.pcie_width;
     break;
