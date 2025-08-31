@@ -6,6 +6,10 @@
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
+#ifndef AMDSMI_LIB_VERSION_MAJOR
+#define AMDSMI_LIB_VERSION_MAJOR 0
+#endif
+
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,
@@ -45,6 +49,7 @@ void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
 unsigned int amds_get_lock(void);
 void amds_set_lock(unsigned int lock);
+uint32_t amds_get_lib_major(void);
 
 #ifndef AMDS_PRIV_IMPL
 #define device_handles (amds_get_device_handles())
@@ -55,6 +60,7 @@ void amds_set_lock(unsigned int lock);
 #define cores_per_socket (amds_get_cores_per_socket())
 #define htable (amds_get_htable())
 #define ntv_table_p (amds_get_ntv_table())
+#define amdsmi_lib_major (amds_get_lib_major())
 #endif
 
 /* AMD SMI function pointers */
@@ -87,7 +93,9 @@ int access_amdsmi_energy_count(int mode, void *arg);
 int access_amdsmi_power_profile_status(int mode, void *arg);
 int access_amdsmi_uuid_hash(int mode, void *arg);
 int access_amdsmi_gpu_string_hash(int mode, void *arg);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_enumeration_info(int mode, void *arg);
+#endif
 int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
 int access_amdsmi_process_info(int mode, void *arg);
@@ -126,7 +134,9 @@ int access_amdsmi_xgmi_plpd_supported(int mode, void *arg);
 int access_amdsmi_process_isolation(int mode, void *arg);
 int access_amdsmi_xcd_counter(int mode, void *arg);
 int access_amdsmi_board_serial_hash(int mode, void *arg);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+#endif
 int access_amdsmi_fw_version(int mode, void *arg);
 int access_amdsmi_bad_page_count(int mode, void *arg);
 int access_amdsmi_bad_page_threshold(int mode, void *arg);
