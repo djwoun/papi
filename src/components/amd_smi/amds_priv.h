@@ -45,6 +45,7 @@ void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
 unsigned int amds_get_lock(void);
 void amds_set_lock(unsigned int lock);
+uint32_t amds_get_lib_major(void);
 
 #ifndef AMDS_PRIV_IMPL
 #define device_handles (amds_get_device_handles())
@@ -55,6 +56,7 @@ void amds_set_lock(unsigned int lock);
 #define cores_per_socket (amds_get_cores_per_socket())
 #define htable (amds_get_htable())
 #define ntv_table_p (amds_get_ntv_table())
+#define amdsmi_lib_major (amds_get_lib_major())
 #endif
 
 /* AMD SMI function pointers */

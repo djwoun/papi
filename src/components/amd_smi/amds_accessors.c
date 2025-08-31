@@ -1430,7 +1430,7 @@ int access_amdsmi_pm_metrics_count(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_pm_metrics_info_p)
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_pm_metrics_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_name_value_t *metrics = NULL;
@@ -1451,7 +1451,7 @@ int access_amdsmi_pm_metric_value(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_pm_metrics_info_p)
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_pm_metrics_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_name_value_t *metrics = NULL;
@@ -1529,7 +1529,7 @@ int access_amdsmi_reg_count(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_reg_table_info_p)
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_reg_table_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_reg_type_t reg_type = (amdsmi_reg_type_t)event->variant; /* set at registration */
@@ -1551,7 +1551,7 @@ int access_amdsmi_reg_value(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_reg_table_info_p)
+  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_reg_table_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_reg_type_t reg_type = (amdsmi_reg_type_t)event->variant;
