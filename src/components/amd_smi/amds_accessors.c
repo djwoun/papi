@@ -730,7 +730,8 @@ int access_amdsmi_memory_partition_config(int mode, void *arg) {
     return PAPI_EMISC;
   switch (event->variant) {
   case 0:
-    event->value = (int64_t)cfg.partition_caps;
+    /* Union holds bit flags; expose the mask value */
+    event->value = (int64_t)cfg.partition_caps.nps_cap_mask;
     break;
   case 1:
     event->value = (int64_t)cfg.mp_mode;

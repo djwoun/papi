@@ -163,6 +163,8 @@ int access_amdsmi_power_sensor(int mode, void *arg);
 int access_amdsmi_pcie_info(int mode, void *arg);
 int access_amdsmi_event_notification(int mode, void *arg);
 int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
+int access_amdsmi_utilization_count(int mode, void *arg);
+int access_amdsmi_violation_status(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);
