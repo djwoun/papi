@@ -2179,6 +2179,13 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_pcie_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
+  // Variant mapping:
+  // 0 max width, 1 max speed, 2 interface version, 3 slot type,
+  // 4 max interface version (lib >=25),
+  // 5 current width, 6 current speed, 7 bandwidth,
+  // 8 replay count, 9 L0->recovery count, 10 replay rollover count,
+  // 11 NAK sent count, 12 NAK received count,
+  // 13 other-end recovery count
   switch (event->variant) {
   case 0:
     event->value = info.pcie_static.max_pcie_width;
