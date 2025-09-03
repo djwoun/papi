@@ -56,12 +56,34 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
     papi_free(new_ctx);
     return papi_errno;
   }
+  for (int i = 0; i < num_events; ++i) {
+    native_event_t *ev = &ntv_table_p->events[event_ids[i]];
+    if (ev->open_func) {
+      papi_errno = ev->open_func(ev);
+      if (papi_errno != PAPI_OK) {
+        for (int j = 0; j < i; ++j) {
+          native_event_t *prev = &ntv_table_p->events[event_ids[j]];
+          if (prev->close_func)
+            prev->close_func(prev);
+        }
+        release_devices(&new_ctx->device_mask);
+        papi_free(new_ctx->counters);
+        papi_free(new_ctx);
+        return papi_errno;
+      }
+    }
+  }
   *ctx = new_ctx;
   return PAPI_OK;
 }
 int amds_ctx_close(amds_ctx_t ctx) {
   if (!ctx)
     return PAPI_OK;
+  for (int i = 0; i < ctx->num_events; ++i) {
+    native_event_t *ev = &ntv_table_p->events[ctx->events_id[i]];
+    if (ev->close_func)
+      ev->close_func(ev);
+  }
   // release device usage
   release_devices(&ctx->device_mask);
   papi_free(ctx->counters);
@@ -69,17 +91,33 @@ int amds_ctx_close(amds_ctx_t ctx) {
   return PAPI_OK;
 }
 int amds_ctx_start(amds_ctx_t ctx) {
-  // No additional actions needed to start in this design (all reads are
-  // on-demand)
+  int papi_errno = PAPI_OK;
+  for (int i = 0; i < ctx->num_events; ++i) {
+    native_event_t *ev = &ntv_table_p->events[ctx->events_id[i]];
+    if (ev->start_func) {
+      papi_errno = ev->start_func(ev);
+      if (papi_errno != PAPI_OK)
+        return papi_errno;
+    }
+  }
   ctx->state |= AMDS_EVENTS_RUNNING;
-  return PAPI_OK;
+  return papi_errno;
 }
 int amds_ctx_stop(amds_ctx_t ctx) {
   if (!(ctx->state & AMDS_EVENTS_RUNNING)) {
     return PAPI_OK;
   }
+  int papi_errno = PAPI_OK;
+  for (int i = 0; i < ctx->num_events; ++i) {
+    native_event_t *ev = &ntv_table_p->events[ctx->events_id[i]];
+    if (ev->stop_func) {
+      int ret = ev->stop_func(ev);
+      if (papi_errno == PAPI_OK)
+        papi_errno = ret;
+    }
+  }
   ctx->state &= ~AMDS_EVENTS_RUNNING;
-  return PAPI_OK;
+  return papi_errno;
 }
 int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   int papi_errno = PAPI_OK;
