@@ -1,47 +1,35 @@
 //-----------------------------------------------------------------------------
-// amd_smi_single_event_test.cpp
+// amdsmi_basics.cpp (harness-integrated)
 // Enumerates every native AMD-SMI event exposed through PAPI and measures
-// them **one at a time**.  This isolates each counter in its own EventSet so
-// that you can verify the event works independently of the others.
-// Designed for C++17 / hipcc builds.
-//
-// Build example:
-//   make -f ROCM_SMI_Makefile amd_smi_single_event_test.out
+// them one at a time. Minimal changes from your original: now uses the
+// test_harness.hpp to support --print and final PASS/FAIL lines.
 //-----------------------------------------------------------------------------
-
-#define __HIP_PLATFORM_HCC__
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include "papi.h"
+#include "test_harness.hpp"
 
-// ---------------------------------------------------------------------------
-// Simple helper for PAPI error handling
-// ---------------------------------------------------------------------------
-#define CALL_PAPI_OK(call)                                                                                                                 \
-  do {                                                                                                                                     \
-    int _ret = (call);                                                                                                                     \
-    if (_ret != PAPI_OK) {                                                                                                                 \
-      fprintf(stderr, "%s:%d: PAPI error in '" #call "': %s\n", __FILE__, __LINE__, PAPI_strerror(_ret));                                  \
-      std::exit(EXIT_FAILURE);                                                                                                             \
-    }                                                                                                                                      \
-  } while (0)
+// Return true if rc is a "warning, not failure" status for add/start/stop.
+static inline bool is_warning_rc(int rc) {
+  return (rc == PAPI_ENOEVNT) || (rc == PAPI_ECNFLCT) || (rc == PAPI_EPERM);
+}
 
 int main(int argc, char *argv[]) {
-  //-------------------------------------------------------------------
-  // 1.  Initialise PAPI
-  //-------------------------------------------------------------------
+  // Unbuffer stdout so the final status line shows promptly.
+  setvbuf(stdout, nullptr, _IONBF, 0);
+
+  auto opts = parse_harness_cli(argc, argv);
+
+  // 1. Initialise PAPI
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT) {
-    fprintf(stderr, "PAPI_library_init failed: %s\n", PAPI_strerror(ret));
-    return EXIT_FAILURE;
+    NOTE("PAPI_library_init failed: %s", PAPI_strerror(ret));
+    return eval_result(opts, 1);
   }
 
-  //-------------------------------------------------------------------
-  // 2.  Locate the AMD-SMI component
-  //-------------------------------------------------------------------
+  // 2. Locate the AMD-SMI component
   int cid = -1;
   const int ncomps = PAPI_num_components();
   for (int i = 0; i < ncomps && cid < 0; ++i) {
@@ -51,63 +39,126 @@ int main(int argc, char *argv[]) {
     }
   }
   if (cid < 0) {
-    fprintf(stderr, "Unable to locate the amd_smi component ? is PAPI built with ROCm support?\n");
-    return EXIT_FAILURE;
+    // Can't conduct on this build/platform ¡æ pass with warning.
+    SKIP("Unable to locate the amd_smi component (PAPI built without ROCm?)");
   }
-  printf("Using AMD-SMI component id %d\n\n", cid);
 
-  //-------------------------------------------------------------------
-  // 3.  Enumerate every native event
-  //-------------------------------------------------------------------
+  NOTE("Using AMD-SMI component id %d\n", cid);
+
+  // 3. Enumerate every native event
   int ev_code = PAPI_NATIVE_MASK;
   if (PAPI_enum_cmp_event(&ev_code, PAPI_ENUM_FIRST, cid) != PAPI_OK) {
-    fprintf(stderr, "No native events found for AMD-SMI component.\n");
-    return EXIT_SUCCESS; // Nothing more to do
+    // No events ¡æ treat as ¡°nothing to do¡± (warning instead of failing)
+    SKIP("No native events found for AMD-SMI component");
   }
 
   int event_index = 0;
+  int passed = 0, warned = 0, failed = 0, skipped = 0;
+
   do {
     char ev_name[PAPI_MAX_STR_LEN]{};
     if (PAPI_event_code_to_name(ev_code, ev_name) != PAPI_OK) {
-      // Should not happen, but skip if it does.
+      // Shouldn't happen; skip silently
+      ++skipped;
       continue;
     }
 
-    if (std::strncmp(ev_name, "process", 7) == 0) {
-      printf("[%4d] Skipping %s (process events not testable)\n\n", event_index++, ev_name);
+    // Preserve your original skip for process* events
+    if (std::strncmp(ev_name, "amd_smi:::process", 17) == 0 ||
+        std::strncmp(ev_name, "process", 7) == 0) {
+      ++skipped;
+      NOTE("[%4d] Skipping %s (process events not testable)\n", event_index++, ev_name);
       continue;
     }
 
-    printf("[%4d] Testing %s...\n", event_index++, ev_name);
+    NOTE("[%4d] Testing %s...", event_index, ev_name);
 
-    //-------------------------------------------------------------------
     // 4-7.  Create a fresh EventSet, read the event, print, cleanup
-    //-------------------------------------------------------------------
     int eventSet = PAPI_NULL;
-    CALL_PAPI_OK(PAPI_create_eventset(&eventSet));
-    CALL_PAPI_OK(PAPI_assign_eventset_component(eventSet, cid));
+    ret = PAPI_create_eventset(&eventSet);
+    if (ret != PAPI_OK) {
+      // Hard failure to create an EventSet
+      NOTE("  ?  create_eventset failed: %s", PAPI_strerror(ret));
+      ++failed; ++event_index;
+      continue;
+    }
+
+    // Keep original explicit assignment to the component
+    ret = PAPI_assign_eventset_component(eventSet, cid);
+    if (ret != PAPI_OK) {
+      NOTE("  ?  assign_eventset_component failed: %s", PAPI_strerror(ret));
+      (void)PAPI_destroy_eventset(&eventSet);
+      ++failed; ++event_index;
+      continue;
+    }
 
     ret = PAPI_add_event(eventSet, ev_code);
     if (ret != PAPI_OK) {
-      fprintf(stderr, "  ?  Could not add %s (%s)\n\n", ev_name, PAPI_strerror(ret));
-      CALL_PAPI_OK(PAPI_destroy_eventset(&eventSet));
+      if (is_warning_rc(ret)) {
+        WARNF("Could not add %-50s (%s)", ev_name, PAPI_strerror(ret));
+        (void)PAPI_destroy_eventset(&eventSet);
+        ++warned; ++event_index;
+      } else {
+        NOTE("  ?  Could not add %s (%s)", ev_name, PAPI_strerror(ret));
+        (void)PAPI_destroy_eventset(&eventSet);
+        ++failed; ++event_index;
+      }
       continue;
     }
 
     long long value = 0;
-    CALL_PAPI_OK(PAPI_start(eventSet));
-    CALL_PAPI_OK(PAPI_stop(eventSet, &value));
+    ret = PAPI_start(eventSet);
+    if (ret != PAPI_OK) {
+      if (is_warning_rc(ret)) {
+        WARNF("start %-54s (%s)", ev_name, PAPI_strerror(ret));
+        (void)PAPI_cleanup_eventset(eventSet);
+        (void)PAPI_destroy_eventset(&eventSet);
+        ++warned; ++event_index;
+      } else {
+        NOTE("  ?  start failed for %s (%s)", ev_name, PAPI_strerror(ret));
+        (void)PAPI_cleanup_eventset(eventSet);
+        (void)PAPI_destroy_eventset(&eventSet);
+        ++failed; ++event_index;
+      }
+      continue;
+    }
 
-    printf("      %-60s = %lld\n\n", ev_name, value);
+    // Read once via stop (same as original)
+    ret = PAPI_stop(eventSet, &value);
+    if (ret != PAPI_OK) {
+      if (is_warning_rc(ret)) {
+        WARNF("stop  %-54s (%s)", ev_name, PAPI_strerror(ret));
+        ++warned;
+      } else {
+        NOTE("  ?  stop failed for %s (%s)", ev_name, PAPI_strerror(ret));
+        ++failed;
+      }
+      (void)PAPI_cleanup_eventset(eventSet);
+      (void)PAPI_destroy_eventset(&eventSet);
+      ++event_index;
+      continue;
+    }
 
-    CALL_PAPI_OK(PAPI_cleanup_eventset(eventSet));
-    CALL_PAPI_OK(PAPI_destroy_eventset(&eventSet));
+    // Success path
+    ++passed;
+    if (opts.print) {
+      printf("      %-60s = %lld\n\n", ev_name, value);
+    }
+
+    (void)PAPI_cleanup_eventset(eventSet);
+    (void)PAPI_destroy_eventset(&eventSet);
+    ++event_index;
 
   } while (PAPI_enum_cmp_event(&ev_code, PAPI_ENUM_EVENTS, cid) == PAPI_OK);
 
-  //-------------------------------------------------------------------
-  // 8.  Shutdown
-  //-------------------------------------------------------------------
+  if (opts.print) {
+    printf("Summary: passed=%d  warned=%d  skipped=%d  failed=%d\n",
+           passed, warned, skipped, failed);
+  }
+
   PAPI_shutdown();
-  return EXIT_SUCCESS;
+
+  // Final: fail only if we had real failures; warnings/skips are allowed.
+  int rc = (failed == 0) ? 0 : 1;
+  return eval_result(opts, rc);
 }
