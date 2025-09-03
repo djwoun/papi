@@ -170,7 +170,20 @@
   _(amdsmi_get_gpu_event_notification_p, amdsmi_status_t,                      \
     (int, uint32_t *, amdsmi_evt_notification_data_t *))                       \
   _(amdsmi_stop_gpu_event_notification_p, amdsmi_status_t,                     \
-    (amdsmi_processor_handle))
+    (amdsmi_processor_handle))                                               \
+  _(amdsmi_gpu_counter_group_supported_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_event_group_t))                          \
+  _(amdsmi_get_gpu_available_counters_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_event_group_t, uint32_t *))              \
+  _(amdsmi_gpu_create_counter_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, amdsmi_event_type_t,                            \
+     amdsmi_event_handle_t *))                                               \
+  _(amdsmi_gpu_control_counter_p, amdsmi_status_t,                             \
+    (amdsmi_event_handle_t, amdsmi_counter_command_t, void *))                \
+  _(amdsmi_gpu_read_counter_p, amdsmi_status_t,                                \
+    (amdsmi_event_handle_t, amdsmi_counter_value_t *))                        \
+  _(amdsmi_gpu_destroy_counter_p, amdsmi_status_t,                             \
+    (amdsmi_event_handle_t))
 
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
 #define AMD_SMI_GPU_FUNCTIONS(_)                                              \

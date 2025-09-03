@@ -106,6 +106,73 @@ static int stop_simple(native_event_t *event) {
   return PAPI_OK;
 }
 
+typedef struct {
+  amdsmi_event_handle_t handle;
+  uint64_t accum;
+} counter_priv_t;
+
+static int open_counter(native_event_t *event) {
+  if (!amdsmi_gpu_create_counter_p)
+    return PAPI_ENOSUPP;
+  counter_priv_t *priv = (counter_priv_t *)papi_calloc(1, sizeof(counter_priv_t));
+  if (!priv)
+    return PAPI_ENOMEM;
+  amdsmi_status_t ret = amdsmi_gpu_create_counter_p(
+      device_handles[event->device], (amdsmi_event_type_t)event->variant,
+      &priv->handle);
+  if (ret != AMDSMI_STATUS_SUCCESS) {
+    papi_free(priv);
+    return PAPI_ENOSUPP;
+  }
+  event->priv = priv;
+  return PAPI_OK;
+}
+
+static int close_counter(native_event_t *event) {
+  counter_priv_t *priv = (counter_priv_t *)event->priv;
+  if (priv) {
+    if (amdsmi_gpu_destroy_counter_p)
+      amdsmi_gpu_destroy_counter_p(priv->handle);
+    papi_free(priv);
+    event->priv = NULL;
+  }
+  return PAPI_OK;
+}
+
+static int start_counter(native_event_t *event) {
+  counter_priv_t *priv = (counter_priv_t *)event->priv;
+  if (!priv || !amdsmi_gpu_control_counter_p)
+    return PAPI_ENOSUPP;
+  priv->accum = 0;
+  amdsmi_status_t ret = amdsmi_gpu_control_counter_p(
+      priv->handle, AMDSMI_CNTR_CMD_START, NULL);
+  return (ret == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_ENOSUPP;
+}
+
+static int stop_counter(native_event_t *event) {
+  counter_priv_t *priv = (counter_priv_t *)event->priv;
+  if (!priv || !amdsmi_gpu_control_counter_p)
+    return PAPI_ENOSUPP;
+  amdsmi_status_t ret =
+      amdsmi_gpu_control_counter_p(priv->handle, AMDSMI_CNTR_CMD_STOP, NULL);
+  return (ret == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_ENOSUPP;
+}
+
+static int access_amdsmi_gpu_counter(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  counter_priv_t *priv = (counter_priv_t *)event->priv;
+  if (!priv || !amdsmi_gpu_read_counter_p)
+    return PAPI_ENOSUPP;
+  amdsmi_counter_value_t val;
+  if (amdsmi_gpu_read_counter_p(priv->handle, &val) != AMDSMI_STATUS_SUCCESS)
+    return PAPI_ENOSUPP;
+  priv->accum += val.value;
+  event->value = priv->accum;
+  return PAPI_OK;
+}
+
 // Replace any non-alphanumeric characters with '_' to build safe event names
 static void sanitize_name(const char *src, char *dst, size_t len) {
   size_t j = 0;
@@ -264,6 +331,17 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_gpu_event_notification", NULL);
   amdsmi_stop_gpu_event_notification_p =
       sym("amdsmi_stop_gpu_event_notification", NULL);
+  amdsmi_gpu_counter_group_supported_p =
+      sym("amdsmi_gpu_counter_group_supported", NULL);
+  amdsmi_get_gpu_available_counters_p =
+      sym("amdsmi_get_gpu_available_counters", NULL);
+  amdsmi_gpu_create_counter_p =
+      sym("amdsmi_gpu_create_counter", NULL);
+  amdsmi_gpu_control_counter_p =
+      sym("amdsmi_gpu_control_counter", NULL);
+  amdsmi_gpu_read_counter_p = sym("amdsmi_gpu_read_counter", NULL);
+  amdsmi_gpu_destroy_counter_p =
+      sym("amdsmi_gpu_destroy_counter", NULL);
   amdsmi_get_minmax_bandwidth_between_processors_p =
       sym("amdsmi_get_minmax_bandwidth_between_processors", NULL);
 #ifndef AMDSMI_DISABLE_ESMI
@@ -584,6 +662,7 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
   ev->mode = mode;
   ev->variant = variant;
   ev->subvariant = subvariant;
+  ev->priv = NULL;
   ev->open_func = open_simple;
   ev->close_func = close_simple;
   ev->start_func = start_simple;
@@ -591,6 +670,20 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
   ev->access_func = access_func;
   htable_insert(htable, ev->name, ev);
   (*idx_ptr)++;
+  return PAPI_OK;
+}
+
+static int add_counter_event(int *idx_ptr, const char *name, const char *descr,
+                             int device, uint32_t variant, uint32_t subvariant) {
+  int ret = add_event(idx_ptr, name, descr, device, variant, subvariant,
+                      PAPI_MODE_READ, access_amdsmi_gpu_counter);
+  if (ret != PAPI_OK)
+    return ret;
+  native_event_t *ev = &ntv_table.events[*idx_ptr - 1];
+  ev->open_func = open_counter;
+  ev->close_func = close_counter;
+  ev->start_func = start_counter;
+  ev->stop_func = stop_counter;
   return PAPI_OK;
 }
 
@@ -2036,6 +2129,52 @@ static int init_event_table(void) {
           if (add_event(&idx, name_buf, descr_buf, d, 1, r, PAPI_MODE_READ,
                         access_amdsmi_xgmi_bandwidth) != PAPI_OK) {
             return PAPI_ENOMEM;
+          }
+        }
+      }
+    }
+
+    if (amdsmi_gpu_counter_group_supported_p &&
+        amdsmi_get_gpu_available_counters_p && amdsmi_gpu_create_counter_p &&
+        amdsmi_gpu_control_counter_p && amdsmi_gpu_read_counter_p &&
+        amdsmi_gpu_destroy_counter_p) {
+      if (amdsmi_gpu_counter_group_supported_p(
+              device_handles[d], AMDSMI_EVNT_GRP_XGMI) ==
+          AMDSMI_STATUS_SUCCESS) {
+        uint32_t avail = 0;
+        if (amdsmi_get_gpu_available_counters_p(
+                device_handles[d], AMDSMI_EVNT_GRP_XGMI, &avail) ==
+                AMDSMI_STATUS_SUCCESS &&
+            avail > 0) {
+          static const struct {
+            const char *suffix;
+            amdsmi_event_type_t type[2];
+          } xgmi_desc[] = {
+              {"nop_tx", {AMDSMI_EVNT_XGMI_0_NOP_TX,
+                          AMDSMI_EVNT_XGMI_1_NOP_TX}},
+              {"request_tx",
+               {AMDSMI_EVNT_XGMI_0_REQUEST_TX,
+                AMDSMI_EVNT_XGMI_1_REQUEST_TX}},
+              {"response_tx",
+               {AMDSMI_EVNT_XGMI_0_RESPONSE_TX,
+                AMDSMI_EVNT_XGMI_1_RESPONSE_TX}},
+              {"beats_tx", {AMDSMI_EVNT_XGMI_0_BEATS_TX,
+                            AMDSMI_EVNT_XGMI_1_BEATS_TX}},
+          };
+          for (int link = 0; link < 2; ++link) {
+            for (size_t m = 0; m < sizeof(xgmi_desc) / sizeof(xgmi_desc[0]);
+                 ++m) {
+              CHECK_EVENT_IDX(idx);
+              snprintf(name_buf, sizeof(name_buf),
+                       "xgmi_%s:device=%d:link=%d", xgmi_desc[m].suffix, d, link);
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d XGMI %s on link %d", d, xgmi_desc[m].suffix,
+                       link);
+              if (add_counter_event(&idx, name_buf, descr_buf, d,
+                                    xgmi_desc[m].type[link], link) != PAPI_OK) {
+                return PAPI_ENOMEM;
+              }
+            }
           }
         }
       }
