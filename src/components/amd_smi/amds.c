@@ -237,6 +237,7 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_gpu_pci_replay_counter", NULL);
   // Clocks
   amdsmi_get_clk_freq_p = sym("amdsmi_get_clk_freq", NULL);
+  amdsmi_get_clock_info_p = sym("amdsmi_get_clock_info", NULL);
   amdsmi_set_clk_freq_p = sym("amdsmi_set_clk_freq", NULL);
   // GPU metrics
   amdsmi_get_gpu_metrics_info_p = sym("amdsmi_get_gpu_metrics_info", NULL);
@@ -367,6 +368,11 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_cpu_socket_freq_range", NULL);
   amdsmi_get_cpu_core_current_freq_limit_p =
       sym("amdsmi_get_cpu_core_current_freq_limit", NULL);
+  amdsmi_get_cpu_cclk_limit_p = sym("amdsmi_get_cpu_cclk_limit", NULL);
+  amdsmi_get_cpu_current_io_bandwidth_p =
+      sym("amdsmi_get_cpu_current_io_bandwidth", NULL);
+  amdsmi_get_cpu_current_xgmi_bw_p =
+      sym("amdsmi_get_cpu_current_xgmi_bw", NULL);
   amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p =
       sym("amdsmi_get_cpu_dimm_temp_range_and_refresh_rate", NULL);
   amdsmi_get_cpu_dimm_power_consumption_p =
@@ -1936,6 +1942,35 @@ static int init_event_table(void) {
       }
     }
   }
+  if (amdsmi_get_clock_info_p) {
+    for (int d = 0; d < gpu_count; ++d) {
+      amdsmi_clk_type_t clk_types[] = {AMDSMI_CLK_TYPE_SYS, AMDSMI_CLK_TYPE_MEM};
+      const char *clk_names[] = {"sys", "mem"};
+      const char *field_names[] = {"current", "min", "max", "locked",
+                                   "deep_sleep"};
+      const char *field_descr[] = {
+          "current frequency (MHz)",     "minimum frequency (MHz)",
+          "maximum frequency (MHz)",     "lock state (bool)",
+          "deep sleep frequency (MHz)"};
+      for (int t = 0; t < 2; ++t) {
+        amdsmi_clk_info_t info;
+        if (amdsmi_get_clock_info_p(device_handles[d], clk_types[t], &info) !=
+            AMDSMI_STATUS_SUCCESS)
+          continue;
+        for (int f = 0; f < 5; ++f) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "clk_%s_%s:device=%d",
+                   clk_names[t], field_names[f], d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d %s %s", d,
+                   clk_names[t], field_descr[f]);
+          if (add_event(&idx, name_buf, descr_buf, d, t, f, PAPI_MODE_READ,
+                        access_amdsmi_clock_info) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
+        }
+      }
+    }
+  }
   /* GPU identification and topology metrics */
   for (int d = 0; d < gpu_count; ++d) {
     uint16_t id16;
@@ -2657,6 +2692,18 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
         }
       }
+      uint32_t cclk;
+      if (amdsmi_get_cpu_cclk_limit_p &&
+          amdsmi_get_cpu_cclk_limit_p(device_handles[dev], &cclk) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf), "cclk_limit:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d core clock limit (MHz)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_cclk_limit) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
       amdsmi_smu_fw_version_t fw;
       if (amdsmi_get_cpu_smu_fw_version_p(device_handles[dev], &fw) ==
           AMDSMI_STATUS_SUCCESS) {
@@ -2666,6 +2713,57 @@ static int init_event_table(void) {
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_smu_fw_version) != PAPI_OK) {
           return PAPI_ENOMEM;
+        }
+      }
+      if (amdsmi_get_cpu_current_io_bandwidth_p) {
+        const char *links[] = {"P0", "P1", "P2", "P3", "P4"};
+        const char *bwnames[] = {"agg", "read", "write"};
+        amdsmi_io_bw_encoding_t bw_types[] = {AGG_BW0, RD_BW0, WR_BW0};
+        for (int l = 0; l < 5; ++l) {
+          for (int t = 0; t < 3; ++t) {
+            amdsmi_link_id_bw_type_t link = {bw_types[t], (char *)links[l]};
+            uint32_t bw = 0;
+            if (amdsmi_get_cpu_current_io_bandwidth_p(device_handles[dev], link,
+                                                      &bw) !=
+                AMDSMI_STATUS_SUCCESS)
+              continue;
+            CHECK_EVENT_IDX(idx);
+            snprintf(name_buf, sizeof(name_buf),
+                     "io_bw_%s_%s:socket=%d", links[l], bwnames[t], s);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Socket %d IO link %s %s bandwidth (MB/s)", s,
+                     links[l], bwnames[t]);
+            if (add_event(&idx, name_buf, descr_buf, dev, l, t, PAPI_MODE_READ,
+                          access_amdsmi_cpu_io_bw) != PAPI_OK) {
+              return PAPI_ENOMEM;
+            }
+          }
+        }
+      }
+      if (amdsmi_get_cpu_current_xgmi_bw_p) {
+        const char *links[] = {"G0", "G1", "G2", "G3",
+                               "G4", "G5", "G6", "G7"};
+        const char *bwnames[] = {"agg", "read", "write"};
+        amdsmi_io_bw_encoding_t bw_types[] = {AGG_BW0, RD_BW0, WR_BW0};
+        for (int l = 0; l < 8; ++l) {
+          for (int t = 0; t < 3; ++t) {
+            amdsmi_link_id_bw_type_t link = {bw_types[t], (char *)links[l]};
+            uint32_t bw = 0;
+            if (amdsmi_get_cpu_current_xgmi_bw_p(device_handles[dev], link,
+                                                 &bw) !=
+                AMDSMI_STATUS_SUCCESS)
+              continue;
+            CHECK_EVENT_IDX(idx);
+            snprintf(name_buf, sizeof(name_buf),
+                     "xgmi_bw_%s_%s:socket=%d", links[l], bwnames[t], s);
+            snprintf(descr_buf, sizeof(descr_buf),
+                     "Socket %d XGMI link %s %s bandwidth (MB/s)", s,
+                     links[l], bwnames[t]);
+            if (add_event(&idx, name_buf, descr_buf, dev, l, t, PAPI_MODE_READ,
+                          access_amdsmi_cpu_xgmi_bw) != PAPI_OK) {
+              return PAPI_ENOMEM;
+            }
+          }
         }
       }
     }

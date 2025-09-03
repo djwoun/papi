@@ -38,6 +38,8 @@
     (amdsmi_processor_handle, uint64_t *))                                     \
   _(amdsmi_get_clk_freq_p, amdsmi_status_t,                                    \
     (amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_frequencies_t *))      \
+  _(amdsmi_get_clock_info_p, amdsmi_status_t,                                  \
+    (amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_clk_info_t *))         \
   _(amdsmi_set_clk_freq_p, amdsmi_status_t,                                    \
     (amdsmi_processor_handle, amdsmi_clk_type_t, uint64_t))                    \
   _(amdsmi_get_gpu_metrics_info_p, amdsmi_status_t,                            \
@@ -224,6 +226,12 @@
     (amdsmi_processor_handle, uint16_t *, uint16_t *))                         \
   _(amdsmi_get_cpu_core_current_freq_limit_p, amdsmi_status_t,                 \
     (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_cclk_limit_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_current_io_bandwidth_p, amdsmi_status_t,                    \
+    (amdsmi_processor_handle, amdsmi_link_id_bw_type_t, uint32_t *))           \
+  _(amdsmi_get_cpu_current_xgmi_bw_p, amdsmi_status_t,                         \
+    (amdsmi_processor_handle, amdsmi_link_id_bw_type_t, uint32_t *))           \
   _(amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p, amdsmi_status_t,        \
     (amdsmi_processor_handle, uint8_t, amdsmi_temp_range_refresh_rate_t *))    \
   _(amdsmi_get_cpu_dimm_power_consumption_p, amdsmi_status_t,                  \

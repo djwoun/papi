@@ -858,6 +858,45 @@ int access_amdsmi_clk_freq(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+
+int access_amdsmi_clock_info(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  amdsmi_clk_type_t clk_types[] = {AMDSMI_CLK_TYPE_SYS, AMDSMI_CLK_TYPE_MEM};
+  if (event->variant < 0 || event->variant >= 2)
+    return PAPI_EMISC;
+  amdsmi_clk_info_t info;
+  amdsmi_status_t status =
+      amdsmi_get_clock_info_p(device_handles[event->device],
+                              clk_types[event->variant], &info);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  switch (event->subvariant) {
+  case 0:
+    event->value = info.clk;
+    break;
+  case 1:
+    event->value = info.min_clk;
+    break;
+  case 2:
+    event->value = info.max_clk;
+    break;
+  case 3:
+    event->value = info.clk_locked;
+    break;
+  case 4:
+    event->value = info.clk_deep_sleep;
+    break;
+  default:
+    return PAPI_EMISC;
+  }
+  return PAPI_OK;
+}
 int access_amdsmi_gpu_metrics(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
@@ -1282,6 +1321,69 @@ int access_amdsmi_cpu_core_boostlimit(int mode, void *arg) {
     return PAPI_EMISC;
   }
   event->value = boost;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_cclk_limit(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  uint32_t cclk = 0;
+  amdsmi_status_t status =
+      amdsmi_get_cpu_cclk_limit_p(device_handles[event->device], &cclk);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = cclk;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_io_bw(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  const char *links[] = {"P0", "P1", "P2", "P3", "P4"};
+  amdsmi_io_bw_encoding_t bw_types[] = {AGG_BW0, RD_BW0, WR_BW0};
+  if (event->variant < 0 || event->variant >= 5 || event->subvariant < 0 ||
+      event->subvariant >= 3)
+    return PAPI_EMISC;
+  amdsmi_link_id_bw_type_t link = {bw_types[event->subvariant],
+                                   (char *)links[event->variant]};
+  uint32_t bw = 0;
+  amdsmi_status_t status = amdsmi_get_cpu_current_io_bandwidth_p(
+      device_handles[event->device], link, &bw);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = bw;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_xgmi_bw(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  const char *links[] = {"G0", "G1", "G2", "G3",
+                         "G4", "G5", "G6", "G7"};
+  amdsmi_io_bw_encoding_t bw_types[] = {AGG_BW0, RD_BW0, WR_BW0};
+  if (event->variant < 0 || event->variant >= 8 || event->subvariant < 0 ||
+      event->subvariant >= 3)
+    return PAPI_EMISC;
+  amdsmi_link_id_bw_type_t link = {bw_types[event->subvariant],
+                                   (char *)links[event->variant]};
+  uint32_t bw = 0;
+  amdsmi_status_t status = amdsmi_get_cpu_current_xgmi_bw_p(
+      device_handles[event->device], link, &bw);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = bw;
   return PAPI_OK;
 }
 int access_amdsmi_dimm_temp(int mode, void *arg) {
