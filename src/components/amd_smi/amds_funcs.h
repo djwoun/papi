@@ -232,6 +232,18 @@
     (amdsmi_processor_handle, amdsmi_link_id_bw_type_t, uint32_t *))           \
   _(amdsmi_get_cpu_current_xgmi_bw_p, amdsmi_status_t,                         \
     (amdsmi_processor_handle, amdsmi_link_id_bw_type_t, uint32_t *))           \
+  _(amdsmi_get_cpu_ddr_bw_p, amdsmi_status_t,                                  \
+    (amdsmi_processor_handle, amdsmi_ddr_bw_metrics_t *))                      \
+  _(amdsmi_get_cpu_fclk_mclk_p, amdsmi_status_t,                               \
+    (amdsmi_processor_handle, uint32_t *, uint32_t *))                         \
+  _(amdsmi_get_cpu_hsmp_driver_version_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_hsmp_driver_version_t *))                 \
+  _(amdsmi_get_cpu_hsmp_proto_ver_p, amdsmi_status_t,                          \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_prochot_status_p, amdsmi_status_t,                         \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p, amdsmi_status_t,             \
+    (amdsmi_processor_handle, uint32_t *))                                     \
   _(amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p, amdsmi_status_t,        \
     (amdsmi_processor_handle, uint8_t, amdsmi_temp_range_refresh_rate_t *))    \
   _(amdsmi_get_cpu_dimm_power_consumption_p, amdsmi_status_t,                  \

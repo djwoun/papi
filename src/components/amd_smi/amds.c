@@ -373,6 +373,15 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_cpu_current_io_bandwidth", NULL);
   amdsmi_get_cpu_current_xgmi_bw_p =
       sym("amdsmi_get_cpu_current_xgmi_bw", NULL);
+  amdsmi_get_cpu_ddr_bw_p = sym("amdsmi_get_cpu_ddr_bw", NULL);
+  amdsmi_get_cpu_fclk_mclk_p = sym("amdsmi_get_cpu_fclk_mclk", NULL);
+  amdsmi_get_cpu_hsmp_driver_version_p =
+      sym("amdsmi_get_cpu_hsmp_driver_version", NULL);
+  amdsmi_get_cpu_hsmp_proto_ver_p = sym("amdsmi_get_cpu_hsmp_proto_ver", NULL);
+  amdsmi_get_cpu_prochot_status_p =
+      sym("amdsmi_get_cpu_prochot_status", NULL);
+  amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p =
+      sym("amdsmi_get_cpu_pwr_svi_telemetry_all_rails", NULL);
   amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p =
       sym("amdsmi_get_cpu_dimm_temp_range_and_refresh_rate", NULL);
   amdsmi_get_cpu_dimm_power_consumption_p =
@@ -2701,6 +2710,112 @@ static int init_event_table(void) {
                  "Socket %d core clock limit (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_cclk_limit) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      uint32_t fclk, mclk;
+      if (amdsmi_get_cpu_fclk_mclk_p &&
+          amdsmi_get_cpu_fclk_mclk_p(device_handles[dev], &fclk, &mclk) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf), "fclk:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d fclk (MHz)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_fclk_mclk) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+        snprintf(name_buf, sizeof(name_buf), "mclk:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d mclk (MHz)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_fclk_mclk) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      amdsmi_ddr_bw_metrics_t ddr_bw;
+      if (amdsmi_get_cpu_ddr_bw_p &&
+          amdsmi_get_cpu_ddr_bw_p(device_handles[dev], &ddr_bw) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf), "ddr_bw_max:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d DDR max bandwidth (GB/s)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_ddr_bw) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+        snprintf(name_buf, sizeof(name_buf), "ddr_bw_utilized:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d DDR utilized bandwidth (GB/s)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_ddr_bw) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+        snprintf(name_buf, sizeof(name_buf),
+                 "ddr_bw_utilized_pct:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d DDR bandwidth utilization (pct)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 2, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_ddr_bw) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      amdsmi_hsmp_driver_version_t dver;
+      if (amdsmi_get_cpu_hsmp_driver_version_p &&
+          amdsmi_get_cpu_hsmp_driver_version_p(device_handles[dev], &dver) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf),
+                 "hsmp_driver_major:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d HSMP driver major version", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_hsmp_driver_version) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+        snprintf(name_buf, sizeof(name_buf),
+                 "hsmp_driver_minor:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d HSMP driver minor version", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_hsmp_driver_version) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      uint32_t proto;
+      if (amdsmi_get_cpu_hsmp_proto_ver_p &&
+          amdsmi_get_cpu_hsmp_proto_ver_p(device_handles[dev], &proto) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf),
+                 "hsmp_proto_ver:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d HSMP protocol version", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_hsmp_proto_ver) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      uint32_t prochot;
+      if (amdsmi_get_cpu_prochot_status_p &&
+          amdsmi_get_cpu_prochot_status_p(device_handles[dev], &prochot) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf),
+                 "prochot_status:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d PROCHOT status", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_prochot_status) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      uint32_t svi_power;
+      if (amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p &&
+          amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p(device_handles[dev],
+                                                       &svi_power) ==
+              AMDSMI_STATUS_SUCCESS) {
+        snprintf(name_buf, sizeof(name_buf), "svi_power:socket=%d", s);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Socket %d SVI power (all rails, W)", s);
+        if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_cpu_svi_power) != PAPI_OK) {
           return PAPI_ENOMEM;
         }
       }

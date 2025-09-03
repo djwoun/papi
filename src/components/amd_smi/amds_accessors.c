@@ -1386,6 +1386,124 @@ int access_amdsmi_cpu_xgmi_bw(int mode, void *arg) {
   event->value = bw;
   return PAPI_OK;
 }
+int access_amdsmi_cpu_ddr_bw(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  amdsmi_ddr_bw_metrics_t bw;
+  amdsmi_status_t status =
+      amdsmi_get_cpu_ddr_bw_p(device_handles[event->device], &bw);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  switch (event->variant) {
+  case 0:
+    event->value = bw.max_bw;
+    break;
+  case 1:
+    event->value = bw.utilized_bw;
+    break;
+  case 2:
+    event->value = bw.utilized_pct;
+    break;
+  default:
+    return PAPI_EMISC;
+  }
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_fclk_mclk(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  uint32_t fclk = 0, mclk = 0;
+  amdsmi_status_t status = amdsmi_get_cpu_fclk_mclk_p(
+      device_handles[event->device], &fclk, &mclk);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  if (event->variant == 0)
+    event->value = fclk;
+  else if (event->variant == 1)
+    event->value = mclk;
+  else
+    return PAPI_EMISC;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_hsmp_driver_version(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  amdsmi_hsmp_driver_version_t ver;
+  amdsmi_status_t status = amdsmi_get_cpu_hsmp_driver_version_p(
+      device_handles[event->device], &ver);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  if (event->variant == 0)
+    event->value = ver.major;
+  else if (event->variant == 1)
+    event->value = ver.minor;
+  else
+    return PAPI_EMISC;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_hsmp_proto_ver(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  uint32_t ver = 0;
+  amdsmi_status_t status =
+      amdsmi_get_cpu_hsmp_proto_ver_p(device_handles[event->device], &ver);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = ver;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_prochot_status(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  uint32_t status = 0;
+  amdsmi_status_t ret = amdsmi_get_cpu_prochot_status_p(
+      device_handles[event->device], &status);
+  if (ret != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = status;
+  return PAPI_OK;
+}
+int access_amdsmi_cpu_svi_power(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  uint32_t power = 0;
+  amdsmi_status_t status = amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p(
+      device_handles[event->device], &power);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = power;
+  return PAPI_OK;
+}
 int access_amdsmi_dimm_temp(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles) {
