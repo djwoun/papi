@@ -2604,3 +2604,73 @@ int access_amdsmi_event_notification(int mode, void *arg) {
   event->value = (int64_t)cnt;
   return PAPI_OK;
 }
+
+int access_amdsmi_utilization_count(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!amdsmi_get_utilization_count_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  amdsmi_utilization_counter_t cnt;
+  memset(&cnt, 0, sizeof(cnt));
+  cnt.type = (amdsmi_utilization_counter_type_t)event->variant;
+  uint64_t ts = 0;
+  amdsmi_status_t st =
+      amdsmi_get_utilization_count_p(device_handles[event->device], &cnt, 1, &ts);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  event->value = (int64_t)cnt.value;
+  return PAPI_OK;
+}
+
+int access_amdsmi_violation_status(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!amdsmi_get_violation_status_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  amdsmi_violation_status_t info;
+  memset(&info, 0, sizeof(info));
+  amdsmi_status_t st =
+      amdsmi_get_violation_status_p(device_handles[event->device], &info);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+  switch (event->variant) {
+  case 0:
+    event->value = (int64_t)info.acc_ppt_pwr;
+    break;
+  case 1:
+    event->value = (int64_t)info.acc_socket_thrm;
+    break;
+  case 2:
+    event->value = (int64_t)info.acc_vr_thrm;
+    break;
+  case 3:
+    event->value = (int64_t)info.per_ppt_pwr;
+    break;
+  case 4:
+    event->value = (int64_t)info.per_socket_thrm;
+    break;
+  case 5:
+    event->value = (int64_t)info.per_vr_thrm;
+    break;
+  case 6:
+    event->value = (int64_t)info.active_ppt_pwr;
+    break;
+  case 7:
+    event->value = (int64_t)info.active_socket_thrm;
+    break;
+  case 8:
+    event->value = (int64_t)info.active_vr_thrm;
+    break;
+  default:
+    return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
+}

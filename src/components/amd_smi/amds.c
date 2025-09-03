@@ -213,6 +213,13 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_socket_handles_p = sym("amdsmi_get_socket_handles", NULL);
   amdsmi_get_processor_handles_by_type_p =
       sym("amdsmi_get_processor_handles_by_type", NULL);
+  amdsmi_get_processor_handles_p =
+      sym("amdsmi_get_processor_handles", NULL);
+  amdsmi_get_processor_info_p =
+      sym("amdsmi_get_processor_info", NULL);
+  amdsmi_get_processor_type_p =
+      sym("amdsmi_get_processor_type", NULL);
+  amdsmi_get_socket_info_p = sym("amdsmi_get_socket_info", NULL);
   // Sensors
   amdsmi_get_temp_metric_p = sym("amdsmi_get_temp_metric", NULL);
   amdsmi_get_gpu_fan_rpms_p = sym("amdsmi_get_gpu_fan_rpms", NULL);
@@ -226,6 +233,8 @@ static int load_amdsmi_sym(void) {
   // Utilization / activity
   amdsmi_get_gpu_activity_p =
       sym("amdsmi_get_gpu_activity", "amdsmi_get_engine_usage");
+  amdsmi_get_utilization_count_p =
+      sym("amdsmi_get_utilization_count", NULL);
   // Power
   amdsmi_get_power_info_p = sym("amdsmi_get_power_info", NULL);
   amdsmi_get_power_cap_info_p = sym("amdsmi_get_power_cap_info", NULL);
@@ -259,6 +268,8 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_energy_count_p = sym("amdsmi_get_energy_count", NULL);
   amdsmi_get_gpu_power_profile_presets_p =
       sym("amdsmi_get_gpu_power_profile_presets", NULL);
+  amdsmi_get_violation_status_p =
+      sym("amdsmi_get_violation_status", NULL);
   // Additional read-only queries
   amdsmi_get_lib_version_p = sym("amdsmi_get_lib_version", NULL);
   amdsmi_get_gpu_driver_info_p = sym("amdsmi_get_gpu_driver_info", NULL);
@@ -1915,6 +1926,55 @@ static int init_event_table(void) {
       }
     }
   }
+  /* GPU utilization counters */
+  if (amdsmi_get_utilization_count_p) {
+    for (int d = 0; d < gpu_count; ++d) {
+      amdsmi_utilization_counter_t uc;
+      uint64_t ts;
+      uc.type = AMDSMI_COARSE_GRAIN_GFX_ACTIVITY;
+      if (amdsmi_get_utilization_count_p(device_handles[d], &uc, 1, &ts) ==
+          AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "util_counter_gfx:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d coarse grain GFX activity counter", d);
+        if (add_event(&idx, name_buf, descr_buf, d,
+                      AMDSMI_COARSE_GRAIN_GFX_ACTIVITY, 0, PAPI_MODE_READ,
+                      access_amdsmi_utilization_count) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      uc.type = AMDSMI_COARSE_GRAIN_MEM_ACTIVITY;
+      if (amdsmi_get_utilization_count_p(device_handles[d], &uc, 1, &ts) ==
+          AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "util_counter_mem:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d coarse grain memory activity counter", d);
+        if (add_event(&idx, name_buf, descr_buf, d,
+                      AMDSMI_COARSE_GRAIN_MEM_ACTIVITY, 0, PAPI_MODE_READ,
+                      access_amdsmi_utilization_count) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      uc.type = AMDSMI_COARSE_DECODER_ACTIVITY;
+      if (amdsmi_get_utilization_count_p(device_handles[d], &uc, 1, &ts) ==
+          AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "util_counter_dec:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d coarse grain decoder activity counter", d);
+        if (add_event(&idx, name_buf, descr_buf, d,
+                      AMDSMI_COARSE_DECODER_ACTIVITY, 0, PAPI_MODE_READ,
+                      access_amdsmi_utilization_count) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+    }
+  }
   /* GPU clock frequency levels for multiple clock domains */
   for (int d = 0; d < gpu_count; ++d) {
     amdsmi_clk_type_t clk_types[] = {AMDSMI_CLK_TYPE_SYS, AMDSMI_CLK_TYPE_DF,
@@ -2680,6 +2740,40 @@ static int init_event_table(void) {
     if (add_event(&idx, name_buf, descr_buf, d, 1, 0, PAPI_MODE_READ,
                   access_amdsmi_power_profile_status) != PAPI_OK) {
       return PAPI_ENOMEM;
+    }
+  }
+  /* GPU violation status metrics */
+  if (amdsmi_get_violation_status_p) {
+    for (int d = 0; d < gpu_count; ++d) {
+      amdsmi_violation_status_t vinfo;
+      if (amdsmi_get_violation_status_p(device_handles[d], &vinfo) !=
+          AMDSMI_STATUS_SUCCESS)
+        continue;
+      const char *names[] = {
+          "ppt_pwr_violation_acc",    "socket_thrm_violation_acc",
+          "vr_thrm_violation_acc",    "ppt_pwr_violation_pct",
+          "socket_thrm_violation_pct", "vr_thrm_violation_pct",
+          "ppt_pwr_violation_active",  "socket_thrm_violation_active",
+          "vr_thrm_violation_active"};
+      const char *descr[] = {
+          "Package power tracking violation count",
+          "Socket thermal violation count",
+          "Voltage regulator thermal violation count",
+          "Package power tracking violation percentage",
+          "Socket thermal violation percentage",
+          "Voltage regulator thermal violation percentage",
+          "Package power tracking violation active flag",
+          "Socket thermal violation active flag",
+          "Voltage regulator thermal violation active flag"};
+      for (int v = 0; v < 9; ++v) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf), "%s:device=%d", names[v], d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d %s", d, descr[v]);
+        if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                      access_amdsmi_violation_status) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
     }
   }
 #ifndef AMDSMI_DISABLE_ESMI

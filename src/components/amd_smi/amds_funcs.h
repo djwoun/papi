@@ -9,6 +9,19 @@
   _(amdsmi_get_processor_handles_by_type_p, amdsmi_status_t,                   \
     (amdsmi_socket_handle, processor_type_t, amdsmi_processor_handle *,        \
      uint32_t *))                                                              \
+  _(amdsmi_get_processor_handles_p, amdsmi_status_t,                           \
+    (amdsmi_socket_handle, uint32_t *, amdsmi_processor_handle *))             \
+  _(amdsmi_get_processor_info_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, size_t, char *))                                 \
+  _(amdsmi_get_processor_type_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, processor_type_t *))                             \
+  _(amdsmi_get_socket_info_p, amdsmi_status_t,                                 \
+    (amdsmi_socket_handle, size_t, char *))                                    \
+  _(amdsmi_get_utilization_count_p, amdsmi_status_t,                           \
+    (amdsmi_processor_handle, amdsmi_utilization_counter_t *, uint32_t,        \
+     uint64_t *))                                                              \
+  _(amdsmi_get_violation_status_p, amdsmi_status_t,                            \
+    (amdsmi_processor_handle, amdsmi_violation_status_t *))                    \
   _(amdsmi_get_temp_metric_p, amdsmi_status_t,                                 \
     (amdsmi_processor_handle, amdsmi_temperature_type_t,                       \
      amdsmi_temperature_metric_t, int64_t *))                                  \
