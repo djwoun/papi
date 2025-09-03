@@ -208,6 +208,15 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
   amdsmi_get_link_metrics_p = sym("amdsmi_get_link_metrics", NULL);
   amdsmi_get_gpu_process_list_p = sym("amdsmi_get_gpu_process_list", NULL);
+  amdsmi_topo_get_numa_node_number_p =
+      sym("amdsmi_topo_get_numa_node_number", NULL);
+  amdsmi_topo_get_link_weight_p = sym("amdsmi_topo_get_link_weight", NULL);
+  amdsmi_topo_get_link_type_p = sym("amdsmi_topo_get_link_type", NULL);
+  amdsmi_topo_get_p2p_status_p = sym("amdsmi_topo_get_p2p_status", NULL);
+  amdsmi_is_P2P_accessible_p = sym("amdsmi_is_P2P_accessible", NULL);
+  amdsmi_get_link_topology_nearest_p =
+      sym("amdsmi_get_link_topology_nearest", NULL);
+  amdsmi_get_gpu_device_bdf_p = sym("amdsmi_get_gpu_device_bdf", NULL);
   amdsmi_get_gpu_ecc_enabled_p = sym("amdsmi_get_gpu_ecc_enabled", NULL);
   amdsmi_get_gpu_total_ecc_count_p =
       sym("amdsmi_get_gpu_total_ecc_count", NULL);
@@ -1881,6 +1890,44 @@ static int init_event_table(void) {
         return PAPI_ENOMEM;
       }
     }
+    // GPU device BDF components
+    if (amdsmi_get_gpu_device_bdf_p) {
+      amdsmi_bdf_t bdf;
+      if (amdsmi_get_gpu_device_bdf_p(device_handles[d], &bdf) ==
+          AMDSMI_STATUS_SUCCESS) {
+        const char *bdf_names[] = {"gpu_bdf_domain", "gpu_bdf_bus",
+                                   "gpu_bdf_device", "gpu_bdf_function"};
+        const char *bdf_descr[] = {
+            "GPU PCI domain number", "GPU PCI bus number",
+            "GPU PCI device number", "GPU PCI function number"};
+        for (uint32_t v = 0; v < 4; ++v) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s:device=%d",
+                   bdf_names[v], d);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d %s", d,
+                   bdf_descr[v]);
+          if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                        access_amdsmi_device_bdf) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
+        }
+      }
+    }
+    // NUMA node via topology API
+    if (amdsmi_topo_get_numa_node_number_p) {
+      uint32_t node;
+      if (amdsmi_topo_get_numa_node_number_p(device_handles[d], &node) ==
+          AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf), "topo_numa_node:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d NUMA node number", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_topo_numa) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+    }
     // GPU Virtualization Mode
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
     amdsmi_virtualization_mode_t vmode;
@@ -2922,6 +2969,94 @@ static int init_event_table(void) {
               return PAPI_ENOMEM;
             }
           }
+        }
+      }
+    }
+    if (amdsmi_get_link_topology_nearest_p) {
+      amdsmi_link_type_t lt_types[] = {AMDSMI_LINK_TYPE_XGMI,
+                                       AMDSMI_LINK_TYPE_PCIE};
+      const char *lt_names[] = {"xgmi", "pcie"};
+      for (int ti = 0; ti < 2; ++ti) {
+        amdsmi_topology_nearest_t info;
+        memset(&info, 0, sizeof(info));
+        if (amdsmi_get_link_topology_nearest_p(device_handles[d], lt_types[ti],
+                                               &info) == AMDSMI_STATUS_SUCCESS) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s_nearest_count:device=%d",
+                   lt_names[ti], d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d %s nearest GPU count", d, lt_names[ti]);
+          if (add_event(&idx, name_buf, descr_buf, d, (uint32_t)lt_types[ti], 0,
+                        PAPI_MODE_READ, access_amdsmi_link_topology_nearest) !=
+              PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
+        }
+      }
+    }
+    for (int p = 0; p < gpu_count; ++p) {
+      if (p == d)
+        continue;
+      if (amdsmi_topo_get_link_weight_p) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "link_weight:device=%d,peer=%d", d, p);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Link weight between device %d and %d", d, p);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
+                      access_amdsmi_link_weight) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      if (amdsmi_topo_get_link_type_p) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "link_hops:device=%d,peer=%d", d, p);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Hops between device %d and %d", d, p);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
+                      access_amdsmi_link_type) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "link_type:device=%d,peer=%d", d, p);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "IO link type between device %d and %d", d, p);
+        if (add_event(&idx, name_buf, descr_buf, d, 1, p, PAPI_MODE_READ,
+                      access_amdsmi_link_type) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+      if (amdsmi_topo_get_p2p_status_p) {
+        const char *p2p_names[] = {"p2p_type",       "p2p_coherent",
+                                   "p2p_atomics32", "p2p_atomics64",
+                                   "p2p_dma",       "p2p_bidir"};
+        const char *p2p_desc[] = {
+            "P2P IO link type",      "P2P coherent support",
+            "P2P 32-bit atomics",   "P2P 64-bit atomics",
+            "P2P DMA support",      "P2P bidirectional support"};
+        for (int v = 0; v < 6; ++v) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s:device=%d,peer=%d",
+                   p2p_names[v], d, p);
+          snprintf(descr_buf, sizeof(descr_buf), "Device %d vs %d %s", d, p,
+                   p2p_desc[v]);
+          if (add_event(&idx, name_buf, descr_buf, d, v, p, PAPI_MODE_READ,
+                        access_amdsmi_p2p_status) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
+        }
+      }
+      if (amdsmi_is_P2P_accessible_p) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "p2p_accessible:device=%d,peer=%d", d, p);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "P2P accessibility between device %d and %d", d, p);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
+                      access_amdsmi_p2p_accessible) != PAPI_OK) {
+          return PAPI_ENOMEM;
         }
       }
     }

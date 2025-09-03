@@ -98,6 +98,13 @@ int access_amdsmi_enumeration_info(int mode, void *arg);
 #endif
 int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
+int access_amdsmi_link_weight(int mode, void *arg);
+int access_amdsmi_link_type(int mode, void *arg);
+int access_amdsmi_p2p_status(int mode, void *arg);
+int access_amdsmi_p2p_accessible(int mode, void *arg);
+int access_amdsmi_link_topology_nearest(int mode, void *arg);
+int access_amdsmi_topo_numa(int mode, void *arg);
+int access_amdsmi_device_bdf(int mode, void *arg);
 int access_amdsmi_process_info(int mode, void *arg);
 int access_amdsmi_ecc_total(int mode, void *arg);
 int access_amdsmi_ecc_block(int mode, void *arg);
