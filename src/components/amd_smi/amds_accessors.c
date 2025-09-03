@@ -317,7 +317,13 @@ int access_amdsmi_process_info(int mode, void *arg) {
     event->value = (int64_t)p->memory_usage.vram_mem;
     break;
   case 7:
+    /* cu_occupancy added in AMD SMI 6.4.3; earlier versions store it in
+       the first reserved slot which remains zero. */
+#if defined(AMDSMI_LIB_VERSION_MINOR) && AMDSMI_LIB_VERSION_MINOR >= 4
     event->value = (int64_t)p->cu_occupancy;
+#else
+    event->value = (int64_t)p->reserved[0];
+#endif
     break;
   default:
     return PAPI_ENOSUPP;
@@ -915,6 +921,29 @@ int access_amdsmi_energy_count(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+
+int access_amdsmi_xgmi_bandwidth(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ || !amdsmi_get_minmax_bandwidth_between_processors_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= gpu_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (event->subvariant < 0 || event->subvariant >= gpu_count ||
+      !device_handles[event->subvariant])
+    return PAPI_EMISC;
+
+  amdsmi_processor_handle src = device_handles[event->device];
+  amdsmi_processor_handle dst = device_handles[event->subvariant];
+  uint64_t min_bw = 0, max_bw = 0;
+  if (amdsmi_get_minmax_bandwidth_between_processors_p(src, dst, &min_bw,
+                                                       &max_bw) !=
+      AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+
+  event->value = (event->variant == 0) ? (int64_t)min_bw : (int64_t)max_bw;
+  return PAPI_OK;
+}
 int access_amdsmi_power_profile_status(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
@@ -1198,28 +1227,6 @@ int access_amdsmi_smu_fw_version(int mode, void *arg) {
   }
   int encoded = ((int)fw.major << 16) | ((int)fw.minor << 8) | fw.debug;
   event->value = encoded;
-  return PAPI_OK;
-}
-int access_amdsmi_xgmi_bandwidth(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ || !amdsmi_get_minmax_bandwidth_between_processors_p)
-    return PAPI_ENOSUPP;
-  native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count ||
-      !device_handles || !device_handles[event->device])
-    return PAPI_EMISC;
-  if (event->subvariant >= gpu_count ||
-      !device_handles[gpu_count + event->subvariant])
-    return PAPI_EMISC;
-
-  amdsmi_processor_handle src = device_handles[event->device];
-  amdsmi_processor_handle dst = device_handles[gpu_count + event->subvariant];
-  uint64_t min_bw = 0, max_bw = 0;
-  if (amdsmi_get_minmax_bandwidth_between_processors_p(src, dst, &min_bw,
-                                                       &max_bw) !=
-      AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
-
-  event->value = (event->variant == 0) ? (int64_t)min_bw : (int64_t)max_bw;
   return PAPI_OK;
 }
 #endif

@@ -63,6 +63,9 @@
     (amdsmi_processor_handle, char *, size_t))                                 \
   _(amdsmi_get_link_metrics_p, amdsmi_status_t,                                \
     (amdsmi_processor_handle, amdsmi_link_metrics_t *))                        \
+  _(amdsmi_get_minmax_bandwidth_between_processors_p, amdsmi_status_t,        \
+    (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,            \
+     uint64_t *))                                                             \
   _(amdsmi_get_gpu_process_list_p, amdsmi_status_t,                            \
     (amdsmi_processor_handle, uint32_t *, amdsmi_proc_info_t *))               \
   _(amdsmi_get_gpu_ecc_enabled_p, amdsmi_status_t,                             \
@@ -191,9 +194,6 @@
     (amdsmi_processor_handle, uint16_t *, uint16_t *))                         \
   _(amdsmi_get_cpu_core_current_freq_limit_p, amdsmi_status_t,                 \
     (amdsmi_processor_handle, uint32_t *))                                     \
-  _(amdsmi_get_minmax_bandwidth_between_processors_p, amdsmi_status_t,         \
-    (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,             \
-     uint64_t *))                                                              \
   _(amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p, amdsmi_status_t,        \
     (amdsmi_processor_handle, uint8_t, amdsmi_temp_range_refresh_rate_t *))    \
   _(amdsmi_get_cpu_dimm_power_consumption_p, amdsmi_status_t,                  \

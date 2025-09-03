@@ -144,6 +144,7 @@ int access_amdsmi_bad_page_record(int mode, void *arg);
 int access_amdsmi_power_sensor(int mode, void *arg);
 int access_amdsmi_pcie_info(int mode, void *arg);
 int access_amdsmi_event_notification(int mode, void *arg);
+int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);
@@ -161,7 +162,6 @@ int access_amdsmi_threads_per_core(int mode, void *arg);
 int access_amdsmi_cpu_family(int mode, void *arg);
 int access_amdsmi_cpu_model(int mode, void *arg);
 int access_amdsmi_smu_fw_version(int mode, void *arg);
-int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 #endif
 
 #endif /* __AMDS_PRIV_H__ */

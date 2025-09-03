@@ -255,6 +255,8 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_gpu_event_notification", NULL);
   amdsmi_stop_gpu_event_notification_p =
       sym("amdsmi_stop_gpu_event_notification", NULL);
+  amdsmi_get_minmax_bandwidth_between_processors_p =
+      sym("amdsmi_get_minmax_bandwidth_between_processors", NULL);
 #ifndef AMDSMI_DISABLE_ESMI
   /* CPU functions */
   amdsmi_get_cpu_handles_p = sym("amdsmi_get_cpu_handles", NULL);
@@ -278,8 +280,6 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_cpu_socket_freq_range", NULL);
   amdsmi_get_cpu_core_current_freq_limit_p =
       sym("amdsmi_get_cpu_core_current_freq_limit", NULL);
-  amdsmi_get_minmax_bandwidth_between_processors_p =
-      sym("amdsmi_get_minmax_bandwidth_between_processors", NULL);
   amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p =
       sym("amdsmi_get_cpu_dimm_temp_range_and_refresh_rate", NULL);
   amdsmi_get_cpu_dimm_power_consumption_p =
