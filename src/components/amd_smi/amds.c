@@ -294,6 +294,15 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_gpu_compute_partition", NULL);
   amdsmi_get_gpu_memory_partition_p =
       sym("amdsmi_get_gpu_memory_partition", NULL);
+  amdsmi_get_gpu_memory_partition_config_p =
+      sym("amdsmi_get_gpu_memory_partition_config", NULL);
+  amdsmi_get_gpu_memory_reserved_pages_p =
+      sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
+  amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
+  amdsmi_get_gpu_metrics_header_info_p =
+      sym("amdsmi_get_gpu_metrics_header_info", NULL);
+  amdsmi_get_gpu_xgmi_link_status_p =
+      sym("amdsmi_get_gpu_xgmi_link_status", NULL);
   amdsmi_get_gpu_accelerator_partition_profile_p =
       sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
   amdsmi_get_gpu_cache_info_p = sym("amdsmi_get_gpu_cache_info", NULL);
@@ -2050,6 +2059,26 @@ static int init_event_table(void) {
         }
       }
     }
+    if (amdsmi_get_gpu_kfd_info_p) {
+      amdsmi_kfd_info_t kinfo;
+      if (amdsmi_get_gpu_kfd_info_p(device_handles[d], &kinfo) ==
+          AMDSMI_STATUS_SUCCESS) {
+        const char *knames[] = {"kfd_id", "kfd_node_id",
+                                 "kfd_current_partition_id"};
+        const char *kdescr[] = {"Device %d KFD identifier",
+                                "Device %d KFD node id",
+                                "Device %d KFD current partition id"};
+        for (uint32_t v = 0; v < 3; ++v) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s:device=%d", knames[v], d);
+          snprintf(descr_buf, sizeof(descr_buf), kdescr[v], d);
+          if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                        access_amdsmi_kfd_info) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
+        }
+      }
+    }
     // NUMA node via topology API
     if (amdsmi_topo_get_numa_node_number_p) {
       uint32_t node;
@@ -2281,6 +2310,22 @@ static int init_event_table(void) {
 #endif
     }
 
+    if (amdsmi_get_gpu_memory_reserved_pages_p) {
+      uint32_t nump = 0;
+      if (amdsmi_get_gpu_memory_reserved_pages_p(device_handles[d], &nump,
+                                                 NULL) == AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "memory_reserved_pages:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d reserved memory pages", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_memory_reserved_pages) != PAPI_OK) {
+          return PAPI_ENOMEM;
+        }
+      }
+    }
+
     if (amdsmi_get_gpu_bad_page_info_p) {
       uint32_t nump = 0;
       if (amdsmi_get_gpu_bad_page_info_p(device_handles[d], &nump, NULL) ==
@@ -2427,6 +2472,28 @@ static int init_event_table(void) {
         if (add_event(&idx, name_buf, descr_buf, d, 6, s, PAPI_MODE_READ,
                       access_amdsmi_power_sensor) != PAPI_OK) {
           return PAPI_ENOMEM;
+        }
+      }
+    }
+
+    if (amdsmi_get_gpu_metrics_header_info_p) {
+      amd_metrics_table_header_t hdr;
+      if (amdsmi_get_gpu_metrics_header_info_p(device_handles[d], &hdr) ==
+          AMDSMI_STATUS_SUCCESS) {
+        const char *hnames[] = {"metrics_header_size",
+                                "metrics_header_format_rev",
+                                "metrics_header_content_rev"};
+        const char *hdescr[] = {"Device %d metrics header structure size",
+                                "Device %d metrics header format revision",
+                                "Device %d metrics header content revision"};
+        for (uint32_t v = 0; v < 3; ++v) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s:device=%d", hnames[v], d);
+          snprintf(descr_buf, sizeof(descr_buf), hdescr[v], d);
+          if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                        access_amdsmi_metrics_header_info) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
         }
       }
     }
@@ -3243,6 +3310,27 @@ static int init_event_table(void) {
         }
       }
     }
+    if (amdsmi_get_gpu_memory_partition_config_p) {
+      amdsmi_memory_partition_config_t cfg;
+      if (amdsmi_get_gpu_memory_partition_config_p(device_handles[d], &cfg) ==
+          AMDSMI_STATUS_SUCCESS) {
+        const char *mpc_names[] = {"memory_partition_caps",
+                                   "memory_partition_mode",
+                                   "memory_partition_numa_count"};
+        const char *mpc_descr[] = {"Device %d memory partition capabilities",
+                                   "Device %d memory partition mode",
+                                   "Device %d NUMA range count"};
+        for (uint32_t v = 0; v < 3; ++v) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s:device=%d", mpc_names[v], d);
+          snprintf(descr_buf, sizeof(descr_buf), mpc_descr[v], d);
+          if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                        access_amdsmi_memory_partition_config) != PAPI_OK) {
+            return PAPI_ENOMEM;
+          }
+        }
+      }
+    }
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
       amdsmi_accelerator_partition_profile_t prof;
       uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
@@ -3320,6 +3408,26 @@ static int init_event_table(void) {
                           access_amdsmi_link_metrics) != PAPI_OK) {
               return PAPI_ENOMEM;
             }
+          }
+        }
+      }
+    }
+    if (amdsmi_get_gpu_xgmi_link_status_p) {
+      amdsmi_xgmi_link_status_t st;
+      if (amdsmi_get_gpu_xgmi_link_status_p(device_handles[d], &st) ==
+          AMDSMI_STATUS_SUCCESS) {
+        uint32_t n = st.total_links;
+        if (n > AMDSMI_MAX_NUM_XGMI_LINKS)
+          n = AMDSMI_MAX_NUM_XGMI_LINKS;
+        for (uint32_t li = 0; li < n; ++li) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf),
+                   "xgmi_link_status:device=%d:link=%u", d, li);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d XGMI link %u status", d, li);
+          if (add_event(&idx, name_buf, descr_buf, d, 0, li, PAPI_MODE_READ,
+                        access_amdsmi_xgmi_link_status) != PAPI_OK) {
+            return PAPI_ENOMEM;
           }
         }
       }
