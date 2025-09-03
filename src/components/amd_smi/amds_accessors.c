@@ -203,95 +203,92 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_link_metrics_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
 
   amdsmi_link_metrics_t lm;
   memset(&lm, 0, sizeof(lm));
-  if (amdsmi_get_link_metrics_p(device_handles[event->device], &lm) != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_link_metrics_p(device_handles[event->device], &lm) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
 
-  uint32_t n = lm.num_links;
-  if (n > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK)
-    n = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
+  uint32_t count = lm.num_links;
+  if (count > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK)
+    count = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
 
   uint32_t enc = event->subvariant;
   uint32_t link_type = enc >> 16;
-  uint32_t link_index = enc & 0xFFFF; /* 0xFFFF denotes aggregate */
+  uint32_t link_index = enc & 0xFFFF; /* 0xFFFF aggregates all links */
 
-  uint64_t acc = 0;
+  uint64_t total = 0;
   if (link_index == 0xFFFF) {
-    for (uint32_t i = 0; i < n; ++i) {
+    for (uint32_t i = 0; i < count; ++i) {
       if (link_type && lm.links[i].link_type != link_type)
         continue;
       switch (event->variant) {
       case 0:
-        acc += lm.links[i].read;
-        break; /* KB */
+        total += lm.links[i].read; /* KB */
+        break;
       case 1:
-        acc += lm.links[i].write;
-        break; /* KB */
+        total += lm.links[i].write; /* KB */
+        break;
       case 2:
-        acc += lm.links[i].bit_rate;
-        break; /* Gb/s */
+        total += lm.links[i].bit_rate; /* Gb/s */
+        break;
       case 3:
-        acc += lm.links[i].max_bandwidth;
-        break; /* Gb/s */
+        total += lm.links[i].max_bandwidth; /* Gb/s */
+        break;
       default:
         return PAPI_ENOSUPP;
       }
     }
   } else {
-    if (link_index >= n)
+    if (link_index >= count)
       return PAPI_EMISC;
     if (link_type && lm.links[link_index].link_type != link_type)
       return PAPI_EMISC;
     switch (event->variant) {
     case 0:
-      acc = lm.links[link_index].read;
-      break; /* KB */
+      total = lm.links[link_index].read; /* KB */
+      break;
     case 1:
-      acc = lm.links[link_index].write;
-      break; /* KB */
+      total = lm.links[link_index].write; /* KB */
+      break;
     case 2:
-      acc = lm.links[link_index].bit_rate;
-      break; /* Gb/s */
+      total = lm.links[link_index].bit_rate; /* Gb/s */
+      break;
     case 3:
-      acc = lm.links[link_index].max_bandwidth;
-      break; /* Gb/s */
+      total = lm.links[link_index].max_bandwidth; /* Gb/s */
+      break;
     default:
       return PAPI_ENOSUPP;
     }
   }
 
-  if (acc > (uint64_t)INT64_MAX)
-    acc = (uint64_t)INT64_MAX; /* defensive */
-  event->value = (int64_t)acc;
+  if (total > (uint64_t)INT64_MAX)
+    total = (uint64_t)INT64_MAX;
+  event->value = (int64_t)total;
   return PAPI_OK;
 }
 
 int access_amdsmi_process_info(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_process_list_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_process_list_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
 
-  amdsmi_proc_info_t list[2];
-  uint32_t maxp = 2;
-  amdsmi_status_t st = amdsmi_get_gpu_process_list_p(device_handles[event->device], &maxp, list);
+  amdsmi_proc_info_t list[16];
+  uint32_t count = 16;
+  amdsmi_status_t st =
+      amdsmi_get_gpu_process_list_p(device_handles[event->device], &count, list);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
 
   uint32_t proc = event->subvariant;
-  if (proc >= 2) {
-    event->value = 0;
-    return PAPI_OK;
-  }
-
-  if (proc >= maxp) {
+  if (proc >= count) {
     event->value = 0;
     return PAPI_OK;
   }
@@ -319,130 +316,158 @@ int access_amdsmi_process_info(int mode, void *arg) {
   case 6:
     event->value = (int64_t)p->memory_usage.vram_mem;
     break;
+  case 7:
+    event->value = (int64_t)p->cu_occupancy;
+    break;
   default:
     return PAPI_ENOSUPP;
   }
   return PAPI_OK;
 }
 int access_amdsmi_ecc_total(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_total_ecc_count_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_total_ecc_count_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
-    return PAPI_EMISC;
-
-  amdsmi_error_count_t ec;
-  memset(&ec, 0, sizeof(ec)); // <-- important
-  amdsmi_status_t st = amdsmi_get_gpu_total_ecc_count_p(device_handles[event->device], &ec);
-  if (st != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
-
-  uint64_t v = (event->variant == 0)   ? ec.correctable_count
-               : (event->variant == 1) ? ec.uncorrectable_count
-                                       : ec.deferred_count; // some ASICs may not set this
-  if ((int64_t)v < 0)
-    return PAPI_ENOSUPP; // defensive: treat bogus as unsupported
-  event->value = (v > (uint64_t)INT64_MAX) ? INT64_MAX : (int64_t)v;
-  return PAPI_OK;
-}
-
-int access_amdsmi_ecc_block(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_ecc_count_p)
-    return PAPI_ENOSUPP;
-  native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
 
   amdsmi_error_count_t ec;
   memset(&ec, 0, sizeof(ec));
-  amdsmi_status_t st = amdsmi_get_gpu_ecc_count_p(device_handles[event->device], (amdsmi_gpu_block_t)event->subvariant, &ec);
-  if (st != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_gpu_total_ecc_count_p(device_handles[event->device], &ec) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
 
-  uint64_t v = (event->variant == 0) ? ec.correctable_count : (event->variant == 1) ? ec.uncorrectable_count : ec.deferred_count;
-  if ((int64_t)v < 0)
+  uint64_t val;
+  switch (event->variant) {
+  case 0:
+    val = ec.correctable_count;
+    break;
+  case 1:
+    val = ec.uncorrectable_count;
+    break;
+  case 2:
+    val = ec.deferred_count;
+    break;
+  default:
     return PAPI_ENOSUPP;
-  event->value = (v > (uint64_t)INT64_MAX) ? INT64_MAX : (int64_t)v;
+  }
+
+  if (val > (uint64_t)INT64_MAX)
+    val = (uint64_t)INT64_MAX;
+  event->value = (int64_t)val;
+  return PAPI_OK;
+}
+
+int access_amdsmi_ecc_block(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_ecc_count_p)
+    return PAPI_ENOSUPP;
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+
+  amdsmi_error_count_t ec;
+  memset(&ec, 0, sizeof(ec));
+  if (amdsmi_get_gpu_ecc_count_p(device_handles[event->device],
+                                 (amdsmi_gpu_block_t)event->subvariant, &ec) !=
+      AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
+
+  uint64_t val;
+  switch (event->variant) {
+  case 0:
+    val = ec.correctable_count;
+    break;
+  case 1:
+    val = ec.uncorrectable_count;
+    break;
+  case 2:
+    val = ec.deferred_count;
+    break;
+  default:
+    return PAPI_ENOSUPP;
+  }
+
+  if (val > (uint64_t)INT64_MAX)
+    val = (uint64_t)INT64_MAX;
+  event->value = (int64_t)val;
   return PAPI_OK;
 }
 
 int access_amdsmi_ecc_status(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_ecc_status_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_ecc_status_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
+  if (event->variant != 0)
+    return PAPI_ENOSUPP;
+
   amdsmi_ras_err_state_t st;
-  amdsmi_status_t rc = amdsmi_get_gpu_ecc_status_p(device_handles[event->device], (amdsmi_gpu_block_t)event->subvariant, &st);
-  if (rc != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_gpu_ecc_status_p(device_handles[event->device],
+                                  (amdsmi_gpu_block_t)event->subvariant, &st) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)st;
   return PAPI_OK;
 }
 
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_ecc_enabled_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_ecc_enabled_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
   uint64_t mask = 0;
-  amdsmi_status_t st = amdsmi_get_gpu_ecc_enabled_p(device_handles[event->device], &mask);
-  if (st != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_gpu_ecc_enabled_p(device_handles[event->device], &mask) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)mask;
   return PAPI_OK;
 }
 int access_amdsmi_compute_partition_hash(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_compute_partition_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_compute_partition_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
   char buf[128] = {0};
-  amdsmi_status_t st = amdsmi_get_gpu_compute_partition_p(device_handles[event->device], buf, sizeof(buf));
-  if (st != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_gpu_compute_partition_p(device_handles[event->device], buf,
+                                         sizeof(buf)) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
 int access_amdsmi_memory_partition_hash(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_memory_partition_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_memory_partition_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
   char buf[128] = {0};
-  amdsmi_status_t st = amdsmi_get_gpu_memory_partition_p(device_handles[event->device], buf, sizeof(buf));
-  if (st != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_gpu_memory_partition_p(device_handles[event->device], buf,
+                                        sizeof(buf)) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_gpu_accelerator_partition_profile_p)
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_accelerator_partition_profile_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_accelerator_partition_profile_t prof;
   uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
-  amdsmi_status_t st = amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[event->device], &prof, ids);
-  if (st != AMDSMI_STATUS_SUCCESS)
+  if (amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[event->device],
+                                                     &prof, ids) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)prof.num_partitions;
   return PAPI_OK;
@@ -826,34 +851,34 @@ int access_amdsmi_fan_speed_max(int mode, void *arg) {
   return PAPI_OK;
 }
 int access_amdsmi_pci_bandwidth(int mode, void *arg) {
-  native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
-    return PAPI_EMISC;
-  }
-  if (mode != PAPI_MODE_READ) {
+  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_pci_bandwidth_p)
     return PAPI_ENOSUPP;
-  }
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles || !device_handles[event->device])
+    return PAPI_EMISC;
+
   amdsmi_pcie_bandwidth_t bw;
-  amdsmi_status_t status = amdsmi_get_gpu_pci_bandwidth_p(device_handles[event->device], &bw);
-  if (status != AMDSMI_STATUS_SUCCESS) {
+  if (amdsmi_get_gpu_pci_bandwidth_p(device_handles[event->device], &bw) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  }
-  uint32_t cur_index = bw.transfer_rate.current;
-  if (cur_index >= bw.transfer_rate.num_supported) {
+
+  uint32_t cur = bw.transfer_rate.current;
+  if (cur >= bw.transfer_rate.num_supported)
     return PAPI_EMISC;
-  }
+
   switch (event->variant) {
   case 0:
     event->value = bw.transfer_rate.num_supported;
     break;
   case 1:
-    event->value = (int64_t)bw.transfer_rate.frequency[cur_index];
+    event->value = (int64_t)bw.transfer_rate.frequency[cur];
     break;
   case 2:
-    event->value = bw.lanes[cur_index];
+    event->value = bw.lanes[cur];
     break;
   default:
-    return PAPI_EMISC;
+    return PAPI_ENOSUPP;
   }
   return PAPI_OK;
 }
@@ -1176,25 +1201,25 @@ int access_amdsmi_smu_fw_version(int mode, void *arg) {
   return PAPI_OK;
 }
 int access_amdsmi_xgmi_bandwidth(int mode, void *arg) {
-  native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
-    return PAPI_EMISC;
-  }
-  if (mode != PAPI_MODE_READ) {
+  if (mode != PAPI_MODE_READ || !amdsmi_get_minmax_bandwidth_between_processors_p)
     return PAPI_ENOSUPP;
-  }
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles || !device_handles[event->device])
+    return PAPI_EMISC;
+  if (event->subvariant >= gpu_count ||
+      !device_handles[gpu_count + event->subvariant])
+    return PAPI_EMISC;
+
   amdsmi_processor_handle src = device_handles[event->device];
   amdsmi_processor_handle dst = device_handles[gpu_count + event->subvariant];
   uint64_t min_bw = 0, max_bw = 0;
-  amdsmi_status_t status = amdsmi_get_minmax_bandwidth_between_processors_p(src, dst, &min_bw, &max_bw);
-  if (status != AMDSMI_STATUS_SUCCESS) {
+  if (amdsmi_get_minmax_bandwidth_between_processors_p(src, dst, &min_bw,
+                                                       &max_bw) !=
+      AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  }
-  if (event->variant == 0) {
-    event->value = (int64_t)min_bw;
-  } else {
-    event->value = (int64_t)max_bw;
-  }
+
+  event->value = (event->variant == 0) ? (int64_t)min_bw : (int64_t)max_bw;
   return PAPI_OK;
 }
 #endif
