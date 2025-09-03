@@ -1119,8 +1119,9 @@ static int init_event_table(void) {
                    eblock_names[bi], d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d ECC status for %s block", d, eblock_names[bi]);
-          if (add_event(&idx, name_buf, descr_buf, d, (uint32_t)eblocks[bi], 0,
-                        PAPI_MODE_READ, access_amdsmi_ecc_status) != PAPI_OK) {
+          if (add_event(&idx, name_buf, descr_buf, d, 0,
+                        (uint32_t)eblocks[bi], PAPI_MODE_READ,
+                        access_amdsmi_ecc_status) != PAPI_OK) {
             return PAPI_ENOMEM;
           }
         }
