@@ -9,6 +9,19 @@
   _(amdsmi_get_processor_handles_by_type_p, amdsmi_status_t,                   \
     (amdsmi_socket_handle, processor_type_t, amdsmi_processor_handle *,        \
      uint32_t *))                                                              \
+  _(amdsmi_get_processor_handles_p, amdsmi_status_t,                           \
+    (amdsmi_socket_handle, uint32_t *, amdsmi_processor_handle *))             \
+  _(amdsmi_get_processor_info_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, size_t, char *))                                 \
+  _(amdsmi_get_processor_type_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, processor_type_t *))                             \
+  _(amdsmi_get_socket_info_p, amdsmi_status_t,                                 \
+    (amdsmi_socket_handle, size_t, char *))                                    \
+  _(amdsmi_get_utilization_count_p, amdsmi_status_t,                           \
+    (amdsmi_processor_handle, amdsmi_utilization_counter_t *, uint32_t,        \
+     uint64_t *))                                                              \
+  _(amdsmi_get_violation_status_p, amdsmi_status_t,                            \
+    (amdsmi_processor_handle, amdsmi_violation_status_t *))                    \
   _(amdsmi_get_temp_metric_p, amdsmi_status_t,                                 \
     (amdsmi_processor_handle, amdsmi_temperature_type_t,                       \
      amdsmi_temperature_metric_t, int64_t *))                                  \
@@ -38,6 +51,8 @@
     (amdsmi_processor_handle, uint64_t *))                                     \
   _(amdsmi_get_clk_freq_p, amdsmi_status_t,                                    \
     (amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_frequencies_t *))      \
+  _(amdsmi_get_clock_info_p, amdsmi_status_t,                                  \
+    (amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_clk_info_t *))         \
   _(amdsmi_set_clk_freq_p, amdsmi_status_t,                                    \
     (amdsmi_processor_handle, amdsmi_clk_type_t, uint64_t))                    \
   _(amdsmi_get_gpu_metrics_info_p, amdsmi_status_t,                            \
@@ -63,6 +78,9 @@
     (amdsmi_processor_handle, char *, size_t))                                 \
   _(amdsmi_get_link_metrics_p, amdsmi_status_t,                                \
     (amdsmi_processor_handle, amdsmi_link_metrics_t *))                        \
+  _(amdsmi_get_minmax_bandwidth_between_processors_p, amdsmi_status_t,        \
+    (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,            \
+     uint64_t *))                                                             \
   _(amdsmi_get_gpu_process_list_p, amdsmi_status_t,                            \
     (amdsmi_processor_handle, uint32_t *, amdsmi_proc_info_t *))               \
   _(amdsmi_get_gpu_ecc_enabled_p, amdsmi_status_t,                             \
@@ -94,8 +112,25 @@
     (amdsmi_processor_handle, amdsmi_pcie_bandwidth_t *))                      \
   _(amdsmi_get_gpu_bdf_id_p, amdsmi_status_t,                                  \
     (amdsmi_processor_handle, uint64_t *))                                     \
+  _(amdsmi_get_gpu_device_bdf_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, amdsmi_bdf_t *))                                 \
   _(amdsmi_get_gpu_topo_numa_affinity_p, amdsmi_status_t,                      \
     (amdsmi_processor_handle, int32_t *))                                      \
+  _(amdsmi_topo_get_numa_node_number_p, amdsmi_status_t,                       \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_topo_get_link_weight_p, amdsmi_status_t,                            \
+    (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *))            \
+  _(amdsmi_topo_get_link_type_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,             \
+     amdsmi_io_link_type_t *))                                                \
+  _(amdsmi_topo_get_p2p_status_p, amdsmi_status_t,                             \
+    (amdsmi_processor_handle, amdsmi_processor_handle, amdsmi_io_link_type_t *,\
+     amdsmi_p2p_capability_t *))                                              \
+  _(amdsmi_is_P2P_accessible_p, amdsmi_status_t,                               \
+    (amdsmi_processor_handle, amdsmi_processor_handle, bool *))                \
+  _(amdsmi_get_link_topology_nearest_p, amdsmi_status_t,                       \
+    (amdsmi_processor_handle, amdsmi_link_type_t,                              \
+     amdsmi_topology_nearest_t *))                                            \
   _(amdsmi_get_energy_count_p, amdsmi_status_t,                                \
     (amdsmi_processor_handle, uint64_t *, float *, uint64_t *))                \
   _(amdsmi_get_gpu_power_profile_presets_p, amdsmi_status_t,                   \
@@ -150,7 +185,38 @@
   _(amdsmi_get_gpu_event_notification_p, amdsmi_status_t,                      \
     (int, uint32_t *, amdsmi_evt_notification_data_t *))                       \
   _(amdsmi_stop_gpu_event_notification_p, amdsmi_status_t,                     \
-    (amdsmi_processor_handle))
+    (amdsmi_processor_handle))                                               \
+  _(amdsmi_gpu_counter_group_supported_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_event_group_t))                          \
+  _(amdsmi_get_gpu_available_counters_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_event_group_t, uint32_t *))              \
+  _(amdsmi_gpu_create_counter_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, amdsmi_event_type_t,                            \
+     amdsmi_event_handle_t *))                                               \
+  _(amdsmi_gpu_control_counter_p, amdsmi_status_t,                             \
+    (amdsmi_event_handle_t, amdsmi_counter_command_t, void *))                \
+  _(amdsmi_gpu_read_counter_p, amdsmi_status_t,                                \
+    (amdsmi_event_handle_t, amdsmi_counter_value_t *))                        \
+  _(amdsmi_get_gpu_kfd_info_p, amdsmi_status_t,                               \
+    (amdsmi_processor_handle, amdsmi_kfd_info_t *))                           \
+  _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t,                \
+    (amdsmi_processor_handle, amdsmi_memory_partition_config_t *))            \
+  _(amdsmi_get_gpu_memory_reserved_pages_p, amdsmi_status_t,                  \
+    (amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *))    \
+  _(amdsmi_get_gpu_metrics_header_info_p, amdsmi_status_t,                    \
+    (amdsmi_processor_handle, amd_metrics_table_header_t *))                  \
+  _(amdsmi_get_gpu_xgmi_link_status_p, amdsmi_status_t,                       \
+    (amdsmi_processor_handle, amdsmi_xgmi_link_status_t *))                   \
+  _(amdsmi_get_xgmi_info_p, amdsmi_status_t,                                  \
+    (amdsmi_processor_handle, amdsmi_xgmi_info_t *))                          \
+  _(amdsmi_gpu_xgmi_error_status_p, amdsmi_status_t,                          \
+    (amdsmi_processor_handle, amdsmi_xgmi_status_t *))                        \
+  _(amdsmi_is_gpu_power_management_enabled_p, amdsmi_status_t,                \
+    (amdsmi_processor_handle, bool *))                                        \
+  _(amdsmi_gpu_validate_ras_eeprom_p, amdsmi_status_t,                        \
+    (amdsmi_processor_handle))                                               \
+  _(amdsmi_gpu_destroy_counter_p, amdsmi_status_t,                             \
+    (amdsmi_event_handle_t))
 
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
 #define AMD_SMI_GPU_FUNCTIONS(_)                                              \
@@ -191,9 +257,24 @@
     (amdsmi_processor_handle, uint16_t *, uint16_t *))                         \
   _(amdsmi_get_cpu_core_current_freq_limit_p, amdsmi_status_t,                 \
     (amdsmi_processor_handle, uint32_t *))                                     \
-  _(amdsmi_get_minmax_bandwidth_between_processors_p, amdsmi_status_t,         \
-    (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,             \
-     uint64_t *))                                                              \
+  _(amdsmi_get_cpu_cclk_limit_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_current_io_bandwidth_p, amdsmi_status_t,                    \
+    (amdsmi_processor_handle, amdsmi_link_id_bw_type_t, uint32_t *))           \
+  _(amdsmi_get_cpu_current_xgmi_bw_p, amdsmi_status_t,                         \
+    (amdsmi_processor_handle, amdsmi_link_id_bw_type_t, uint32_t *))           \
+  _(amdsmi_get_cpu_ddr_bw_p, amdsmi_status_t,                                  \
+    (amdsmi_processor_handle, amdsmi_ddr_bw_metrics_t *))                      \
+  _(amdsmi_get_cpu_fclk_mclk_p, amdsmi_status_t,                               \
+    (amdsmi_processor_handle, uint32_t *, uint32_t *))                         \
+  _(amdsmi_get_cpu_hsmp_driver_version_p, amdsmi_status_t,                     \
+    (amdsmi_processor_handle, amdsmi_hsmp_driver_version_t *))                 \
+  _(amdsmi_get_cpu_hsmp_proto_ver_p, amdsmi_status_t,                          \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_prochot_status_p, amdsmi_status_t,                         \
+    (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p, amdsmi_status_t,             \
+    (amdsmi_processor_handle, uint32_t *))                                     \
   _(amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p, amdsmi_status_t,        \
     (amdsmi_processor_handle, uint8_t, amdsmi_temp_range_refresh_rate_t *))    \
   _(amdsmi_get_cpu_dimm_power_consumption_p, amdsmi_status_t,                  \
