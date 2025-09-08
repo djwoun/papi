@@ -31,13 +31,15 @@ EOF
 
 for arg in "$@"; do
   case "$arg" in
-    --print) PRINT_ALL=1 ;;
+    TESTS_QUIET)   ;;               # ignore, invoked by src/run_tests.sh
+    --print)       PRINT_ALL=1 ;;
     --print-only=*) PRINT_SET="${arg#*=}" ;;
     --hello-event=*) HELLO_EVENT="${arg#*=}" ;;
-    -h|--help) usage; exit 0 ;;
+    -h|--help)     usage; exit 0 ;;
     *) echo "Unknown option: $arg"; usage; exit 2 ;;
   esac
 done
+
 
 in_set() {
   # $1 = token, $2 = comma list
