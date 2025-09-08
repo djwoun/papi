@@ -120,15 +120,13 @@ int amds_ctx_stop(amds_ctx_t ctx) {
   return papi_errno;
 }
 int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
-  /* Read each event individually. If an accessor fails, set the value to 0 but
-     continue so that PAPI_stop() can still clean up the context. Returning an
-     error here would prevent _amd_smi_stop() from executing and leave devices
-     marked as in-use for subsequent tests. */
+  int papi_errno = PAPI_OK;
   for (int i = 0; i < ctx->num_events; ++i) {
     unsigned int id = ctx->events_id[i];
-    if (ntv_table_p->events[id].access_func(PAPI_MODE_READ,
-                                           &ntv_table_p->events[id]) != PAPI_OK) {
-      ntv_table_p->events[id].value = 0;
+    papi_errno = ntv_table_p->events[id].access_func(PAPI_MODE_READ,
+                                                    &ntv_table_p->events[id]);
+    if (papi_errno != PAPI_OK) {
+      return papi_errno;
     }
     ctx->counters[i] = (long long)ntv_table_p->events[id].value;
   }
