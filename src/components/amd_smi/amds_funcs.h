@@ -201,6 +201,8 @@
     (amdsmi_processor_handle, amdsmi_kfd_info_t *))                           \
   _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t,                \
     (amdsmi_processor_handle, amdsmi_memory_partition_config_t *))            \
+  _(amdsmi_is_gpu_memory_partition_supported_p, amdsmi_status_t,              \
+    (amdsmi_processor_handle, bool *))                                        \
   _(amdsmi_get_gpu_memory_reserved_pages_p, amdsmi_status_t,                  \
     (amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *))    \
   _(amdsmi_get_gpu_metrics_header_info_p, amdsmi_status_t,                    \

@@ -123,7 +123,8 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   int papi_errno = PAPI_OK;
   for (int i = 0; i < ctx->num_events; ++i) {
     unsigned int id = ctx->events_id[i];
-    papi_errno = ntv_table_p->events[id].access_func(PAPI_MODE_READ, &ntv_table_p->events[id]);
+    papi_errno = ntv_table_p->events[id].access_func(PAPI_MODE_READ,
+                                                    &ntv_table_p->events[id]);
     if (papi_errno != PAPI_OK) {
       return papi_errno;
     }

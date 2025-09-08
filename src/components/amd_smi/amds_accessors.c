@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 /* -------- Helpers and new accessors (GPU read-only additions) -------- */
 static uint64_t _str_to_u64_hash(const char *s) {
   /* djb2 64-bit */
@@ -709,10 +710,19 @@ int access_amdsmi_memory_partition_hash(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count ||
       !device_handles[event->device])
     return PAPI_EMISC;
+  if (amdsmi_is_gpu_memory_partition_supported_p) {
+    bool supported = false;
+    if (amdsmi_is_gpu_memory_partition_supported_p(device_handles[event->device],
+                                                   &supported) !=
+            AMDSMI_STATUS_SUCCESS ||
+        !supported)
+      return PAPI_ENOSUPP;
+  }
   char buf[128] = {0};
   if (amdsmi_get_gpu_memory_partition_p(device_handles[event->device], buf,
                                         sizeof(buf)) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
+  buf[sizeof(buf) - 1] = '\0';
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
@@ -724,7 +734,15 @@ int access_amdsmi_memory_partition_config(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count ||
       !device_handles[event->device])
     return PAPI_EMISC;
-  amdsmi_memory_partition_config_t cfg;
+  if (amdsmi_is_gpu_memory_partition_supported_p) {
+    bool supported = false;
+    if (amdsmi_is_gpu_memory_partition_supported_p(device_handles[event->device],
+                                                   &supported) !=
+            AMDSMI_STATUS_SUCCESS ||
+        !supported)
+      return PAPI_ENOSUPP;
+  }
+  amdsmi_memory_partition_config_t cfg = {0};
   if (amdsmi_get_gpu_memory_partition_config_p(device_handles[event->device],
                                                &cfg) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -751,7 +769,7 @@ int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count ||
       !device_handles[event->device])
     return PAPI_EMISC;
-  amdsmi_accelerator_partition_profile_t prof;
+  amdsmi_accelerator_partition_profile_t prof = {0};
   uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
   if (amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[event->device],
                                                      &prof, ids) !=

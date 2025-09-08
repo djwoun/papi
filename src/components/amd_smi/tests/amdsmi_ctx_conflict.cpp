@@ -81,6 +81,7 @@ int main(int argc, char** argv) {
     // Unbuffer stdout so the final status line always shows promptly
     setvbuf(stdout, nullptr, _IONBF, 0);
 
+    harness_accept_tests_quiet(&argc, argv);
     auto opts = parse_harness_cli(argc, argv);
     // Optional override of the event: ./amdsmi_ctx_conflict "<event>" [--print ...]
     if (argc > 1 && strncmp(argv[1], "--", 2) != 0) g_event = argv[1];
