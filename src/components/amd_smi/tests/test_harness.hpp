@@ -14,6 +14,25 @@ struct HarnessOpts {
 
 static HarnessOpts harness_opts;
 
+// Accept the positional token "TESTS_QUIET" (or "QUIET"):
+//  - remove it from argv so it can't be mistaken for a positional arg,
+//  - enable quiet mode via env for the harness to pick up.
+static inline void harness_accept_tests_quiet(int *argc, char **argv) {
+    int w = 1;
+    int saw_quiet = 0;
+    for (int r = 1; r < *argc; ++r) {
+        const char *a = argv[r];
+        if (a && (!strcmp(a, "TESTS_QUIET") || !strcmp(a, "QUIET"))) {
+            saw_quiet = 1;
+            continue;
+        }
+        argv[w++] = argv[r];
+    }
+    argv[w] = NULL;
+    *argc = w;
+    if (saw_quiet) setenv("TESTS_QUIET", "1", 1);
+}
+
 // Parse CLI
 static HarnessOpts parse_harness_cli(int argc, char **argv) {
     harness_opts.print = false;
@@ -26,6 +45,10 @@ static HarnessOpts parse_harness_cli(int argc, char **argv) {
             const char *v = argv[i] + 9;
             harness_opts.expect_fail = (strcmp(v, "fail") == 0);
         }
+    }
+    if (!harness_opts.print) {
+        const char *tq = getenv("TESTS_QUIET");
+        if (tq && *tq) harness_opts.print = false;
     }
     if (!harness_opts.print) {
         const char* q = getenv("PAPI_AMDSMI_TEST_QUIET");
@@ -59,7 +82,7 @@ static int eval_result(const HarnessOpts &opts, int result_code) {
     if (harness_opts.print) { fprintf(stdout, "WARNING: "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); } \
 } while (0)
 
-// === ¡°Can¡¯t conduct¡± helpers ===
+// === Cant conduct helpers ===
 // Exit immediately as PASSED with WARNING (portable success)
 #define EXIT_WARNING(...) do { \
     harness_opts.had_warning = 1; \
@@ -67,7 +90,7 @@ static int eval_result(const HarnessOpts &opts, int result_code) {
     printf("PASSED with WARNING\n"); fflush(stdout); exit(0); \
 } while (0)
 
-// If add fails due to unsupported or HW/resource limits ¡æ end as PASSED with WARNING
+// If add fails due to unsupported or HW/resource limits end as PASSED with WARNING
 #define EXIT_WARNING_ON_ADD(rc, evname) do { \
     if ((rc) == PAPI_ENOEVNT || (rc) == PAPI_ECNFLCT || (rc) == PAPI_EPERM) { \
         EXIT_WARNING("Event unavailable (%s): %s", \
@@ -75,14 +98,14 @@ static int eval_result(const HarnessOpts &opts, int result_code) {
     } \
 } while (0)
 
-// If start fails due to HW/resource limits ¡æ end as PASSED with WARNING
+// If start fails due to HW/resource limits end as PASSED with WARNING
 #define EXIT_WARNING_ON_START(rc, ctx) do { \
     if ((rc) == PAPI_ECNFLCT || (rc) == PAPI_EPERM) { \
         EXIT_WARNING("Cannot start counters (%s): %s", (ctx), PAPI_strerror(rc)); \
     } \
 } while (0)
 
-// Keep SKIP as a ¡°can¡¯t conduct¡± success-with-warning
+// Keep SKIP as a cant conduct success-with-warning
 #define SKIP(reason) EXIT_WARNING("%s", (reason))
 
 #endif // TEST_HARNESS_HPP

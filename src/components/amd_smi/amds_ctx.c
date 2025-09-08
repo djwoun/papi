@@ -131,7 +131,7 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
     ctx->counters[i] = (long long)ntv_table_p->events[id].value;
   }
   *counts = ctx->counters;
-  return PAPI_OK;
+  return papi_errno;
 }
 int amds_ctx_write(amds_ctx_t ctx, long long *counts) {
   int papi_errno = PAPI_OK;

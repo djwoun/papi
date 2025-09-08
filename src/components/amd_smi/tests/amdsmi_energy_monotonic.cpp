@@ -6,6 +6,7 @@
 #include "test_harness.hpp"
 
 int main(int argc, char **argv) {
+    harness_accept_tests_quiet(&argc, argv);
     auto opts = parse_harness_cli(argc, argv);
 
     const char* root = std::getenv("PAPI_AMDSMI_ROOT");

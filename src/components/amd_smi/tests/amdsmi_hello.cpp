@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     // Unbuffer stdout so the final status line always shows.
     setvbuf(stdout, nullptr, _IONBF, 0);
 
+    harness_accept_tests_quiet(&argc, argv);
     auto opts = parse_harness_cli(argc, argv);
 
     // Default event (can override via argv[1], e.g. "./amdsmi_hello amd_smi:::power_average:device=0")
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
         return eval_result(opts, 1);
     }
 
-    // Start ¡æ short wait ¡æ stop/read
+    // Start Â¡Ã¦ short wait Â¡Ã¦ stop/read
     rc = PAPI_start(EventSet);
     if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) {
         NOTE("Cannot start counters: %s", PAPI_strerror(rc));

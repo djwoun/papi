@@ -18,8 +18,9 @@ static inline bool is_warning_rc(int rc) {
 
 int main(int argc, char *argv[]) {
   // Unbuffer stdout so the final status line shows promptly.
-  setvbuf(stdout, nullptr, _IONBF, 0);
+   setvbuf(stdout, nullptr, _IONBF, 0);
 
+  harness_accept_tests_quiet(&argc, argv);
   auto opts = parse_harness_cli(argc, argv);
 
   // 1. Initialise PAPI
@@ -39,7 +40,7 @@ int main(int argc, char *argv[]) {
     }
   }
   if (cid < 0) {
-    // Can't conduct on this build/platform ¡æ pass with warning.
+    // Can't conduct on this build/platform Â¡Ã¦ pass with warning.
     SKIP("Unable to locate the amd_smi component (PAPI built without ROCm?)");
   }
 
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
   // 3. Enumerate every native event
   int ev_code = PAPI_NATIVE_MASK;
   if (PAPI_enum_cmp_event(&ev_code, PAPI_ENUM_FIRST, cid) != PAPI_OK) {
-    // No events ¡æ treat as ¡°nothing to do¡± (warning instead of failing)
+    // No events Â¡Ã¦ treat as Â¡Â°nothing to doÂ¡Â± (warning instead of failing)
     SKIP("No native events found for AMD-SMI component");
   }
 
