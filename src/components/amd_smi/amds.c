@@ -3442,32 +3442,27 @@ static int init_event_table(void) {
         }
       }
     }
+    /* Register memory partition string hash without probing the value at init.
+       Probing via amdsmi_get_gpu_memory_partition_* in ROCm 6.4.0 can trigger
+       a Valgrind UMR inside libamd_smi. We only check feature support here and
+       fetch the value later in the accessor. */
     if (amdsmi_get_gpu_memory_partition_p) {
       bool supported = true;
       if (amdsmi_is_gpu_memory_partition_supported_p) {
         supported = false;
         if (amdsmi_is_gpu_memory_partition_supported_p(device_handles[d],
-                                                       &supported) !=
-                AMDSMI_STATUS_SUCCESS ||
+                                                       &supported) != AMDSMI_STATUS_SUCCESS ||
             !supported) {
           supported = false;
         }
       }
       if (supported) {
-        char part[128] = {0};
-        if (amdsmi_get_gpu_memory_partition_p(device_handles[d], part,
-                                              sizeof(part)) ==
-            AMDSMI_STATUS_SUCCESS) {
-          part[sizeof(part) - 1] = '\0';
-          CHECK_EVENT_IDX(idx);
-          snprintf(name_buf, sizeof(name_buf),
-                   "memory_partition_hash:device=%d", d);
-          snprintf(descr_buf, sizeof(descr_buf),
-                   "Device %d memory partition (hash)", d);
-          if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                        access_amdsmi_memory_partition_hash) != PAPI_OK) {
-            return PAPI_ENOMEM;
-          }
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d memory partition (hash)", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_memory_partition_hash) != PAPI_OK) {
+          return PAPI_ENOMEM;
         }
       }
     }
@@ -3476,48 +3471,44 @@ static int init_event_table(void) {
       if (amdsmi_is_gpu_memory_partition_supported_p) {
         supported = false;
         if (amdsmi_is_gpu_memory_partition_supported_p(device_handles[d],
-                                                       &supported) !=
-                AMDSMI_STATUS_SUCCESS ||
+                                                       &supported) != AMDSMI_STATUS_SUCCESS ||
             !supported) {
           supported = false;
         }
       }
       if (supported) {
-        amdsmi_memory_partition_config_t cfg = {0};
-        if (amdsmi_get_gpu_memory_partition_config_p(device_handles[d], &cfg) ==
-            AMDSMI_STATUS_SUCCESS) {
-          const char *mpc_names[] = {"memory_partition_caps",
-                                     "memory_partition_mode",
-                                     "memory_partition_numa_count"};
-          const char *mpc_descr[] = {"Device %d memory partition capabilities",
-                                     "Device %d memory partition mode",
-                                     "Device %d NUMA range count"};
-          for (uint32_t v = 0; v < 3; ++v) {
-            CHECK_EVENT_IDX(idx);
-            snprintf(name_buf, sizeof(name_buf), "%s:device=%d", mpc_names[v], d);
-            snprintf(descr_buf, sizeof(descr_buf), mpc_descr[v], d);
-            if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
-                          access_amdsmi_memory_partition_config) != PAPI_OK) {
-              return PAPI_ENOMEM;
-            }
+        /* Do not call amdsmi_get_gpu_memory_partition_config at init-time.
+           It can hit a UMR in libamd_smi on 6.4.0. Just register the events;
+           the accessor will fetch values on demand. */
+        const char *mpc_names[] = {"memory_partition_caps",
+                                   "memory_partition_mode",
+                                   "memory_partition_numa_count"};
+        const char *mpc_descr[] = {"Device %d memory partition capabilities",
+                                   "Device %d memory partition mode",
+                                   "Device %d NUMA range count"};
+        for (uint32_t v = 0; v < 3; ++v) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "%s:device=%d", mpc_names[v], d);
+          snprintf(descr_buf, sizeof(descr_buf), mpc_descr[v], d);
+          if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                        access_amdsmi_memory_partition_config) != PAPI_OK) {
+            return PAPI_ENOMEM;
           }
         }
       }
     }
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
-      amdsmi_accelerator_partition_profile_t prof = {0};
-      uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
-      if (amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], &prof,
-                                                         ids) == AMDSMI_STATUS_SUCCESS) {
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "accelerator_num_partitions:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d accelerator partition count", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_accelerator_num_partitions) != PAPI_OK) {
-          return PAPI_ENOMEM;
-        }
+      /* Avoid probing amdsmi_get_gpu_accelerator_partition_profile at init-time:
+         ROCm 6.4.0 may trigger strlen/ostream on uninitialized data inside the lib.
+         Register the count event and let the accessor fetch later. */
+      CHECK_EVENT_IDX(idx);
+      snprintf(name_buf, sizeof(name_buf),
+               "accelerator_num_partitions:device=%d", d);
+      snprintf(descr_buf, sizeof(descr_buf),
+               "Device %d accelerator partition count", d);
+      if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                    access_amdsmi_accelerator_num_partitions) != PAPI_OK) {
+        return PAPI_ENOMEM;
       }
     }
     /* Driver info (strings hashed) */
