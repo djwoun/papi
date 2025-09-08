@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <string.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #define MAX_EVENTS_PER_DEVICE 1024
@@ -307,6 +308,8 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_gpu_memory_partition", NULL);
   amdsmi_get_gpu_memory_partition_config_p =
       sym("amdsmi_get_gpu_memory_partition_config", NULL);
+  amdsmi_is_gpu_memory_partition_supported_p =
+      sym("amdsmi_is_gpu_memory_partition_supported", NULL);
   amdsmi_get_gpu_memory_reserved_pages_p =
       sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
   amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
@@ -3440,44 +3443,69 @@ static int init_event_table(void) {
       }
     }
     if (amdsmi_get_gpu_memory_partition_p) {
-      char part[128] = {0};
-      if (amdsmi_get_gpu_memory_partition_p(device_handles[d], part,
-                                            sizeof(part)) ==
-          AMDSMI_STATUS_SUCCESS) {
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "memory_partition_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d memory partition (hash)", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_memory_partition_hash) != PAPI_OK) {
-          return PAPI_ENOMEM;
+      bool supported = true;
+      if (amdsmi_is_gpu_memory_partition_supported_p) {
+        supported = false;
+        if (amdsmi_is_gpu_memory_partition_supported_p(device_handles[d],
+                                                       &supported) !=
+                AMDSMI_STATUS_SUCCESS ||
+            !supported) {
+          supported = false;
         }
       }
-    }
-    if (amdsmi_get_gpu_memory_partition_config_p) {
-      amdsmi_memory_partition_config_t cfg;
-      if (amdsmi_get_gpu_memory_partition_config_p(device_handles[d], &cfg) ==
-          AMDSMI_STATUS_SUCCESS) {
-        const char *mpc_names[] = {"memory_partition_caps",
-                                   "memory_partition_mode",
-                                   "memory_partition_numa_count"};
-        const char *mpc_descr[] = {"Device %d memory partition capabilities",
-                                   "Device %d memory partition mode",
-                                   "Device %d NUMA range count"};
-        for (uint32_t v = 0; v < 3; ++v) {
+      if (supported) {
+        char part[128] = {0};
+        if (amdsmi_get_gpu_memory_partition_p(device_handles[d], part,
+                                              sizeof(part)) ==
+            AMDSMI_STATUS_SUCCESS) {
+          part[sizeof(part) - 1] = '\0';
           CHECK_EVENT_IDX(idx);
-          snprintf(name_buf, sizeof(name_buf), "%s:device=%d", mpc_names[v], d);
-          snprintf(descr_buf, sizeof(descr_buf), mpc_descr[v], d);
-          if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
-                        access_amdsmi_memory_partition_config) != PAPI_OK) {
+          snprintf(name_buf, sizeof(name_buf),
+                   "memory_partition_hash:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d memory partition (hash)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                        access_amdsmi_memory_partition_hash) != PAPI_OK) {
             return PAPI_ENOMEM;
           }
         }
       }
     }
+    if (amdsmi_get_gpu_memory_partition_config_p) {
+      bool supported = true;
+      if (amdsmi_is_gpu_memory_partition_supported_p) {
+        supported = false;
+        if (amdsmi_is_gpu_memory_partition_supported_p(device_handles[d],
+                                                       &supported) !=
+                AMDSMI_STATUS_SUCCESS ||
+            !supported) {
+          supported = false;
+        }
+      }
+      if (supported) {
+        amdsmi_memory_partition_config_t cfg = {0};
+        if (amdsmi_get_gpu_memory_partition_config_p(device_handles[d], &cfg) ==
+            AMDSMI_STATUS_SUCCESS) {
+          const char *mpc_names[] = {"memory_partition_caps",
+                                     "memory_partition_mode",
+                                     "memory_partition_numa_count"};
+          const char *mpc_descr[] = {"Device %d memory partition capabilities",
+                                     "Device %d memory partition mode",
+                                     "Device %d NUMA range count"};
+          for (uint32_t v = 0; v < 3; ++v) {
+            CHECK_EVENT_IDX(idx);
+            snprintf(name_buf, sizeof(name_buf), "%s:device=%d", mpc_names[v], d);
+            snprintf(descr_buf, sizeof(descr_buf), mpc_descr[v], d);
+            if (add_event(&idx, name_buf, descr_buf, d, v, 0, PAPI_MODE_READ,
+                          access_amdsmi_memory_partition_config) != PAPI_OK) {
+              return PAPI_ENOMEM;
+            }
+          }
+        }
+      }
+    }
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
-      amdsmi_accelerator_partition_profile_t prof;
+      amdsmi_accelerator_partition_profile_t prof = {0};
       uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
       if (amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], &prof,
                                                          ids) == AMDSMI_STATUS_SUCCESS) {
@@ -3494,7 +3522,7 @@ static int init_event_table(void) {
     }
     /* Driver info (strings hashed) */
     if (amdsmi_get_gpu_driver_info_p) {
-      amdsmi_driver_info_t dinfo;
+      amdsmi_driver_info_t dinfo = {0};
       if (amdsmi_get_gpu_driver_info_p(device_handles[d], &dinfo) ==
           AMDSMI_STATUS_SUCCESS) {
         CHECK_EVENT_IDX(idx);
