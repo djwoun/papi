@@ -13,7 +13,7 @@ struct ThreadState { int start_rc = PAPI_OK; };
 static std::atomic<bool> t1_started(false);
 
 // Default event; you can override with argv[1] (any amd_smi native event string)
-static const char* g_event = "amd_smi:::temp_current:device=0:sensor=0";
+static const char* g_event = "amd_smi:::temp_current:device=0:sensor=1";
 
 static void* thread_fn1(void* arg) {
     PAPI_register_thread();
