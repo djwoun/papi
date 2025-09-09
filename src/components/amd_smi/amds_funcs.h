@@ -199,16 +199,12 @@
     (amdsmi_event_handle_t, amdsmi_counter_value_t *))                        \
   _(amdsmi_get_gpu_kfd_info_p, amdsmi_status_t,                               \
     (amdsmi_processor_handle, amdsmi_kfd_info_t *))                           \
-  _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t,                \
-    (amdsmi_processor_handle, amdsmi_memory_partition_config_t *))            \
   _(amdsmi_is_gpu_memory_partition_supported_p, amdsmi_status_t,              \
     (amdsmi_processor_handle, bool *))                                        \
   _(amdsmi_get_gpu_memory_reserved_pages_p, amdsmi_status_t,                  \
     (amdsmi_processor_handle, uint32_t *, amdsmi_retired_page_record_t *))    \
   _(amdsmi_get_gpu_metrics_header_info_p, amdsmi_status_t,                    \
     (amdsmi_processor_handle, amd_metrics_table_header_t *))                  \
-  _(amdsmi_get_gpu_xgmi_link_status_p, amdsmi_status_t,                       \
-    (amdsmi_processor_handle, amdsmi_xgmi_link_status_t *))                   \
   _(amdsmi_get_xgmi_info_p, amdsmi_status_t,                                  \
     (amdsmi_processor_handle, amdsmi_xgmi_info_t *))                          \
   _(amdsmi_gpu_xgmi_error_status_p, amdsmi_status_t,                          \
@@ -221,11 +217,15 @@
     (amdsmi_event_handle_t))
 
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
-#define AMD_SMI_GPU_FUNCTIONS(_)                                              \
-  AMD_SMI_GPU_FUNCTIONS_BASE(_)                                              \
-  _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t,                       \
-    (amdsmi_processor_handle, amdsmi_enumeration_info_t *))                   \
-  _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t,                    \
+#define AMD_SMI_GPU_FUNCTIONS(_) \
+  AMD_SMI_GPU_FUNCTIONS_BASE(_) \
+  _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t, \
+    (amdsmi_processor_handle, amdsmi_memory_partition_config_t *)) \
+  _(amdsmi_get_gpu_xgmi_link_status_p, amdsmi_status_t, \
+    (amdsmi_processor_handle, amdsmi_xgmi_link_status_t *)) \
+  _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t, \
+    (amdsmi_processor_handle, amdsmi_enumeration_info_t *)) \
+  _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t, \
     (amdsmi_processor_handle, amdsmi_virtualization_mode_t *))
 #else
 #define AMD_SMI_GPU_FUNCTIONS(_) AMD_SMI_GPU_FUNCTIONS_BASE(_)

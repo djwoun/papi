@@ -305,18 +305,22 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_compute_partition_p =
       sym("amdsmi_get_gpu_compute_partition", NULL);
   amdsmi_get_gpu_memory_partition_p =
-      sym("amdsmi_get_gpu_memory_partition", NULL);
-  amdsmi_get_gpu_memory_partition_config_p =
-      sym("amdsmi_get_gpu_memory_partition_config", NULL);
+        sym("amdsmi_get_gpu_memory_partition", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+    amdsmi_get_gpu_memory_partition_config_p =
+        sym("amdsmi_get_gpu_memory_partition_config", NULL);
+#endif
   amdsmi_is_gpu_memory_partition_supported_p =
       sym("amdsmi_is_gpu_memory_partition_supported", NULL);
   amdsmi_get_gpu_memory_reserved_pages_p =
       sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
   amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
   amdsmi_get_gpu_metrics_header_info_p =
-      sym("amdsmi_get_gpu_metrics_header_info", NULL);
-  amdsmi_get_gpu_xgmi_link_status_p =
-      sym("amdsmi_get_gpu_xgmi_link_status", NULL);
+        sym("amdsmi_get_gpu_metrics_header_info", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+    amdsmi_get_gpu_xgmi_link_status_p =
+        sym("amdsmi_get_gpu_xgmi_link_status", NULL);
+#endif
   amdsmi_get_xgmi_info_p = sym("amdsmi_get_xgmi_info", NULL);
   amdsmi_gpu_xgmi_error_status_p =
       sym("amdsmi_gpu_xgmi_error_status", NULL);
@@ -3457,6 +3461,7 @@ static int init_event_table(void) {
         }
       }
     }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
     if (amdsmi_get_gpu_memory_partition_config_p) {
       amdsmi_memory_partition_config_t cfg = {0};
       /* Probe memory partition configuration */
@@ -3479,6 +3484,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
       amdsmi_accelerator_partition_profile_t prof = {0};
       uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
@@ -3562,6 +3568,7 @@ static int init_event_table(void) {
         }
       }
     }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
     if (amdsmi_get_gpu_xgmi_link_status_p) {
       amdsmi_xgmi_link_status_t st;
       if (amdsmi_get_gpu_xgmi_link_status_p(device_handles[d], &st) ==
@@ -3582,6 +3589,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     if (amdsmi_gpu_xgmi_error_status_p) {
       amdsmi_xgmi_status_t st;
       if (amdsmi_gpu_xgmi_error_status_p(device_handles[d], &st) ==
