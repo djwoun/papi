@@ -273,6 +273,7 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_xgmi_link_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_xgmi_link_status_p)
     return PAPI_ENOSUPP;
@@ -290,6 +291,7 @@ int access_amdsmi_xgmi_link_status(int mode, void *arg) {
   event->value = (int64_t)st.status[li];
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_xgmi_error_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_gpu_xgmi_error_status_p)
@@ -727,6 +729,7 @@ int access_amdsmi_memory_partition_hash(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_memory_partition_config(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_memory_partition_config_p)
     return PAPI_ENOSUPP;
@@ -762,6 +765,7 @@ int access_amdsmi_memory_partition_config(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_accelerator_partition_profile_p)
     return PAPI_ENOSUPP;

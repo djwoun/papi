@@ -116,7 +116,9 @@ int access_amdsmi_ecc_status(int mode, void *arg);
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
 int access_amdsmi_compute_partition_hash(int mode, void *arg);
 int access_amdsmi_memory_partition_hash(int mode, void *arg);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_memory_partition_config(int mode, void *arg);
+#endif
 int access_amdsmi_memory_reserved_pages(int mode, void *arg);
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
 int access_amdsmi_lib_version(int mode, void *arg);
@@ -145,7 +147,9 @@ int access_amdsmi_vram_usage(int mode, void *arg);
 int access_amdsmi_soc_pstate_id(int mode, void *arg);
 int access_amdsmi_soc_pstate_supported(int mode, void *arg);
 int access_amdsmi_metrics_header_info(int mode, void *arg);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_xgmi_link_status(int mode, void *arg);
+#endif
 int access_amdsmi_xgmi_error_status(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_id(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_supported(int mode, void *arg);
