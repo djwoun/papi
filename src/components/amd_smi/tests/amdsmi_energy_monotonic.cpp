@@ -50,13 +50,17 @@ int main(int argc, char **argv) {
         return eval_result(opts, 1);
     }
 
-    usleep(100000);
+    // Try up to 1 second for the energy counter to advance
+    for (int i = 0; i < 10; ++i) {
+        usleep(100000);
 
-    ret = PAPI_read(EventSet, &v2);
-    if (ret != PAPI_OK) {
-        NOTE("PAPI_read(2): %s", PAPI_strerror(ret));
-        long long dummy=0; PAPI_stop(EventSet, &dummy);
-        return eval_result(opts, 1);
+        ret = PAPI_read(EventSet, &v2);
+        if (ret != PAPI_OK) {
+            NOTE("PAPI_read(2): %s", PAPI_strerror(ret));
+            long long dummy=0; PAPI_stop(EventSet, &dummy);
+            return eval_result(opts, 1);
+        }
+        if (v2 > v1) break;
     }
 
     long long dummy=0;
