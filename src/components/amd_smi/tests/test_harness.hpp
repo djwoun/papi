@@ -25,10 +25,10 @@ static inline void harness_accept_tests_quiet(int *argc, char **argv) {
        the environment variable so tests don't misinterpret it as a positional
        argument. */
 
-    const char *badarg = NULL;
+    char *badarg = NULL;
     const char *tq_env = getenv("TESTS_QUIET");
     if (tq_env && strcmp(tq_env, "TESTS_QUIET") != 0) {
-        badarg = tq_env;          // remember stray value to filter from argv
+        badarg = strdup(tq_env);  // remember stray value to filter from argv
         unsetenv("TESTS_QUIET");  // ignore non‑literal TESTS_QUIET
     }
 
@@ -49,6 +49,7 @@ static inline void harness_accept_tests_quiet(int *argc, char **argv) {
     argv[w] = NULL;
     *argc = w;
     if (saw_quiet) setenv("TESTS_QUIET", "1", 1);
+    if (badarg) free(badarg);
 }
 
 // Parse CLI
