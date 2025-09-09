@@ -18,12 +18,30 @@ static HarnessOpts harness_opts;
 //  - remove it from argv so it can't be mistaken for a positional arg,
 //  - enable quiet mode via env for the harness to pick up.
 static inline void harness_accept_tests_quiet(int *argc, char **argv) {
+    /* The PAPI test harness historically invokes each test with a single
+       positional token holding the value of the TESTS_QUIET environment
+       variable.  Only the literal string "TESTS_QUIET" should trigger quiet
+       mode.  If any other value is present we drop it from argv and ignore
+       the environment variable so tests don't misinterpret it as a positional
+       argument. */
+
+    const char *badarg = NULL;
+    const char *tq_env = getenv("TESTS_QUIET");
+    if (tq_env && strcmp(tq_env, "TESTS_QUIET") != 0) {
+        badarg = tq_env;          // remember stray value to filter from argv
+        unsetenv("TESTS_QUIET");  // ignore non‑literal TESTS_QUIET
+    }
+
     int w = 1;
     int saw_quiet = 0;
     for (int r = 1; r < *argc; ++r) {
         const char *a = argv[r];
         if (a && (!strcmp(a, "TESTS_QUIET") || !strcmp(a, "QUIET"))) {
             saw_quiet = 1;
+            continue;
+        }
+        if (badarg && a && strcmp(a, badarg) == 0) {
+            /* discard unexpected TESTS_QUIET value */
             continue;
         }
         argv[w++] = argv[r];

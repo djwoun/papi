@@ -36,7 +36,8 @@ for arg in "$@"; do
     --print-only=*) PRINT_SET="${arg#*=}" ;;
     --hello-event=*) HELLO_EVENT="${arg#*=}" ;;
     -h|--help)     usage; exit 0 ;;
-    *) echo "Unknown option: $arg"; usage; exit 2 ;;
+    --*) echo "Unknown option: $arg"; usage; exit 2 ;;
+    *) ;;                         # ignore any other stray args
   esac
 done
 
