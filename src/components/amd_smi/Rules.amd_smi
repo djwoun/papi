@@ -90,8 +90,6 @@ COMPOBJS += amds.o \
 # Where to find amd_smi.h varied in early ROCM releases. If it changes again,
 # for backward compatibility add *more* -I paths, do not just replace this one.
 
-CFLAGS += -I$(PAPI_AMDSMI_ROOT)/../include/amd_smi
-CFLAGS += -I$(PAPI_AMDSMI_ROOT)/../include
 CFLAGS += -I$(PAPI_AMDSMI_ROOT)/include/amd_smi
 CFLAGS += -I$(PAPI_AMDSMI_ROOT)/include
 CFLAGS += -g
