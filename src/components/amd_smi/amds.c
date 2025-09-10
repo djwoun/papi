@@ -489,13 +489,6 @@ int amds_init(void) {
       amdsmi_lib_major = vinfo.major;
       amdsmi_lib_minor = vinfo.minor;
     }
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
-    if (!((amdsmi_lib_major == AMDSMI_LIB_VERSION_MAJOR) &&
-      (amdsmi_lib_minor >= AMDSMI_LIB_VERSION_MINOR))) {
-      amdsmi_get_gpu_memory_partition_config_p = NULL;
-      amdsmi_get_gpu_accelerator_partition_profile_p = NULL;
-    }
-#endif
   }
   htable_init(&htable);
   // Discover GPU and CPU devices
@@ -691,12 +684,42 @@ fn_fail:
 }
 
 int amds_shutdown(void) {
+  // Tear down our tables first
   shutdown_event_table();
   shutdown_device_table();
   htable_shutdown(htable);
+  htable = NULL;
 
-  return amdsmi_shut_down_p();
+  // Tell AMD SMI to shut down if the symbol exists
+  amdsmi_status_t st = AMDSMI_STATUS_SUCCESS;
+  if (amdsmi_shut_down_p) {
+    st = amdsmi_shut_down_p();
+  }
+
+  // Unload the shared library if we loaded it
+  if (amds_dlp) {
+    dlclose(amds_dlp);
+    amds_dlp = NULL;
+  }
+
+  // Clear function pointers so a future init can't call stale symbols
+  #define NULLIFY(name, ret, args) name = NULL;
+  AMD_SMI_GPU_FUNCTIONS(NULLIFY)
+  #ifndef AMDSMI_DISABLE_ESMI
+  AMD_SMI_CPU_FUNCTIONS(NULLIFY)
+  #endif
+  #undef NULLIFY
+
+  // Reset a few globals used by init paths
+  device_count = 0;
+  gpu_count = 0;
+  cpu_count = 0;
+  ntv_table_p = NULL;
+  amdsmi_lib_major = 0;
+
+  return (st == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_EMISC;
 }
+
 
 int amds_err_get_last(const char **err_string) {
   if (err_string)
@@ -3476,10 +3499,11 @@ static int init_event_table(void) {
         }
       }
     }
+    /*
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
     if (amdsmi_get_gpu_memory_partition_config_p) {
       amdsmi_memory_partition_config_t cfg = {0};
-      /* Probe memory partition configuration */
+      // Probe memory partition configuration 
       if (amdsmi_get_gpu_memory_partition_config_p(device_handles[d], &cfg) ==
           AMDSMI_STATUS_SUCCESS) {
         const char *mpc_names[] = {"memory_partition_caps",
@@ -3517,6 +3541,7 @@ static int init_event_table(void) {
         }
       }
     }
+    */
     /* Driver info (strings hashed) */
     if (amdsmi_get_gpu_driver_info_p) {
       amdsmi_driver_info_t dinfo = {0};

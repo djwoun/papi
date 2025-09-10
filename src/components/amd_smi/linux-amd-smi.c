@@ -216,20 +216,20 @@ static int _amd_smi_write(hwd_context_t *ctx, hwd_control_state_t *ctrl, long lo
 
 static int _amd_smi_stop(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
     int papi_errno = PAPI_OK;
-    amdsmi_context_t *amdsmi_ctx = (amdsmi_context_t *) ctx;
-    amdsmi_control_t *amdsmi_ctl = (amdsmi_control_t *) ctrl;
-    if (!(amdsmi_ctx->state & AMDS_EVENTS_RUNNING)) {
-        return PAPI_EMISC;
-    }
-    papi_errno = amds_ctx_stop(amdsmi_ctl->amds_ctx);
-    if (papi_errno != PAPI_OK) {
-        return papi_errno;
-    }
-    amdsmi_ctx->state &= ~AMDS_EVENTS_RUNNING;
-    papi_errno = amds_ctx_close(amdsmi_ctl->amds_ctx);
-    amdsmi_ctx->state &= ~AMDS_EVENTS_OPENED;
+    amdsmi_context_t *amdsmi_ctx = (amdsmi_context_t *)ctx;
+    amdsmi_control_t *amdsmi_ctl = (amdsmi_control_t *)ctrl;
+    if (!(amdsmi_ctx->state & AMDS_EVENTS_RUNNING)) return PAPI_EMISC;
+
+    papi_errno  = amds_ctx_stop(amdsmi_ctl->amds_ctx);   // may be != PAPI_OK
+    amdsmi_ctx->state &= ~AMDS_EVENTS_RUNNING;            // mirror ctx state even on error
+
+    // Always try to close to release device_mask/memory
+    int close_rc = amds_ctx_close(amdsmi_ctl->amds_ctx);
     amdsmi_ctl->amds_ctx = NULL;
-    return papi_errno;
+    amdsmi_ctx->state &= ~AMDS_EVENTS_OPENED;
+
+    // Preserve the original stop error if any
+    return (papi_errno != PAPI_OK) ? papi_errno : close_rc;
 }
 
 static int _amd_smi_reset(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
