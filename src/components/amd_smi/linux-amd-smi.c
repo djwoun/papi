@@ -112,36 +112,38 @@ static int _amd_smi_init_control_state(hwd_control_state_t *ctrl) {
     return _amd_smi_check_n_initialize();
 }
 
-static int update_native_events(amdsmi_control_t *ctl, NativeInfo_t *ntvInfo, int ntvCount) {
-    int papi_errno = PAPI_OK;
-    
+static int update_native_events(amdsmi_control_t *ctl, NativeInfo_t *ntvInfo, int ntvCount)
+{
+    if (!ctl) return PAPI_EINVAL;
+    if (ntvCount < 0) return PAPI_EINVAL;
+
     if (ntvCount == 0) {
-      papi_free(ctl->events_id);
-      ctl->events_id = NULL;
-      ctl->num_events = 0;
-      return PAPI_OK;
+        if (ctl->events_id) papi_free(ctl->events_id);
+        ctl->events_id = NULL;
+        ctl->num_events = 0;
+        return PAPI_OK;
     }
-    
-    unsigned int *events = NULL;
-    if (ntvCount > 0) {
-        events = papi_calloc((size_t)ntvCount, sizeof(*events));
-        if (!events) {
-            return PAPI_ENOMEM;
-        }
-        for (int i = 0; i < ntvCount; ++i) {
-            events[i] = ntvInfo[i].ni_event;
-            ntvInfo[i].ni_position = i;
-        }
+
+    if (!ntvInfo) return PAPI_EINVAL;
+
+    // Allocate a new array; leave ctl unchanged until success.
+    unsigned int *events = papi_calloc((size_t)ntvCount, sizeof(*events));
+    if (!events) {
+        // Old ctl->events_id/num_events remain intact on allocation failure.
+        return PAPI_ENOMEM;
     }
-    
+
     for (int i = 0; i < ntvCount; ++i) {
         events[i] = ntvInfo[i].ni_event;
         ntvInfo[i].ni_position = i;
     }
-    papi_free(ctl->events_id);
+
+    // Swap in the new array atomically.
+    if (ctl->events_id) papi_free(ctl->events_id);
     ctl->events_id = events;
     ctl->num_events = ntvCount;
-    return papi_errno;
+
+    return PAPI_OK;
 }
 
 static int try_open_events(amdsmi_control_t *ctl) {
