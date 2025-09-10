@@ -35,6 +35,7 @@ static void *amds_dlp = NULL;
 static void *htable = NULL;
 static char error_string[PAPI_MAX_STR_LEN + 1];
 static uint32_t amdsmi_lib_major = 0;
+static uint32_t amdsmi_lib_minor = 0;
 // Forward declarations for internal helpers
 static int load_amdsmi_sym(void);
 static int init_device_table(void);
@@ -486,7 +487,15 @@ int amds_init(void) {
     amdsmi_version_t vinfo;
     if (amdsmi_get_lib_version_p(&vinfo) == AMDSMI_STATUS_SUCCESS) {
       amdsmi_lib_major = vinfo.major;
+      amdsmi_lib_minor = vinfo.minor;
     }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+    if (!((amdsmi_lib_major == AMDSMI_LIB_VERSION_MAJOR) &&
+      (amdsmi_lib_minor >= AMDSMI_LIB_VERSION_MINOR))) {
+      amdsmi_get_gpu_memory_partition_config_p = NULL;
+      amdsmi_get_gpu_accelerator_partition_profile_p = NULL;
+    }
+#endif
   }
   htable_init(&htable);
   // Discover GPU and CPU devices
@@ -1628,27 +1637,28 @@ static int init_event_table(void) {
 
     for (int si = 0; si < num_temp_sensors && si < 8; ++si) {
       // Test each sensor individually first
-      int64_t sensor_test_val;
+      int64_t sensor_test_val = 0;  // <= init
       if (!amdsmi_get_temp_metric_p ||
           amdsmi_get_temp_metric_p(device_handles[d], temp_sensors[si],
                                    AMDSMI_TEMP_CURRENT,
                                    &sensor_test_val) != AMDSMI_STATUS_SUCCESS) {
         continue; // Skip this specific sensor if it doesn't work
       }
+    
       // Register metrics for this working sensor, testing each metric individually
-      for (size_t mi = 0; mi < sizeof(temp_metrics) / sizeof(temp_metrics[0]);
-           ++mi) {
+      for (size_t mi = 0; mi < sizeof(temp_metrics) / sizeof(temp_metrics[0]); ++mi) {
         // Bounds check to prevent buffer overflow
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
           return PAPI_ENOSUPP; // Too many events
         }
-        // Test this specific metric on this specific sensor
-        int64_t metric_val;
+    
+        int64_t metric_val = 0;  // <= init
         if (amdsmi_get_temp_metric_p(device_handles[d], temp_sensors[si],
-                                     temp_metrics[mi],
-                                     &metric_val) != AMDSMI_STATUS_SUCCESS) {
+                                     temp_metrics[mi], &metric_val)
+            != AMDSMI_STATUS_SUCCESS) {
           continue; /* skip this specific metric if not supported */
         }
+    
         snprintf(name_buf, sizeof(name_buf), "%s:device=%d:sensor=%d",
                  temp_metric_names[mi], d, (int)temp_sensors[si]);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d %s for sensor %d", d,
@@ -2595,9 +2605,13 @@ static int init_event_table(void) {
     }
 
     if (amdsmi_get_gpu_metrics_header_info_p) {
-      amd_metrics_table_header_t hdr;
-      if (amdsmi_get_gpu_metrics_header_info_p(device_handles[d], &hdr) ==
-          AMDSMI_STATUS_SUCCESS) {
+      amd_metrics_table_header_t hdr = {0};   // <= zero-init
+    
+      // If the API defines a size/version field, set it before the call:
+      // hdr.metrics_header_size = sizeof(hdr);   // uncomment if such a field exists
+    
+      if (amdsmi_get_gpu_metrics_header_info_p(device_handles[d], &hdr)
+          == AMDSMI_STATUS_SUCCESS) {
         const char *hnames[] = {"metrics_header_size",
                                 "metrics_header_format_rev",
                                 "metrics_header_content_rev"};
@@ -3448,10 +3462,11 @@ static int init_event_table(void) {
     }
     if (amdsmi_get_gpu_memory_partition_p) {
       char part[128] = {0};
-      /* Probe memory partition string to confirm support */
-      if (amdsmi_get_gpu_memory_partition_p(device_handles[d], part,
-                                            sizeof(part)) ==
-          AMDSMI_STATUS_SUCCESS) {
+      uint32_t len = (uint32_t)sizeof(part);
+      amdsmi_status_t rc =
+          amdsmi_get_gpu_memory_partition_p(device_handles[d], part, len);
+      part[sizeof(part) - 1] = '\0';  // belt-and-suspenders NUL
+      if (rc == AMDSMI_STATUS_SUCCESS && part[0] != '\0') {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d memory partition (hash)", d);
@@ -3488,15 +3503,14 @@ static int init_event_table(void) {
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
       amdsmi_accelerator_partition_profile_t prof = {0};
       uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
-      /* Probe accelerator partition profile to ensure availability */
-      if (amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], &prof,
-                                                         ids) ==
-          AMDSMI_STATUS_SUCCESS) {
+      amdsmi_status_t rc =
+          amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], &prof, ids);
+      if (rc == AMDSMI_STATUS_SUCCESS &&
+          prof.num_partitions > 0 &&
+          prof.num_partitions <= AMDSMI_MAX_ACCELERATOR_PARTITIONS) {
         CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "accelerator_num_partitions:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d accelerator partition count", d);
+        snprintf(name_buf, sizeof(name_buf), "accelerator_num_partitions:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf), "Device %d accelerator partition count", d);
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_accelerator_num_partitions) != PAPI_OK) {
           return PAPI_ENOMEM;
