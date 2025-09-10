@@ -114,10 +114,26 @@ static int _amd_smi_init_control_state(hwd_control_state_t *ctrl) {
 
 static int update_native_events(amdsmi_control_t *ctl, NativeInfo_t *ntvInfo, int ntvCount) {
     int papi_errno = PAPI_OK;
-    unsigned int *events = papi_calloc(ntvCount, sizeof(*events));
-    if (events == NULL) {
-        return PAPI_ENOMEM;
+    
+    if (ntvCount == 0) {
+      papi_free(ctl->events_id);
+      ctl->events_id = NULL;
+      ctl->num_events = 0;
+      return PAPI_OK;
     }
+    
+    unsigned int *events = NULL;
+    if (ntvCount > 0) {
+        events = papi_calloc((size_t)ntvCount, sizeof(*events));
+        if (!events) {
+            return PAPI_ENOMEM;
+        }
+        for (int i = 0; i < ntvCount; ++i) {
+            events[i] = ntvInfo[i].ni_event;
+            ntvInfo[i].ni_position = i;
+        }
+    }
+    
     for (int i = 0; i < ntvCount; ++i) {
         events[i] = ntvInfo[i].ni_event;
         ntvInfo[i].ni_position = i;
