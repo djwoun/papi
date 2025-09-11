@@ -42,7 +42,7 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
   if (new_ctx == NULL) {
     return PAPI_ENOMEM;
   }
-  new_ctx->events_id = event_ids; // Store pointer (original approach)
+  new_ctx->events_id = event_ids; // Store pointer 
   new_ctx->num_events = num_events;
   new_ctx->counters = (long long *)papi_calloc(num_events, sizeof(long long));
   if (new_ctx->counters == NULL) {

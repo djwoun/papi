@@ -26,6 +26,7 @@ int amds_evt_code_to_name(unsigned int EventCode, char *name, int len) {
     return PAPI_EINVAL;
   }
   strncpy(name, ntv_table_p->events[EventCode].name, len);
+  name[len-1] = '\0';
   return PAPI_OK;
 }
 int amds_evt_name_to_code(const char *name, unsigned int *EventCode) {
@@ -42,5 +43,6 @@ int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
     return PAPI_EINVAL;
   }
   strncpy(descr, ntv_table_p->events[EventCode].descr, len);
+  descr[len-1] = '\0';
   return PAPI_OK;
 }
