@@ -1432,7 +1432,8 @@ int access_amdsmi_cpu_power_cap(int mode, void *arg) {
 }
 int access_amdsmi_cpu_core_energy(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
@@ -1452,7 +1453,8 @@ int access_amdsmi_cpu_core_energy(int mode, void *arg) {
 }
 int access_amdsmi_cpu_core_freq_limit(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
@@ -1472,7 +1474,8 @@ int access_amdsmi_cpu_core_freq_limit(int mode, void *arg) {
 }
 int access_amdsmi_cpu_core_boostlimit(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
@@ -1673,7 +1676,8 @@ int access_amdsmi_cpu_svi_power(int mode, void *arg) {
 }
 int access_amdsmi_dimm_temp(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
@@ -1689,7 +1693,8 @@ int access_amdsmi_dimm_temp(int mode, void *arg) {
 }
 int access_amdsmi_dimm_power(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
@@ -1705,7 +1710,8 @@ int access_amdsmi_dimm_power(int mode, void *arg) {
 }
 int access_amdsmi_dimm_range_refresh(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
@@ -1765,7 +1771,8 @@ int access_amdsmi_cpu_model(int mode, void *arg) {
 }
 int access_amdsmi_smu_fw_version(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
   if (mode != PAPI_MODE_READ) {
