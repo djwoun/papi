@@ -2,6 +2,9 @@
 #include "amds_priv.h"
 #include "papi.h"
 #include "papi_memory.h"
+#include "papi_internal.h"
+
+unsigned int _amd_smi_lock;
 static int32_t device_mask = 0;
 
 static int acquire_devices(unsigned int *events_id, int num_events, int32_t *bitmask) {
@@ -12,19 +15,25 @@ static int acquire_devices(unsigned int *events_id, int num_events, int32_t *bit
       continue;
     mask_acq |= (1 << dev_id);
   }
+  _papi_hwi_lock(_amd_smi_lock);
   if (mask_acq & device_mask) {
+    _papi_hwi_unlock(_amd_smi_lock);
     return PAPI_ECNFLCT; // conflict: device already in use
   }
   device_mask |= mask_acq;
+  _papi_hwi_unlock(_amd_smi_lock);
   *bitmask = mask_acq;
   return PAPI_OK;
 }
 static int release_devices(int32_t *bitmask) {
   int32_t mask_rel = *bitmask;
+  _papi_hwi_lock(_amd_smi_lock);
   if ((mask_rel & device_mask) != mask_rel) {
+    _papi_hwi_unlock(_amd_smi_lock);
     return PAPI_EMISC;
   }
   device_mask ^= mask_rel;
+  _papi_hwi_unlock(_amd_smi_lock);
   *bitmask = 0;
   return PAPI_OK;
 }

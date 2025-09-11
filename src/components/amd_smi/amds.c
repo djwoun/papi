@@ -12,7 +12,6 @@
 #include <stdbool.h>
 #define MAX_EVENTS_PER_DEVICE 1024
 
-static unsigned int _amd_smi_lock;
 // Pointers to AMD SMI library functions (dynamically loaded)
 #include "amds_funcs.h"
 #define DEFINE_AMDSMI(name, ret, args) ret(*name) args;
@@ -43,8 +42,6 @@ static native_event_table_t ntv_table;
 static native_event_table_t *ntv_table_p = NULL;
 
 /* Internal state accessors */
-unsigned int amds_get_lock(void) { return _amd_smi_lock; }
-void amds_set_lock(unsigned int lock) { _amd_smi_lock = lock; }
 int32_t amds_get_device_count(void) { return device_count; }
 amdsmi_processor_handle *amds_get_device_handles(void) { return device_handles; }
 int32_t amds_get_gpu_count(void) { return gpu_count; }
