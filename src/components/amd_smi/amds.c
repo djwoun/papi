@@ -7,12 +7,9 @@
 #include "papi_memory.h"
 #include <stdio.h>
 #include <dlfcn.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include <string.h>
 #include <stdbool.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #define MAX_EVENTS_PER_DEVICE 1024
 
 static unsigned int _amd_smi_lock;
@@ -67,29 +64,6 @@ uint32_t amds_get_lib_major(void) { return amdsmi_lib_major; }
       return PAPI_ENOSUPP;                                                     \
     }                                                                         \
   } while (0)
-// Redirects stderr to /dev/null, returns dup of old stderr (or -1 on failure)
-static int silence_stderr_begin(void) {
-  int devnull = open("/dev/null", O_WRONLY);
-  if (devnull < 0)
-    return -1;
-  int saved = dup(STDERR_FILENO);
-  if (saved < 0) {
-    close(devnull);
-    return -1;
-  }
-  (void)dup2(devnull, STDERR_FILENO);
-  close(devnull);
-  return saved;
-}
-
-// Restores stderr using the fd returned by silence_stderr_begin()
-static void silence_stderr_end(int saved_fd) {
-  if (saved_fd >= 0) {
-    (void)dup2(saved_fd, STDERR_FILENO);
-    close(saved_fd);
-  }
-}
-
 // Simple open/close/start/stop functions (no special handling needed for most events)
 static int open_simple(native_event_t *event) {
   (void)event;
@@ -1101,10 +1075,8 @@ static int init_event_table(void) {
       amdsmi_name_value_t *metrics = NULL;
       uint32_t mcount = 0;
 
-      int saved_stderr = silence_stderr_begin();
       amdsmi_status_t st = amdsmi_get_gpu_pm_metrics_info_p(device_handles[d],
                                                             &metrics, &mcount);
-      silence_stderr_end(saved_stderr);
 
       if (st == AMDSMI_STATUS_SUCCESS && mcount > 0) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count && metrics)
@@ -1612,10 +1584,8 @@ static int init_event_table(void) {
         amdsmi_name_value_t *reg_metrics = NULL;
         uint32_t num_metrics = 0;
 
-        int saved_stderr = silence_stderr_begin();
         amdsmi_status_t st = amdsmi_get_gpu_reg_table_info_p(
             device_handles[d], reg_types[rt], &reg_metrics, &num_metrics);
-        silence_stderr_end(saved_stderr);
 
         if (st == AMDSMI_STATUS_SUCCESS && num_metrics > 0) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {

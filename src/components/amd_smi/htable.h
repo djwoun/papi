@@ -195,7 +195,7 @@ create_table(uint64_t size, struct hash_table **table)
     int htable_errno = HTABLE_SUCCESS;
 
     *table = papi_calloc(1, sizeof(**table));
-    if (table == NULL) {
+    if (*table == NULL) {
         htable_errno = HTABLE_ENOMEM;
         goto fn_exit;
     }
