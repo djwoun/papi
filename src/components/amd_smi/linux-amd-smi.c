@@ -17,6 +17,7 @@
 #include "extras.h"
 #include "amds.h"
 #include "amds_priv.h"
+extern unsigned int _amd_smi_lock;
 
 typedef struct {
     int initialized;
@@ -54,7 +55,7 @@ static int _amd_smi_init_component(int cidx) {
     _amd_smi_vector.cmp_info.num_native_events = -1;
     _amd_smi_vector.cmp_info.num_cntrs = -1;
     _amd_smi_vector.cmp_info.num_mpx_cntrs = -1;
-    amds_set_lock(PAPI_NUM_LOCK + NUM_INNER_LOCK + cidx);
+    _amd_smi_lock = PAPI_NUM_LOCK + NUM_INNER_LOCK + cidx;
 
     sprintf(_amd_smi_vector.cmp_info.disabled_reason,
             "Not initialized. Access an AMD SMI event to initialize.");

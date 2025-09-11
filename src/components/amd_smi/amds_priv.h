@@ -48,8 +48,6 @@ amdsmi_processor_handle **amds_get_cpu_core_handles(void);
 uint32_t *amds_get_cores_per_socket(void);
 void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
-unsigned int amds_get_lock(void);
-void amds_set_lock(unsigned int lock);
 uint32_t amds_get_lib_major(void);
 
 #ifndef AMDS_PRIV_IMPL
