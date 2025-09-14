@@ -24,6 +24,7 @@ int access_amdsmi_lib_version(int mode, void *arg) {
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   amdsmi_version_t vinfo;
+  memset(&vinfo, 0, sizeof(vinfo));
   amdsmi_status_t st = amdsmi_get_lib_version_p(&vinfo);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -97,6 +98,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
       return PAPI_ENOSUPP;
     {
       amdsmi_driver_info_t dinfo;
+      memset(&dinfo, 0, sizeof(dinfo));
       st = amdsmi_get_gpu_driver_info_p(device_handles[event->device], &dinfo);
       if (st == AMDSMI_STATUS_SUCCESS) {
         if (event->variant == 3)
@@ -113,6 +115,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
       return PAPI_ENOSUPP;
     {
       amdsmi_vbios_info_t vb;
+      memset(&vb, 0, sizeof(vb));
       st = amdsmi_get_gpu_vbios_info_p(device_handles[event->device], &vb);
       if (st == AMDSMI_STATUS_SUCCESS) {
         if (event->variant == 5)
@@ -142,6 +145,7 @@ int access_amdsmi_enumeration_info(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_enumeration_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_enumeration_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -173,6 +177,7 @@ int access_amdsmi_asic_info(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_asic_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_asic_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -282,6 +287,7 @@ int access_amdsmi_xgmi_link_status(int mode, void *arg) {
       !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_xgmi_link_status_t st;
+  memset(&st, 0, sizeof(st));
   if (amdsmi_get_gpu_xgmi_link_status_p(device_handles[event->device], &st) !=
       AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -468,6 +474,7 @@ int access_amdsmi_device_bdf(int mode, void *arg) {
       !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_bdf_t bdf;
+  memset(&bdf, 0, sizeof(bdf));
   if (amdsmi_get_gpu_device_bdf_p(device_handles[event->device], &bdf) !=
       AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -498,6 +505,7 @@ int access_amdsmi_kfd_info(int mode, void *arg) {
       !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_kfd_info_t info;
+  memset(&info, 0, sizeof(info));
   if (amdsmi_get_gpu_kfd_info_p(device_handles[event->device], &info) !=
       AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -892,6 +900,7 @@ int access_amdsmi_power_cap(int mode, void *arg) {
   if (mode == PAPI_MODE_READ) {
     // Read current power cap
     amdsmi_power_cap_info_t info;
+    memset(&info, 0, sizeof(info));
     amdsmi_status_t status = amdsmi_get_power_cap_info_p(device_handles[event->device], 0, &info); // sensor index 0
     if (status != AMDSMI_STATUS_SUCCESS) {
       return PAPI_EMISC;
@@ -914,6 +923,7 @@ int access_amdsmi_power_cap_range(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_power_cap_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t status = amdsmi_get_power_cap_info_p(device_handles[event->device], 0, &info);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -997,6 +1007,7 @@ int access_amdsmi_clk_freq(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_frequencies_t freq_info;
+  memset(&freq_info, 0, sizeof(freq_info));
   amdsmi_clk_type_t clk_type = AMDSMI_CLK_TYPE_SYS;
   if (event->variant == 1)
     clk_type = AMDSMI_CLK_TYPE_DF;
@@ -1039,6 +1050,7 @@ int access_amdsmi_clock_info(int mode, void *arg) {
   if (event->variant < 0 || event->variant >= 2)
     return PAPI_EMISC;
   amdsmi_clk_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t status =
       amdsmi_get_clock_info_p(device_handles[event->device],
                               clk_types[event->variant], &info);
@@ -1074,6 +1086,7 @@ int access_amdsmi_metrics_header_info(int mode, void *arg) {
       !device_handles[event->device])
     return PAPI_EMISC;
   amd_metrics_table_header_t hdr;
+  memset(&hdr, 0, sizeof(hdr));
   if (amdsmi_get_gpu_metrics_header_info_p(device_handles[event->device], &hdr) !=
       AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -1220,6 +1233,7 @@ int access_amdsmi_gpu_activity(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   amdsmi_engine_usage_t usage;
+  memset(&usage, 0, sizeof(usage));
   amdsmi_status_t status = amdsmi_get_gpu_activity_p(device_handles[event->device], &usage);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -1264,6 +1278,7 @@ int access_amdsmi_pci_bandwidth(int mode, void *arg) {
     return PAPI_EMISC;
 
   amdsmi_pcie_bandwidth_t bw;
+  memset(&bw, 0, sizeof(bw));
   if (amdsmi_get_gpu_pci_bandwidth_p(device_handles[event->device], &bw) !=
       AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -1594,6 +1609,7 @@ int access_amdsmi_cpu_ddr_bw(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_ddr_bw_metrics_t bw;
+  memset(&bw, 0, sizeof(bw));
   amdsmi_status_t status =
       amdsmi_get_cpu_ddr_bw_p(device_handles[event->device], &bw);
   if (status != AMDSMI_STATUS_SUCCESS)
@@ -1643,6 +1659,7 @@ int access_amdsmi_cpu_hsmp_driver_version(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_hsmp_driver_version_t ver;
+  memset(&ver, 0, sizeof(ver));
   amdsmi_status_t status = amdsmi_get_cpu_hsmp_driver_version_p(
       device_handles[event->device], &ver);
   if (status != AMDSMI_STATUS_SUCCESS)
@@ -1713,6 +1730,7 @@ int access_amdsmi_dimm_temp(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   amdsmi_dimm_thermal_t dimm_temp;
+  memset(&dimm_temp, 0, sizeof(dimm_temp));
   amdsmi_status_t status = amdsmi_get_cpu_dimm_thermal_sensor_p(device_handles[event->device], (uint8_t)event->subvariant, &dimm_temp);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -1730,6 +1748,7 @@ int access_amdsmi_dimm_power(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   amdsmi_dimm_power_t dimm_pow;
+  memset(&dimm_pow, 0, sizeof(dimm_pow));
   amdsmi_status_t status = amdsmi_get_cpu_dimm_power_consumption_p(device_handles[event->device], (uint8_t)event->subvariant, &dimm_pow);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -1747,6 +1766,7 @@ int access_amdsmi_dimm_range_refresh(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   amdsmi_temp_range_refresh_rate_t rate;
+  memset(&rate, 0, sizeof(rate));
   amdsmi_status_t status =
       amdsmi_get_cpu_dimm_temp_range_and_refresh_rate_p(device_handles[event->device], (uint8_t)event->subvariant, &rate);
   if (status != AMDSMI_STATUS_SUCCESS) {
@@ -1808,6 +1828,7 @@ int access_amdsmi_smu_fw_version(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   amdsmi_smu_fw_version_t fw;
+  memset(&fw, 0, sizeof(fw));
   amdsmi_status_t status = amdsmi_get_cpu_smu_fw_version_p(device_handles[event->device], &fw);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -1988,7 +2009,7 @@ int access_amdsmi_od_volt_info(int mode, void *arg) {
   }
 
   amdsmi_od_volt_freq_data_t info;
-  memset(&info, 0, sizeof(info));  /* <-- critical: avoid uninitialized fields */
+  memset(&info, 0, sizeof(info));  
 
   amdsmi_status_t st =
       amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &info);
@@ -2319,7 +2340,9 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
     return PAPI_ENOSUPP;
 
   amdsmi_vram_usage_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_vram_usage_p(device_handles[event->device], &info);
+  
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   if (event->variant == 0)
@@ -2462,6 +2485,7 @@ int access_amdsmi_fw_version(int mode, void *arg) {
     return PAPI_EMISC;
 
   amdsmi_fw_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_fw_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2489,6 +2513,7 @@ int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_vram_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2592,7 +2617,9 @@ int access_amdsmi_power_sensor(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
+    
   amdsmi_power_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_power_info_v2_p(device_handles[event->device], event->subvariant, &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
