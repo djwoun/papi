@@ -1068,20 +1068,20 @@ static int init_event_table(void) {
 
       if (st == AMDSMI_STATUS_SUCCESS && mcount > 0) {
         if (idx >= MAX_EVENTS_PER_DEVICE * device_count && metrics)
-          papi_free(metrics);
+          free(metrics);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "pm_metrics_count:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d number of PM metrics available", d);
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_pm_metrics_count) != PAPI_OK) {
-          if (metrics) papi_free(metrics);
+          if (metrics) free(metrics);
           return PAPI_ENOMEM;
         }
 
         for (uint32_t i = 0; i < mcount; ++i) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
-            if (metrics) papi_free(metrics);
+            if (metrics) free(metrics);
             CHECK_EVENT_IDX(idx);
           }
           char metric_name[MAX_AMDSMI_NAME_LENGTH];
@@ -1091,13 +1091,13 @@ static int init_event_table(void) {
                    metrics[i].name);
           if (add_event(&idx, name_buf, descr_buf, d, i, 0, PAPI_MODE_READ,
                         access_amdsmi_pm_metric_value) != PAPI_OK) {
-            if (metrics) papi_free(metrics);
+            if (metrics) free(metrics);
             return PAPI_ENOMEM;
           }
         }
       }
       if (metrics)
-        papi_free(metrics);
+        free(metrics);
     }
     if (amdsmi_is_gpu_power_management_enabled_p) {
       bool enabled = false;
@@ -1553,7 +1553,7 @@ static int init_event_table(void) {
         if (st == AMDSMI_STATUS_SUCCESS && num_metrics > 0) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             if (reg_metrics)
-              papi_free(reg_metrics);
+              free(reg_metrics);
             CHECK_EVENT_IDX(idx);
           }
           snprintf(name_buf, sizeof(name_buf), "reg_%s_count:device=%d",
@@ -1562,14 +1562,14 @@ static int init_event_table(void) {
                    "Device %d number of %s register metrics", d, reg_names[rt]);
           if (add_event(&idx, name_buf, descr_buf, d, (uint32_t)reg_types[rt], 0,
                         PAPI_MODE_READ, access_amdsmi_reg_count) != PAPI_OK) {
-            if (reg_metrics) papi_free(reg_metrics);
+            if (reg_metrics) free(reg_metrics);
             return PAPI_ENOMEM;
           }
 
           for (uint32_t i = 0; i < num_metrics; ++i) {
             if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
               if (reg_metrics)
-                papi_free(reg_metrics);
+                free(reg_metrics);
               CHECK_EVENT_IDX(idx);
             }
             char reg_metric_name[MAX_AMDSMI_NAME_LENGTH];
@@ -1581,13 +1581,13 @@ static int init_event_table(void) {
                      d, reg_names[rt], reg_metrics[i].name);
             if (add_event(&idx, name_buf, descr_buf, d, (uint32_t)reg_types[rt],
                           i, PAPI_MODE_READ, access_amdsmi_reg_value) != PAPI_OK) {
-              if (reg_metrics) papi_free(reg_metrics);
+              if (reg_metrics) free(reg_metrics);
               return PAPI_ENOMEM;
             }
           }
         }
         if (reg_metrics)
-          papi_free(reg_metrics);
+          free(reg_metrics);
       }
     }
 
