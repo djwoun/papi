@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# AMD SMI test runner (no build) with print control
+# AMD SMI test runner (no build) mirroring run_tests.sh semantics.
+# Quiet by default; use -v/--verbose to see output from the tests.
 
 # Be reasonably strict but compatible with older bash
 set -e
@@ -13,27 +14,27 @@ banner() { printf "Running: \033[36m%s\033[0m %s\n" "$1" "${2-}"; }
 sep()    { printf "%s\n\n" "-------------------------------------"; }
 
 # ---------------------------
-# CLI: --print | --print-only
+# CLI: -v/--verbose | --verbose-only
 # ---------------------------
-PRINT_ALL=0
-PRINT_SET=""     # comma list: hello,basics,gemm,energy,conflict
+VERBOSE_ALL=0
+VERBOSE_SET=""     # comma list: hello,basics,gemm,energy,conflict
 HELLO_EVENT="amd_smi:::temp_current:device=0:sensor=1"
 
 usage() {
   cat <<EOF
-Usage: $0 [--print] [--print-only=list] [--hello-event=EVENT]
+Usage: $0 [-v] [--verbose-only=list] [--hello-event=EVENT]
 
-  --print                 Enable verbose (--print) for all tests
-  --print-only=list       Comma-separated subset: hello,basics,gemm,energy,conflict
+  -v, --verbose           Show output from all tests
+  --verbose-only=list     Comma-separated subset: hello,basics,gemm,energy,conflict
   --hello-event=EVENT     Override event passed to amdsmi_hello
 EOF
 }
 
 for arg in "$@"; do
   case "$arg" in
-    TESTS_QUIET)   ;;               # ignore, invoked by src/run_tests.sh
-    --print)       PRINT_ALL=1 ;;
-    --print-only=*) PRINT_SET="${arg#*=}" ;;
+    TESTS_QUIET)   ;;               # ignore literal token
+    -v|--verbose)  VERBOSE_ALL=1 ;;
+    --verbose-only=*) VERBOSE_SET="${arg#*=}" ;;
     --hello-event=*) HELLO_EVENT="${arg#*=}" ;;
     -h|--help)     usage; exit 0 ;;
     --*) echo "Unknown option: $arg"; usage; exit 2 ;;
@@ -52,8 +53,8 @@ in_set() {
 
 should_print() {
   # $1 = test key (hello|basics|gemm|energy|conflict)
-  if [ "$PRINT_ALL" -eq 1 ]; then return 0; fi
-  if [ -n "$PRINT_SET" ] && in_set "$1" "$PRINT_SET"; then return 0; fi
+  if [ "$VERBOSE_ALL" -eq 1 ]; then return 0; fi
+  if [ -n "$VERBOSE_SET" ] && in_set "$1" "$VERBOSE_SET"; then return 0; fi
   return 1
 }
 
@@ -67,13 +68,13 @@ run_test() {
   fi
 
   if should_print "$key"; then
-    # Per-invocation verbose: unset quiet and pass --print
-    banner "./$bin --print" "$*"
-    ( unset PAPI_AMDSMI_TEST_QUIET; "./$bin" --print "$@" ) || true
-  else
-    # Per-invocation quiet: set quiet and do not pass --print
+    # Verbose: no TESTS_QUIET token
     banner "./$bin" "$*"
-    PAPI_AMDSMI_TEST_QUIET=1 "./$bin" "$@" || true
+    "./$bin" "$@" || true
+  else
+    # Quiet: pass literal TESTS_QUIET token and env
+    banner "./$bin TESTS_QUIET" "$*"
+    TESTS_QUIET=TESTS_QUIET "./$bin" TESTS_QUIET "$@" || true
   fi
   sep
 }
@@ -89,4 +90,4 @@ run_test amdsmi_energy_monotonic energy
 run_test amdsmi_ctx_conflict  conflict
 
 # Done
-unset PAPI_AMDSMI_TEST_QUIET
+

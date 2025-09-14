@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
 
     harness_accept_tests_quiet(&argc, argv);
     auto opts = parse_harness_cli(argc, argv);
-    // Optional override of the event: ./amdsmi_ctx_conflict "<event>" [--print ...]
+    // Optional override of the event: ./amdsmi_ctx_conflict "<event>"
     if (argc > 1 && strncmp(argv[1], "--", 2) != 0) g_event = argv[1];
 
     const char* root = std::getenv("PAPI_AMDSMI_ROOT");
