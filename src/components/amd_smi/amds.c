@@ -3469,6 +3469,7 @@ static int init_event_table(void) {
                       access_amdsmi_link_type) != PAPI_OK)
           return PAPI_ENOMEM;
       }
+      /*
       if (amdsmi_topo_get_p2p_status_p) {
         const char *p2p_names[] = {"p2p_type",       "p2p_coherent",
                                    "p2p_atomics32", "p2p_atomics64",
@@ -3498,6 +3499,7 @@ static int init_event_table(void) {
                       access_amdsmi_p2p_accessible) != PAPI_OK)
           return PAPI_ENOMEM;
       }
+      */
     }
   }
   ntv_table.count = idx;
