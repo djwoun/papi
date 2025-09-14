@@ -357,41 +357,59 @@ int access_amdsmi_link_type(int mode, void *arg) {
 int access_amdsmi_p2p_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_topo_get_p2p_status_p)
     return PAPI_ENOSUPP;
+
   native_event_t *event = (native_event_t *)arg;
-  int src = event->device;
-  int dst = (int)event->subvariant;
+  const int src = event->device;
+  const int dst = (int)event->subvariant;
+
   if (src < 0 || src >= device_count || dst < 0 || dst >= device_count ||
       !device_handles[src] || !device_handles[dst] || src == dst)
     return PAPI_EMISC;
-  amdsmi_io_link_type_t type;
-  amdsmi_p2p_capability_t cap;
-  if (amdsmi_topo_get_p2p_status_p(device_handles[src], device_handles[dst],
-                                   &type, &cap) != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
-  switch (event->variant) {
-  case 0:
-    event->value = (int64_t)type;
-    break;
-  case 1:
-    event->value = cap.is_iolink_coherent;
-    break;
-  case 2:
-    event->value = cap.is_iolink_atomics_32bit;
-    break;
-  case 3:
-    event->value = cap.is_iolink_atomics_64bit;
-    break;
-  case 4:
-    event->value = cap.is_iolink_dma;
-    break;
-  case 5:
-    event->value = cap.is_iolink_bi_directional;
-    break;
-  default:
-    return PAPI_ENOSUPP;
+
+  // 1) Prefer the cheap predicate to avoid the buggy slow path:
+  bool accessible = false;
+  if (amdsmi_is_P2P_accessible_p &&
+      amdsmi_is_P2P_accessible_p(device_handles[src], device_handles[dst],
+                                 &accessible) == AMDSMI_STATUS_SUCCESS &&
+      accessible) {
+    // 2) Only for accessible pairs, ask for detailed capabilities:
+    amdsmi_io_link_type_t type = 0;
+    amdsmi_p2p_capability_t cap = {0};
+    if (amdsmi_topo_get_p2p_status_p(device_handles[src], device_handles[dst],
+                                     &type, &cap) != AMDSMI_STATUS_SUCCESS)
+      return PAPI_EMISC;  // unexpected for accessible pairs
+
+    switch (event->variant) {
+      case 0: event->value = (int64_t)type; break;
+      case 1: event->value = cap.is_iolink_coherent; break;
+      case 2: event->value = cap.is_iolink_atomics_32bit; break;
+      case 3: event->value = cap.is_iolink_atomics_64bit; break;
+      case 4: event->value = cap.is_iolink_dma; break;
+      case 5: event->value = cap.is_iolink_bi_directional; break;
+      default: return PAPI_ENOSUPP;
+    }
+    return PAPI_OK;
   }
+
+  // 3) Non-accessible or predicate missing: report a sensible value without
+  // touching the buggy call. Type (variant 0) can still be queried safely via
+  // amdsmi_topo_get_link_type; the rest are false by definition.
+  if (event->variant == 0 && amdsmi_topo_get_link_type_p) {
+    uint64_t hops = 0;
+    amdsmi_io_link_type_t type = 0; // UNKNOWN/PCIE/XGMI per platform
+    if (amdsmi_topo_get_link_type_p(device_handles[src], device_handles[dst],
+                                    &hops, &type) == AMDSMI_STATUS_SUCCESS) {
+      event->value = (int64_t)type;
+      return PAPI_OK;
+    }
+    // If link_type also fails, fall through to “no data”.
+  }
+
+  // For non-accessible pairs, the capability booleans are zero.
+  event->value = 0;
   return PAPI_OK;
 }
+
 
 int access_amdsmi_p2p_accessible(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_is_P2P_accessible_p)
@@ -1959,55 +1977,44 @@ int access_amdsmi_od_volt_info(int mode, void *arg) {
     return PAPI_ENOSUPP;
   if (!amdsmi_get_gpu_od_volt_info_p)
     return PAPI_ENOSUPP;
+
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
+  }
 
   amdsmi_od_volt_freq_data_t info;
-  amdsmi_status_t st = amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &info);
+  memset(&info, 0, sizeof(info));  /* <-- critical: avoid uninitialized fields */
+
+  amdsmi_status_t st =
+      amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
 
   switch (event->variant) {
-  case 0:
-    event->value = (int64_t)info.curr_sclk_range.lower_bound;
-    break;
-  case 1:
-    event->value = (int64_t)info.curr_sclk_range.upper_bound;
-    break;
-  case 2:
-    event->value = (int64_t)info.curr_mclk_range.lower_bound;
-    break;
-  case 3:
-    event->value = (int64_t)info.curr_mclk_range.upper_bound;
-    break;
-  case 4:
-    event->value = (int64_t)info.sclk_freq_limits.lower_bound;
-    break;
-  case 5:
-    event->value = (int64_t)info.sclk_freq_limits.upper_bound;
-    break;
-  case 6:
-    event->value = (int64_t)info.mclk_freq_limits.lower_bound;
-    break;
-  case 7:
-    event->value = (int64_t)info.mclk_freq_limits.upper_bound;
-    break;
-  case 8:
-    if (event->subvariant >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS)
-      return PAPI_EMISC;
-    event->value = (int64_t)info.curve.vc_points[event->subvariant].frequency;
-    break;
-  case 9:
-    if (event->subvariant >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS)
-      return PAPI_EMISC;
-    event->value = (int64_t)info.curve.vc_points[event->subvariant].voltage;
-    break;
-  default:
-    return PAPI_ENOSUPP;
+    case 0: event->value = (int64_t)info.curr_sclk_range.lower_bound; break;
+    case 1: event->value = (int64_t)info.curr_sclk_range.upper_bound; break;
+    case 2: event->value = (int64_t)info.curr_mclk_range.lower_bound; break;
+    case 3: event->value = (int64_t)info.curr_mclk_range.upper_bound; break;
+    case 4: event->value = (int64_t)info.sclk_freq_limits.lower_bound; break;
+    case 5: event->value = (int64_t)info.sclk_freq_limits.upper_bound; break;
+    case 6: event->value = (int64_t)info.mclk_freq_limits.lower_bound; break;
+    case 7: event->value = (int64_t)info.mclk_freq_limits.upper_bound; break;
+    case 8:
+      if (event->subvariant >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS) return PAPI_EMISC;
+      event->value = (int64_t)info.curve.vc_points[event->subvariant].frequency;
+      break;
+    case 9:
+      if (event->subvariant >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS) return PAPI_EMISC;
+      event->value = (int64_t)info.curve.vc_points[event->subvariant].voltage;
+      break;
+    default:
+      return PAPI_ENOSUPP;
   }
   return PAPI_OK;
 }
+
 
 int access_amdsmi_perf_level(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
