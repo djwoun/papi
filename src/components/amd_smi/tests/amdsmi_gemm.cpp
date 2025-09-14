@@ -240,14 +240,16 @@ static int real_main(const HarnessOpts& opts) {
     HIP_CHECK_CLEANUP(hipHostFree(h_B));
     HIP_CHECK_CLEANUP(hipHostFree(h_C));
 
-    long long dummy=0;
-    statusFlag = PAPI_stop(EventSet, &dummy);
+    long long stop_values[5] = {0};  // five events were added
+    statusFlag = PAPI_stop(EventSet, stop_values);
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_stop: %s\n", PAPI_strerror(statusFlag)); return 1; }
     statusFlag = PAPI_cleanup_eventset(EventSet);
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_cleanup_eventset: %s\n", PAPI_strerror(statusFlag)); return 1; }
     statusFlag = PAPI_destroy_eventset(&EventSet);
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_destroy_eventset: %s\n", PAPI_strerror(statusFlag)); return 1; }
-
+    
+    HIP_CHECK_CLEANUP(hipDeviceReset());   // optional but reduces “still reachable” from the HIP runtime
+    PAPI_shutdown();    // triggers component cleanup + AMD SMI shutdown
     return 0;
 }
 
