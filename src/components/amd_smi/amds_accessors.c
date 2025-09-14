@@ -402,7 +402,7 @@ int access_amdsmi_p2p_status(int mode, void *arg) {
       event->value = (int64_t)type;
       return PAPI_OK;
     }
-    // If link_type also fails, fall through to “no data”.
+    // If link_type also fails, fall through to no data.
   }
 
   // For non-accessible pairs, the capability booleans are zero.
@@ -525,6 +525,7 @@ int access_amdsmi_xgmi_info(int mode, void *arg) {
       !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_xgmi_info_t info;
+  memset(&info, 0, sizeof(info));
   if (amdsmi_get_xgmi_info_p(device_handles[event->device], &info) !=
       AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -938,6 +939,7 @@ int access_amdsmi_power_average(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_power_info_t power;
+  memset(&power, 0, sizeof(power));
   amdsmi_status_t status = amdsmi_get_power_info_p(device_handles[event->device], &power);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -1098,6 +1100,7 @@ int access_amdsmi_gpu_metrics(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   amdsmi_gpu_metrics_t metrics;
+  memset(&metrics, 0, sizeof(metrics));
   amdsmi_status_t status = amdsmi_get_gpu_metrics_info_p(device_handles[event->device], &metrics);
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
@@ -2239,6 +2242,7 @@ int access_amdsmi_vram_width(int mode, void *arg) {
     return PAPI_ENOSUPP;
 
   amdsmi_vram_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2257,6 +2261,7 @@ int access_amdsmi_vram_size(int mode, void *arg) {
     return PAPI_ENOSUPP;
 
   amdsmi_vram_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2276,6 +2281,7 @@ int access_amdsmi_vram_type(int mode, void *arg) {
     return PAPI_ENOSUPP;
 
   amdsmi_vram_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2294,6 +2300,7 @@ int access_amdsmi_vram_vendor(int mode, void *arg) {
     return PAPI_ENOSUPP;
 
   amdsmi_vram_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2437,6 +2444,7 @@ int access_amdsmi_board_serial_hash(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_board_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_gpu_board_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -2629,6 +2637,7 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_pcie_info_t info;
+  memset(&info, 0, sizeof(info));
   amdsmi_status_t st = amdsmi_get_pcie_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
