@@ -1,5 +1,5 @@
 // gemm.cpp ? harness-integrated, keeps your HIP threading/monitoring logic,
-// removes CSV output (prints readings only when --print), default PASS/FAIL.
+// removes CSV output (prints readings unless suppressed), default PASS/FAIL.
 #include <stdio.h>
 #include <stdlib.h>
 #include "papi.h"
@@ -139,7 +139,7 @@ static int real_main(const HarnessOpts& opts) {
         SKIP("HIP device 1 not available");
     }
 
-    // Set device 1 and show properties (only in --print mode)
+    // Set device 1 and show properties (only when output is enabled)
     HIP_CHECK(hipSetDevice(1));
     hipDeviceProp_t deviceProp;
     HIP_CHECK(hipGetDeviceProperties(&deviceProp, 1));
@@ -195,7 +195,7 @@ static int real_main(const HarnessOpts& opts) {
     statusFlag = PAPI_start(EventSet);
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_start: %s\n", PAPI_strerror(statusFlag)); return 1; }
 
-    // Launch monitor thread (prints only when --print is given)
+    // Launch monitor thread (prints unless suppressed)
     pthread_t monitor_thread;
     struct monitor_params params;
     params.EventSet = EventSet;
@@ -248,7 +248,7 @@ static int real_main(const HarnessOpts& opts) {
     statusFlag = PAPI_destroy_eventset(&EventSet);
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_destroy_eventset: %s\n", PAPI_strerror(statusFlag)); return 1; }
     
-    HIP_CHECK_CLEANUP(hipDeviceReset());   // optional but reduces “still reachable” from the HIP runtime
+    HIP_CHECK_CLEANUP(hipDeviceReset());   // optional but reduces Â“still reachableÂ” from the HIP runtime
     PAPI_shutdown();    // triggers component cleanup + AMD SMI shutdown
     return 0;
 }

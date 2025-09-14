@@ -54,21 +54,27 @@ static inline void harness_accept_tests_quiet(int *argc, char **argv) {
 
 // Parse CLI
 static HarnessOpts parse_harness_cli(int argc, char **argv) {
-    harness_opts.print = false;
+    /* Default to printing unless the legacy TESTS_QUIET token is
+       present.  This mirrors src/run_tests.sh where invoking with -v
+       unsets TESTS_QUIET, signalling that tests should emit output. */
+    harness_opts.print = true;
     harness_opts.expect_fail = false;
     harness_opts.had_warning = 0;
 
     for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "--print") == 0) harness_opts.print = true;
-        else if (strncmp(argv[i], "--expect=", 9) == 0) {
+        if (strncmp(argv[i], "--expect=", 9) == 0) {
             const char *v = argv[i] + 9;
             harness_opts.expect_fail = (strcmp(v, "fail") == 0);
         }
     }
-    if (!harness_opts.print) {
-        const char *tq = getenv("TESTS_QUIET");
-        if (tq && *tq) harness_opts.print = false;
-    }
+
+    /* Suppress output only if TESTS_QUIET is explicitly set.  When
+       run_tests.sh is invoked without -v it passes the literal token
+       "TESTS_QUIET", which harness_accept_tests_quiet converts into
+       this environment variable. */
+    const char *tq = getenv("TESTS_QUIET");
+    if (tq && *tq) harness_opts.print = false;
+
     if (!harness_opts.print) {
         const char* q = getenv("PAPI_AMDSMI_TEST_QUIET");
         if (!q || q[0] != '1') setenv("PAPI_AMDSMI_TEST_QUIET", "1", 1);
@@ -90,7 +96,7 @@ static int eval_result(const HarnessOpts &opts, int result_code) {
     return passed ? 0 : 1;
 }
 
-// Print note only with --print
+// Print note only when output is enabled
 #define NOTE(...) do { \
     if (harness_opts.print) { fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); } \
 } while (0)
