@@ -791,9 +791,17 @@ int access_amdsmi_temp_metric(int mode, void *arg) {
   if (mode != PAPI_MODE_READ) {
     return PAPI_ENOSUPP;
   }
-  amdsmi_status_t status = amdsmi_get_temp_metric_p(device_handles[event->device], (amdsmi_temperature_type_t)event->subvariant,
-                                                    (amdsmi_temperature_metric_t)event->variant, (int64_t *)&event->value);
-  return (status == AMDSMI_STATUS_SUCCESS ? PAPI_OK : PAPI_EMISC);
+  int64_t tmp = 0;
+  amdsmi_status_t status =
+      amdsmi_get_temp_metric_p(device_handles[event->device],
+                               (amdsmi_temperature_type_t)event->subvariant,
+                               (amdsmi_temperature_metric_t)event->variant,
+                               &tmp);
+  if (status == AMDSMI_STATUS_SUCCESS) {
+    event->value = (uint64_t)tmp;
+    return PAPI_OK;
+  }
+  return PAPI_EMISC;
 }
 int access_amdsmi_fan_rpms(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
@@ -2033,7 +2041,7 @@ int access_amdsmi_pm_metrics_count(int mode, void *arg) {
   uint32_t count = 0;
   amdsmi_status_t st = amdsmi_get_gpu_pm_metrics_info_p(device_handles[event->device], &metrics, &count);
   if (metrics)
-    papi_free(metrics); /* library allocates */
+    free(metrics); /* library allocates */
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (uint64_t)count;
@@ -2055,11 +2063,11 @@ int access_amdsmi_pm_metric_value(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_pm_metrics_info_p(device_handles[event->device], &metrics, &count);
   if (st != AMDSMI_STATUS_SUCCESS || event->variant >= count) {
     if (metrics)
-      papi_free(metrics);
+      free(metrics);
     return PAPI_EMISC;
   }
   event->value = (int64_t)metrics[event->variant].value;
-  papi_free(metrics);
+  free(metrics);
   return PAPI_OK;
 }
 
@@ -2162,7 +2170,7 @@ int access_amdsmi_reg_count(int mode, void *arg) {
   uint32_t num = 0;
   amdsmi_status_t st = amdsmi_get_gpu_reg_table_info_p(device_handles[event->device], reg_type, &regs, &num);
   if (regs)
-    papi_free(regs);
+    free(regs);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (uint64_t)num;
@@ -2185,11 +2193,11 @@ int access_amdsmi_reg_value(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_reg_table_info_p(device_handles[event->device], reg_type, &regs, &num);
   if (st != AMDSMI_STATUS_SUCCESS || event->subvariant >= num) {
     if (regs)
-      papi_free(regs);
+      free(regs);
     return PAPI_EMISC;
   }
   event->value = (int64_t)regs[event->subvariant].value;
-  papi_free(regs);
+  free(regs);
   return PAPI_OK;
 }
 
