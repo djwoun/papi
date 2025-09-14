@@ -2327,33 +2327,45 @@ int access_amdsmi_vram_vendor(int mode, void *arg) {
 }
 
 int access_amdsmi_vram_usage(int mode, void *arg) {
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
       !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
 
-  amdsmi_vram_usage_t info;
-  memset(&info, 0, sizeof(info));  /* critical: avoid uninitialised fields */
-
-  amdsmi_status_t st =
-      amdsmi_get_gpu_vram_usage_p(device_handles[event->device], &info);
-  if (st != AMDSMI_STATUS_SUCCESS) {
-    event->value = 0;              /* deterministic, not UB */
-    return PAPI_OK;                 /* print 0 rather than error */
-  }
-
+  /* variant: 0 = total MB, 1 = used MB */
   if (event->variant == 0) {
-    event->value = (uint64_t)info.vram_total;  /* MB */
-  } else if (event->variant == 1) {
-    event->value = (uint64_t)info.vram_used;   /* MB */
-  } else {
-    return PAPI_EMISC;
+    /* TOTAL: prefer vram_info to avoid the buggy usage path */
+    if (!amdsmi_get_gpu_vram_info_p) return PAPI_ENOSUPP;
+
+    amdsmi_vram_info_t vinf;
+    memset(&vinf, 0, sizeof(vinf));
+    if (amdsmi_get_gpu_vram_info_p(device_handles[event->device], &vinf)
+        != AMDSMI_STATUS_SUCCESS) {
+      event->value = 0;   /* deterministic, not UB */
+      return PAPI_OK;
+    }
+    /* vinf.vram_size is reported in MB by AMD SMI */
+    event->value = (uint64_t)vinf.vram_size;
+    return PAPI_OK;
   }
+
+  /* USED: keep using vram_usage for the “used” number */
+  if (!amdsmi_get_gpu_vram_usage_p) return PAPI_ENOSUPP;
+
+  amdsmi_vram_usage_t u;
+  memset(&u, 0, sizeof(u));
+  if (amdsmi_get_gpu_vram_usage_p(device_handles[event->device], &u)
+      != AMDSMI_STATUS_SUCCESS) {
+    event->value = 0;
+    return PAPI_OK;
+  }
+  event->value = (uint64_t)u.vram_used;  /* MB */
   return PAPI_OK;
 }
+
 
 int access_amdsmi_soc_pstate_id(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
