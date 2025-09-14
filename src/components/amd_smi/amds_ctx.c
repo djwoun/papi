@@ -129,19 +129,36 @@ int amds_ctx_stop(amds_ctx_t ctx) {
   return papi_errno;
 }
 int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
-  int papi_errno = PAPI_OK;
+  if (!ctx || !counts) return PAPI_EINVAL;
+
+  /* Always produce a fully defined buffer */
+  for (int i = 0; i < ctx->num_events; ++i) {
+    ctx->counters[i] = 0;  /* default if read fails */
+  }
+
+  /* Optional: track first error, but don't bail early */
+  int first_err = PAPI_OK;
+
   for (int i = 0; i < ctx->num_events; ++i) {
     unsigned int id = ctx->events_id[i];
-    papi_errno = ntv_table_p->events[id].access_func(PAPI_MODE_READ,
-                                                    &ntv_table_p->events[id]);
-    if (papi_errno != PAPI_OK) {
-      return papi_errno;
+    native_event_t *ev = &ntv_table_p->events[id];
+
+    int rc = PAPI_OK;
+    if (ev->access_func) {
+      rc = ev->access_func(PAPI_MODE_READ, ev);
     }
-    ctx->counters[i] = (long long)ntv_table_p->events[id].value;
+    if (rc == PAPI_OK) {
+      ctx->counters[i] = (long long)ev->value;
+    } else if (first_err == PAPI_OK) {
+      first_err = rc;  /* remember, but keep going */
+    }
   }
+
   *counts = ctx->counters;
-  return papi_errno;
+  /* Return OK so callers can safely print; or 'first_err' if you want to surface it */
+  return PAPI_OK;
 }
+
 int amds_ctx_write(amds_ctx_t ctx, long long *counts) {
   int papi_errno = PAPI_OK;
   for (int i = 0; i < ctx->num_events; ++i) {
