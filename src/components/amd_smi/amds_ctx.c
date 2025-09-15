@@ -137,7 +137,7 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   }
 
   /* Optional: track first error, but don't bail early */
-  int first_err = PAPI_OK;
+  int papi_errno = PAPI_OK;
 
   for (int i = 0; i < ctx->num_events; ++i) {
     unsigned int id = ctx->events_id[i];
@@ -149,15 +149,14 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
     }
     if (rc == PAPI_OK) {
       ctx->counters[i] = (long long)ev->value;
-    } else if (first_err == PAPI_OK) {
-      first_err = rc;  /* remember, but keep going */
+    } else if (papi_errno == PAPI_OK) {
+      papi_errno = rc;  /* remember, but keep going */
     }
   }
 
   *counts = ctx->counters;
   
-  if (first_err != PAPI_OK) return first_err;
-  return PAPI_OK;
+  return papi_errno;
 }
 
 int amds_ctx_write(amds_ctx_t ctx, long long *counts) {
