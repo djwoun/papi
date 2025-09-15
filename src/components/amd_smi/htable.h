@@ -106,11 +106,6 @@ static inline int htable_insert(void *handle, const char *key, void *in)
     /* Check if rehash (grow table) is needed after insertion */
     htable_errno = rehash_table(table, NULL);  /* use NULL to indicate self-resize (growth) */
     if (htable_errno != HTABLE_SUCCESS) {
-        if (htable_errno == HTABLE_ENOMEM) {
-            /* Roll back the insertion of the new entry on memory error */
-            delete_table_entry(table, entry);
-            destroy_table_entry(entry);
-        }
         return htable_errno;
     }
     return HTABLE_SUCCESS;
