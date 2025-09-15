@@ -155,7 +155,8 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   }
 
   *counts = ctx->counters;
-  /* Return OK so callers can safely print; or 'first_err' if you want to surface it */
+  
+  if (first_err != PAPI_OK) return first_err;
   return PAPI_OK;
 }
 
