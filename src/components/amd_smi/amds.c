@@ -1783,7 +1783,7 @@ static int init_event_table(void) {
       CHECK_EVENT_IDX(idx);
       snprintf(name_buf, sizeof(name_buf), "power_cap_dpm:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf),
-               "Device %d DPM power cap (MHz)", d);
+               "Device %d DPM power cap (W)", d);
       if (add_event(&idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
                     access_amdsmi_power_cap_range) != PAPI_OK)
         return PAPI_ENOMEM;
