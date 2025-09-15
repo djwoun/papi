@@ -142,8 +142,7 @@ static inline int htable_delete(void *handle, const char *key)
     /* Check if rehash (shrink table) is needed after deletion */
     htable_errno = rehash_table(table, NULL);  /* attempt shrink after deletion */
     if (htable_errno == HTABLE_ENOMEM) {
-        /* Ignore memory error on shrink operation */
-        htable_errno = HTABLE_SUCCESS;
+        return htable_errno;
     }
     return htable_errno;
 }
