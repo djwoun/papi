@@ -1,416 +1,389 @@
-/**
- * @file    htable.h
- * @author  Giuseppe Congiu
- *          gcongiu@icl.utk.edu
- *
- */
 #ifndef __HTABLE_H__
 #define __HTABLE_H__
+
 #include <string.h>
 #include <inttypes.h>
 #include "papi.h"
 #include "papi_internal.h"
 #include "papi_memory.h"
 
-#define HTABLE_NEEDS_TO_GROW(table)   (table->size > 0 && table->capacity / table->size < 2)
-#define HTABLE_NEEDS_TO_SHRINK(table) (table->size > 0 && table->capacity / table->size > 8)
+/* Return codes for hash table operations */
+#define HTABLE_SUCCESS   0    /* Operation successful */
+#define HTABLE_ENOVAL   -1    /* Key not found in table */
+#define HTABLE_EINVAL   -2    /* Invalid argument (e.g., NULL handle or key) */
+#define HTABLE_ENOMEM   -3    /* Allocation failure */
 
-#define HTABLE_SUCCESS ( 0)
-#define HTABLE_ENOVAL  (-1)
-#define HTABLE_EINVAL  (-2)
-#define HTABLE_ENOMEM  (-3)
+#define HTABLE_MIN_SIZE        8                       /* Minimum number of buckets */
+#define HTABLE_NEEDS_TO_GROW(table)   ((table)->size > 0 && (table)->capacity / (table)->size < 2)
+#define HTABLE_NEEDS_TO_SHRINK(table) ((table)->size > 0 && (table)->capacity / (table)->size > 8)
 
+/* Hash table entry definition (separate chaining) */
 struct hash_table_entry {
-    char *key;
-    void *val;
-    struct hash_table_entry *next;
+    char *key;                      /* Dynamically allocated key string */
+    void *val;                      /* Value associated with the key */
+    struct hash_table_entry *next;  /* Next entry in the bucket's linked list */
 };
 
+/* Hash table structure */
 struct hash_table {
-    uint32_t capacity;
-    uint32_t size;
-    struct hash_table_entry **buckets;
+    uint32_t capacity;              /* Number of buckets (table size) */
+    uint32_t size;                  /* Number of entries currently stored */
+    struct hash_table_entry **buckets; /* Array of bucket heads for separate chaining */
 };
 
-static uint64_t hash_func(const char *);
+/* Internal helper function prototypes (not part of public API) */
+static uint64_t hash_func(const char *str);
+static int create_table(uint64_t capacity, struct hash_table **table);
+static int destroy_table(struct hash_table *table);
+static int rehash_table(struct hash_table *old_table, struct hash_table *new_table);
+static int destroy_table_entries(struct hash_table *table);
+static int create_table_entry(const char *key, void *val, struct hash_table_entry **entry);
+static int destroy_table_entry(struct hash_table_entry *entry);
+static int insert_table_entry(struct hash_table *table, struct hash_table_entry *entry);
+static int delete_table_entry(struct hash_table *table, struct hash_table_entry *entry);
+static int find_table_entry(struct hash_table *table, const char *key, struct hash_table_entry **entry);
 
-static int create_table(uint64_t, struct hash_table **);
-static int destroy_table(struct hash_table *);
-static int rehash_table(struct hash_table *, struct hash_table *);
-static int move_table(struct hash_table *, struct hash_table *);
-static int check_n_resize_table(struct hash_table *);
-static int destroy_table_entries(struct hash_table *);
-
-static int create_table_entry(const char *, void *,
-                              struct hash_table_entry **);
-static int destroy_table_entry(struct hash_table_entry *);
-static int insert_table_entry(struct hash_table *, struct hash_table_entry *);
-static int delete_table_entry(struct hash_table *, struct hash_table_entry *);
-static int find_table_entry(struct hash_table *, const char *,
-                            struct hash_table_entry **);
-
-static inline int
-htable_init(void **handle)
+/* Initialize a new hash table. Handle is an out-parameter for the table pointer. */
+static inline int htable_init(void **handle)
 {
+    if (handle == NULL) {
+        return HTABLE_EINVAL;
+    }
     int htable_errno = HTABLE_SUCCESS;
-
-#define HTABLE_MIN_SIZE (8)
     struct hash_table *table = NULL;
+    /* Create initial table with minimum capacity */
     htable_errno = create_table(HTABLE_MIN_SIZE, &table);
     if (htable_errno != HTABLE_SUCCESS) {
-        goto fn_fail;
+        *handle = NULL;
+        return htable_errno;
     }
-
     *handle = table;
-
-  fn_exit:
-    return htable_errno;
-  fn_fail:
-    *handle = NULL;
-    goto fn_exit;
+    return HTABLE_SUCCESS;
 }
 
-static inline int
-htable_shutdown(void *handle)
+/* Shutdown an existing hash table, freeing all allocated memory. */
+static inline int htable_shutdown(void *handle)
 {
-    int htable_errno = HTABLE_SUCCESS;
     struct hash_table *table = (struct hash_table *) handle;
-
     if (table == NULL) {
         return HTABLE_EINVAL;
     }
-
+    /* Free all entries and the table itself */
     destroy_table_entries(table);
     destroy_table(table);
-
-    return htable_errno;
+    return HTABLE_SUCCESS;
 }
 
-static inline int
-htable_insert(void *handle, const char *key, void *in)
+/* Insert a key-value pair into the hash table. Updates value if key already exists. */
+static inline int htable_insert(void *handle, const char *key, void *in)
 {
-    int htable_errno = HTABLE_SUCCESS;
     struct hash_table *table = (struct hash_table *) handle;
-
     if (table == NULL || key == NULL) {
         return HTABLE_EINVAL;
     }
-
+    int htable_errno;
     struct hash_table_entry *entry = NULL;
+    /* Check if key already exists */
     htable_errno = find_table_entry(table, key, &entry);
     if (htable_errno == HTABLE_SUCCESS) {
+        /* Key exists: update its value */
         entry->val = in;
-        goto fn_exit;
+        return HTABLE_SUCCESS;
     }
-
+    /* Key not found: create a new entry */
     htable_errno = create_table_entry(key, in, &entry);
-    if (htable_errno != HTABLE_SUCCESS) {
-        goto fn_fail;
-    }
-
-    htable_errno = insert_table_entry(table, entry);
-    if (htable_errno != HTABLE_SUCCESS) {
-        goto fn_fail;
-    }
-
-    htable_errno = check_n_resize_table(table);
-
-  fn_exit:
-    return htable_errno;
-  fn_fail:
-    if (entry) {
-        papi_free(entry);
-    }
-    goto fn_exit;
-}
-
-static inline int
-htable_delete(void *handle, const char *key)
-{
-    int htable_errno = HTABLE_SUCCESS;
-    struct hash_table *table = (struct hash_table *) handle;
-
-    if (table == NULL || key == NULL) {
-        return HTABLE_EINVAL;
-    }
-
-    struct hash_table_entry *entry = NULL;
-    htable_errno = find_table_entry(table, key, &entry);
     if (htable_errno != HTABLE_SUCCESS) {
         return htable_errno;
     }
+    /* Link the new entry into the table */
+    htable_errno = insert_table_entry(table, entry);
+    if (htable_errno != HTABLE_SUCCESS) {
+        /* Insertion failed: free the entry and return error */
+        papi_free(entry->key);
+        papi_free(entry);
+        return htable_errno;
+    }
+    /* Check if rehash (grow table) is needed after insertion */
+    htable_errno = rehash_table(table, NULL);  /* use NULL to indicate self-resize (growth) */
+    if (htable_errno != HTABLE_SUCCESS) {
+        if (htable_errno == HTABLE_ENOMEM) {
+            /* Roll back the insertion of the new entry on memory error */
+            delete_table_entry(table, entry);
+            destroy_table_entry(entry);
+        }
+        return htable_errno;
+    }
+    return HTABLE_SUCCESS;
+}
 
-    entry->val = NULL;
-
+/* Remove an entry by key from the hash table. No effect if key not found. */
+static inline int htable_delete(void *handle, const char *key)
+{
+    struct hash_table *table = (struct hash_table *) handle;
+    if (table == NULL || key == NULL) {
+        return HTABLE_EINVAL;
+    }
+    struct hash_table_entry *entry = NULL;
+    int htable_errno = find_table_entry(table, key, &entry);
+    if (htable_errno != HTABLE_SUCCESS) {
+        /* Key not found or other error */
+        return htable_errno;
+    }
+    /* Unlink the entry from the table (does not free memory yet) */
     htable_errno = delete_table_entry(table, entry);
     if (htable_errno != HTABLE_SUCCESS) {
         return htable_errno;
     }
-
+    /* Free the removed entry structure */
     htable_errno = destroy_table_entry(entry);
     if (htable_errno != HTABLE_SUCCESS) {
         return htable_errno;
     }
-
-    return check_n_resize_table(table);
-}
-
-static inline int
-htable_find(void *handle, const char *key, void **out)
-{
-    int htable_errno = HTABLE_SUCCESS;
-    struct hash_table *table = (struct hash_table *) handle;
-
-    if (table == NULL || key == NULL || out == NULL) {
-        return HTABLE_EINVAL;
+    /* Check if rehash (shrink table) is needed after deletion */
+    htable_errno = rehash_table(table, NULL);  /* attempt shrink after deletion */
+    if (htable_errno == HTABLE_ENOMEM) {
+        /* Ignore memory error on shrink operation */
+        htable_errno = HTABLE_SUCCESS;
     }
-
-    struct hash_table_entry *entry = NULL;
-    htable_errno = find_table_entry(table, key, &entry);
-    if (htable_errno != HTABLE_SUCCESS) {
-        return htable_errno;
-    }
-
-    *out = entry->val;
     return htable_errno;
 }
 
-/**
- * djb2 hash function
- */
-uint64_t
-hash_func(const char *string)
+/* Find an entry by key in the hash table. 
+ * Returns HTABLE_SUCCESS and sets *out if found, else HTABLE_ENOVAL. */
+static inline int htable_find(void *handle, const char *key, void **out)
 {
-    uint64_t hash = 5381;
+    struct hash_table *table = (struct hash_table *) handle;
+    if (table == NULL || key == NULL || out == NULL) {
+        return HTABLE_EINVAL;
+    }
+    struct hash_table_entry *entry = NULL;
+    int htable_errno = find_table_entry(table, key, &entry);
+    if (htable_errno != HTABLE_SUCCESS) {
+        *out = NULL;  /* ensure output is NULL if not found */
+        return htable_errno;
+    }
+    *out = entry->val;
+    return HTABLE_SUCCESS;
+}
+
+/* djb2 string hash function – returns a 64-bit hash for the given string */
+static uint64_t hash_func(const char *str)
+{
+    uint64_t hash = 5381ULL;
     int c;
-    while ((c = *string++)) {
-        hash = ((hash << 5) + hash) + c;
+    while ((c = *str++) != 0) {
+        hash = ((hash << 5) + hash) + (uint8_t)c;  /* hash * 33 + c */
     }
     return hash;
 }
 
-int
-create_table(uint64_t size, struct hash_table **table)
+/* Allocate and initialize a new hash_table structure with the given capacity. */
+static int create_table(uint64_t capacity, struct hash_table **table)
 {
+    if (capacity < 1 || table == NULL) {
+        return HTABLE_EINVAL;
+    }
     int htable_errno = HTABLE_SUCCESS;
-
-    *table = papi_calloc(1, sizeof(**table));
-    if (*table == NULL) {
-        htable_errno = HTABLE_ENOMEM;
-        goto fn_exit;
+    struct hash_table *t = papi_calloc(1, sizeof(struct hash_table));
+    if (t == NULL) {
+        return HTABLE_ENOMEM;
     }
-
-    (*table)->buckets = papi_calloc(size, sizeof(*(*table)->buckets));
-    if ((*table)->buckets == NULL) {
-        htable_errno = HTABLE_ENOMEM;
-        goto fn_exit;
+    t->buckets =  papi_calloc(capacity, sizeof(struct hash_table_entry *));
+    if (t->buckets == NULL) {
+        papi_free(t);
+        return HTABLE_ENOMEM;
     }
-
-    (*table)->capacity = size;
-
-  fn_exit:
-    return htable_errno;
-}
-
-int
-destroy_table(struct hash_table *table)
-{
-    int htable_errno = HTABLE_SUCCESS;
-
-    if (table && table->buckets) {
-        papi_free(table->buckets);
-    }
-
-    if (table) {
-        papi_free(table);
-    }
-
-    return htable_errno;
-}
-
-int
-rehash_table(struct hash_table *old_table, struct hash_table *new_table)
-{
-    uint64_t old_id;
-    for (old_id = 0; old_id < old_table->capacity; ++old_id) {
-        struct hash_table_entry *entry = old_table->buckets[old_id];
-        struct hash_table_entry *next;
-        while (entry) {
-            next = entry->next;
-            delete_table_entry(old_table, entry);
-            insert_table_entry(new_table, entry);
-            entry = next;
-        }
-    }
-
+    t->capacity = (uint32_t) capacity;
+    t->size = 0;
+    *table = t;
     return HTABLE_SUCCESS;
 }
 
-int
-move_table(struct hash_table *new_table, struct hash_table *old_table)
+/* Free the memory associated with a hash_table (structure and bucket array). */
+static int destroy_table(struct hash_table *table)
 {
-    int htable_errno = HTABLE_SUCCESS;
-    struct hash_table_entry **old_buckets = old_table->buckets;
-
-    old_table->capacity = new_table->capacity;
-    old_table->size = new_table->size;
-    old_table->buckets = new_table->buckets;
-    new_table->buckets = NULL;
-    papi_free(old_buckets);
-
-    return htable_errno;
-}
-
-int
-destroy_table_entries(struct hash_table *table)
-{
-    int htable_errno = HTABLE_SUCCESS;
-    uint64_t i;
-
-    for (i = 0; i < table->capacity; ++i) {
-        struct hash_table_entry *entry = table->buckets[i];
-        struct hash_table_entry *tmp = NULL;
-
-        while (entry) {
-            tmp = entry;
-            entry = entry->next;
-            delete_table_entry(table, tmp);
-            destroy_table_entry(tmp);
-        }
+    if (table == NULL) {
+        return HTABLE_SUCCESS;
     }
-
-    return htable_errno;
+    if (table->buckets != NULL) {
+        papi_free(table->buckets);
+    }
+    papi_free(table);
+    return HTABLE_SUCCESS;
 }
 
-int
-check_n_resize_table(struct hash_table *table)
+/* Rehash the entries from old_table into new_table or perform in-place resizing.
+   If new_table is NULL, this function checks old_table and resizes it if needed. */
+static int rehash_table(struct hash_table *old_table, struct hash_table *new_table)
 {
     int htable_errno = HTABLE_SUCCESS;
-    struct hash_table *new_table = NULL;
-    char resize =
-        (HTABLE_NEEDS_TO_GROW(table) << 1) | HTABLE_NEEDS_TO_SHRINK(table);
-
-    if (resize) {
-        uint64_t new_capacity = (resize & 0x2) ?
-            table->capacity * 2 : table->capacity / 2;
+    if (new_table == NULL) {
+        /* Self-resizing mode: determine if growth or shrink is needed */
+        char resize = (HTABLE_NEEDS_TO_GROW(old_table) << 1) | HTABLE_NEEDS_TO_SHRINK(old_table);
+        if (!resize) {
+            return HTABLE_SUCCESS;  /* no resizing needed */
+        }
+        /* Determine new capacity (double or half) */
+        uint64_t new_capacity = (resize & 0x2) ? 
+            (uint64_t)old_table->capacity * 2 
+            : (uint64_t)old_table->capacity / 2;
+        if (new_capacity < HTABLE_MIN_SIZE) {
+            new_capacity = HTABLE_MIN_SIZE;
+        }
+        /* Allocate a new table structure and buckets */
         htable_errno = create_table(new_capacity, &new_table);
         if (htable_errno != HTABLE_SUCCESS) {
-            goto fn_fail;
+            return htable_errno;
         }
-
-        htable_errno = rehash_table(table, new_table);
-        if (htable_errno != HTABLE_SUCCESS) {
-            goto fn_fail;
+        /* Move all entries from old_table into new_table */
+        for (uint64_t i = 0; i < old_table->capacity; ++i) {
+            struct hash_table_entry *entry = old_table->buckets[i];
+            while (entry != NULL) {
+                struct hash_table_entry *next_entry = entry->next;
+                /* Compute new bucket index (capacity is always power-of-2) */
+                uint64_t new_index = hash_func(entry->key) & (new_table->capacity - 1);
+                /* Insert entry at head of new_table's bucket list */
+                entry->next = new_table->buckets[new_index];
+                new_table->buckets[new_index] = entry;
+                entry = next_entry;
+            }
         }
-
-        move_table(new_table, table);
+        new_table->size = old_table->size;
+        /* Replace old_table's data with new_table's data */
+        struct hash_table_entry **old_buckets = old_table->buckets;
+        old_table->capacity = new_table->capacity;
+        old_table->size = new_table->size;
+        old_table->buckets = new_table->buckets;
+        new_table->buckets = NULL;  /* avoid double-free */
+        /* Free old bucket array and temporary table structure */
+        papi_free(old_buckets);
         destroy_table(new_table);
+        return HTABLE_SUCCESS;
     }
-
-  fn_exit:
-    return htable_errno;
-  fn_fail:
-    if (new_table) {
-        destroy_table(new_table);
+    /* Explicit rehash into a provided new_table (for manual resizing, if needed) */
+    for (uint64_t j = 0; j < old_table->capacity; ++j) {
+        struct hash_table_entry *entry = old_table->buckets[j];
+        while (entry != NULL) {
+            struct hash_table_entry *next_entry = entry->next;
+            uint64_t new_index = hash_func(entry->key) & (new_table->capacity - 1);
+            entry->next = new_table->buckets[new_index];
+            new_table->buckets[new_index] = entry;
+            entry = next_entry;
+        }
     }
-    goto fn_exit;
+    new_table->size = old_table->size;
+    return HTABLE_SUCCESS;
 }
 
-int
-create_table_entry(const char *key, void *val, struct hash_table_entry **entry)
+/* Free all entries in the hash table (but not the table or buckets themselves). */
+static int destroy_table_entries(struct hash_table *table)
 {
-    int htable_errno = HTABLE_SUCCESS;
+    if (table == NULL) {
+        return HTABLE_SUCCESS;
+    }
+    for (uint64_t i = 0; i < table->capacity; ++i) {
+        struct hash_table_entry *entry = table->buckets[i];
+        while (entry != NULL) {
+            struct hash_table_entry *tmp = entry;
+            entry = entry->next;
+            papi_free(tmp->key);
+            papi_free(tmp);
+        }
+        table->buckets[i] = NULL;
+    }
+    table->size = 0;
+    return HTABLE_SUCCESS;
+}
 
-    *entry = papi_calloc(1, sizeof(**entry));
-    if (*entry == NULL) {
+/* Create a new hash_table_entry with the given key and value. Copies the key string. */
+static int create_table_entry(const char *key, void *val, struct hash_table_entry **entry)
+{
+    if (key == NULL || entry == NULL) {
+        return HTABLE_EINVAL;
+    }
+    struct hash_table_entry *e = papi_calloc(1, sizeof(struct hash_table_entry));
+    if (e == NULL) {
         return HTABLE_ENOMEM;
     }
-    (*entry)->key = papi_strdup(key);
-    (*entry)->val = val;
-    (*entry)->next = NULL;
-
-    return htable_errno;
+    e->key = papi_strdup(key);
+    if (e->key == NULL) {  /* strdup failure */
+        papi_free(e);
+        return HTABLE_ENOMEM;
+    }
+    e->val = val;
+    e->next = NULL;
+    *entry = e;
+    return HTABLE_SUCCESS;
 }
 
-int
-destroy_table_entry(struct hash_table_entry *entry)
+/* Destroy a single hash_table_entry (free its key and memory). */
+static int destroy_table_entry(struct hash_table_entry *entry)
 {
-    int htable_errno = HTABLE_SUCCESS;
+    if (entry == NULL) {
+        return HTABLE_EINVAL;
+    }
     papi_free(entry->key);
     papi_free(entry);
-    return htable_errno;
+    return HTABLE_SUCCESS;
 }
 
-int
-insert_table_entry(struct hash_table *table, struct hash_table_entry *entry)
+/* Insert a hash_table_entry into the table (at the head of its bucket list). */
+static int insert_table_entry(struct hash_table *table, struct hash_table_entry *entry)
 {
-    int htable_errno = HTABLE_SUCCESS;
-
-    uint64_t id = hash_func(entry->key) % table->capacity;
-
-    if (table->buckets[id]) {
-        entry->next = table->buckets[id];
+    if (table == NULL || entry == NULL) {
+        return HTABLE_EINVAL;
     }
-
-    table->buckets[id] = entry;
-    ++table->size;
-
-    return htable_errno;
+    /* Compute bucket index and insert at head of list */
+    uint64_t index = hash_func(entry->key) & (table->capacity - 1);
+    entry->next = table->buckets[index];
+    table->buckets[index] = entry;
+    table->size += 1;
+    return HTABLE_SUCCESS;
 }
 
-int
-delete_table_entry(struct hash_table *table, struct hash_table_entry *entry)
+/* Remove a hash_table_entry from its bucket list (does not free the entry). */
+static int delete_table_entry(struct hash_table *table, struct hash_table_entry *entry)
 {
-    int htable_errno = HTABLE_SUCCESS;
-
-    uint64_t id = hash_func(entry->key) % table->capacity;
-
-    if (table->buckets[id] == entry) {
-        table->buckets[id] = entry->next;
-        entry->next = NULL;
-        goto fn_exit;
+    if (table == NULL || entry == NULL) {
+        return HTABLE_EINVAL;
     }
-
-    struct hash_table_entry *prev = table->buckets[id];
-    struct hash_table_entry *curr = table->buckets[id]->next;
-
-    while (curr) {
+    uint64_t index = hash_func(entry->key) & (table->capacity - 1);
+    struct hash_table_entry *curr = table->buckets[index];
+    struct hash_table_entry *prev = NULL;
+    while (curr != NULL) {
         if (curr == entry) {
-            prev->next = curr->next;
-            curr->next = NULL;
-            break;
+            /* Found the entry to remove */
+            if (prev == NULL) {
+                /* Entry is at head of the list */
+                table->buckets[index] = curr->next;
+            } else {
+                /* Entry is in the middle or end of the list */
+                prev->next = curr->next;
+            }
+            entry->next = NULL;
+            table->size -= 1;
+            return HTABLE_SUCCESS;
         }
-        prev = prev->next;
+        prev = curr;
         curr = curr->next;
     }
-
-  fn_exit:
-    --table->size;
-    return htable_errno;
+    /* Entry not found (should not happen if a valid pointer was provided) */
+    return HTABLE_ENOVAL;
 }
 
-int
-find_table_entry(struct hash_table *table, const char *key,
-                 struct hash_table_entry **entry)
+/* Find a hash_table_entry by key in the table. Sets *entry if found. */
+static int find_table_entry(struct hash_table *table, const char *key, struct hash_table_entry **entry)
 {
-    int htable_errno;
-
-    uint64_t id = hash_func(key) % table->capacity;
-    struct hash_table_entry *head = table->buckets[id];
-    if (head == NULL) {
-        htable_errno = HTABLE_ENOVAL;
-        goto fn_exit;
+    if (table == NULL || key == NULL || entry == NULL) {
+        return HTABLE_EINVAL;
     }
-
-    struct hash_table_entry *curr = head;
-    while (curr && strcmp(curr->key, key)) {
+    uint64_t index = hash_func(key) & (table->capacity - 1);
+    struct hash_table_entry *curr = table->buckets[index];
+    while (curr != NULL && strcmp(curr->key, key) != 0) {
         curr = curr->next;
     }
-
     *entry = curr;
-    htable_errno = (curr) ? HTABLE_SUCCESS : HTABLE_ENOVAL;
-
-  fn_exit:
-    return htable_errno;
+    return (curr != NULL ? HTABLE_SUCCESS : HTABLE_ENOVAL);
 }
-#endif /* End of __HTABLE_H__ */
+
+#endif /* __HTABLE_H__ */
