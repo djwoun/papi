@@ -93,9 +93,6 @@ int access_amdsmi_energy_count(int mode, void *arg);
 int access_amdsmi_power_profile_status(int mode, void *arg);
 int access_amdsmi_uuid_hash(int mode, void *arg);
 int access_amdsmi_gpu_string_hash(int mode, void *arg);
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
-int access_amdsmi_enumeration_info(int mode, void *arg);
-#endif
 int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
 int access_amdsmi_link_weight(int mode, void *arg);
@@ -114,9 +111,6 @@ int access_amdsmi_ecc_status(int mode, void *arg);
 int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
 int access_amdsmi_compute_partition_hash(int mode, void *arg);
 int access_amdsmi_memory_partition_hash(int mode, void *arg);
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
-int access_amdsmi_memory_partition_config(int mode, void *arg);
-#endif
 int access_amdsmi_memory_reserved_pages(int mode, void *arg);
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
 int access_amdsmi_lib_version(int mode, void *arg);
@@ -145,18 +139,12 @@ int access_amdsmi_vram_usage(int mode, void *arg);
 int access_amdsmi_soc_pstate_id(int mode, void *arg);
 int access_amdsmi_soc_pstate_supported(int mode, void *arg);
 int access_amdsmi_metrics_header_info(int mode, void *arg);
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
-int access_amdsmi_xgmi_link_status(int mode, void *arg);
-#endif
 int access_amdsmi_xgmi_error_status(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_id(int mode, void *arg);
 int access_amdsmi_xgmi_plpd_supported(int mode, void *arg);
 int access_amdsmi_process_isolation(int mode, void *arg);
 int access_amdsmi_xcd_counter(int mode, void *arg);
 int access_amdsmi_board_serial_hash(int mode, void *arg);
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
-int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
-#endif
 int access_amdsmi_fw_version(int mode, void *arg);
 int access_amdsmi_bad_page_count(int mode, void *arg);
 int access_amdsmi_bad_page_threshold(int mode, void *arg);
@@ -167,6 +155,14 @@ int access_amdsmi_event_notification(int mode, void *arg);
 int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 int access_amdsmi_utilization_count(int mode, void *arg);
 int access_amdsmi_violation_status(int mode, void *arg);
+
+/* Consolidated AMDSMI_LIB_VERSION_MAJOR >= 25 block */
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
+int access_amdsmi_enumeration_info(int mode, void *arg);
+int access_amdsmi_memory_partition_config(int mode, void *arg);
+int access_amdsmi_xgmi_link_status(int mode, void *arg);
+int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+#endif
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);
