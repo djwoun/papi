@@ -147,11 +147,6 @@ static int update_native_events(amdsmi_control_t *ctl, NativeInfo_t *ntvInfo, in
     return PAPI_OK;
 }
 
-static int try_open_events(amdsmi_control_t *ctl) {
-    // No pre-opening needed; events will be opened in amds_ctx_start
-    return PAPI_OK;
-}
-
 static int _amd_smi_update_control_state(hwd_control_state_t *ctrl, NativeInfo_t *nativeInfo,
                                          int nativeCount, hwd_context_t *ctx) {
     int papi_errno = _amd_smi_check_n_initialize();
@@ -167,7 +162,7 @@ static int _amd_smi_update_control_state(hwd_control_state_t *ctrl, NativeInfo_t
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
-    return try_open_events(amdsmi_ctl);
+    return PAPI_OK;
 }
 
 static int _amd_smi_start(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
@@ -199,8 +194,9 @@ static int _amd_smi_start(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
 static int _amd_smi_read(hwd_context_t *ctx, hwd_control_state_t *ctrl,
                          long long **values, int flags) {
   (void)ctx; (void)flags;
+  amdsmi_context_t *amdsmi_ctx = (amdsmi_context_t *)ctx;
   amdsmi_control_t *amdsmi_ctl = (amdsmi_control_t *)ctrl;
-  if (!amdsmi_ctl->amds_ctx)           // fail only if ctx is gone
+  if (!(amdsmi_ctx->state & AMDS_EVENTS_RUNNING) || !amdsmi_ctl->amds_ctx)           // fail only if ctx is gone
     return PAPI_EMISC;
   return amds_ctx_read(amdsmi_ctl->amds_ctx, values);
 }
