@@ -204,29 +204,42 @@
     (amdsmi_event_handle_t))
 
 #if AMDSMI_VERSION_AT_LEAST(24, 7)
-#define AMD_SMI_GPU_FUNCTIONS(_) \
-  AMD_SMI_GPU_FUNCTIONS_BASE(_) \
-  _(amdsmi_get_violation_status_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_violation_status_t *)) \
-  _(amdsmi_get_gpu_accelerator_partition_profile_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *, \
-     uint32_t *)) \
-  _(amdsmi_topo_get_p2p_status_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_processor_handle, amdsmi_io_link_type_t *, \
-     amdsmi_p2p_capability_t *)) \
-  _(amdsmi_get_link_topology_nearest_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_link_type_t, \
-     amdsmi_topology_nearest_t *)) \
-  _(amdsmi_get_gpu_kfd_info_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_kfd_info_t *)) \
-  _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_memory_partition_config_t *)) \
-  _(amdsmi_get_gpu_xgmi_link_status_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_xgmi_link_status_t *)) \
-  _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t, \
-    (amdsmi_processor_handle, amdsmi_enumeration_info_t *)) \
-  _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t, \
+#define AMD_SMI_GPU_FUNCTIONS_24_7(_)                                          \
+  _(amdsmi_get_violation_status_p, amdsmi_status_t,                           \
+    (amdsmi_processor_handle, amdsmi_violation_status_t *))                   \
+  _(amdsmi_get_gpu_accelerator_partition_profile_p, amdsmi_status_t,          \
+    (amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *,       \
+     uint32_t *))                                                             \
+  _(amdsmi_topo_get_p2p_status_p, amdsmi_status_t,                            \
+    (amdsmi_processor_handle, amdsmi_processor_handle, amdsmi_io_link_type_t *,\
+     amdsmi_p2p_capability_t *))                                              \
+  _(amdsmi_get_link_topology_nearest_p, amdsmi_status_t,                      \
+    (amdsmi_processor_handle, amdsmi_link_type_t,                             \
+     amdsmi_topology_nearest_t *))                                            \
+  _(amdsmi_get_gpu_kfd_info_p, amdsmi_status_t,                                \
+    (amdsmi_processor_handle, amdsmi_kfd_info_t *))
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+#define AMD_SMI_GPU_FUNCTIONS_25_0(_)                                          \
+  _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t,                \
+    (amdsmi_processor_handle, amdsmi_memory_partition_config_t *))            \
+  _(amdsmi_get_gpu_xgmi_link_status_p, amdsmi_status_t,                       \
+    (amdsmi_processor_handle, amdsmi_xgmi_link_status_t *))                   \
+  _(amdsmi_get_gpu_enumeration_info_p, amdsmi_status_t,                       \
+    (amdsmi_processor_handle, amdsmi_enumeration_info_t *))                   \
+  _(amdsmi_get_gpu_virtualization_mode_p, amdsmi_status_t,                    \
     (amdsmi_processor_handle, amdsmi_virtualization_mode_t *))
+#endif
+#endif
+
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+#define AMD_SMI_GPU_FUNCTIONS(_)                                              \
+  AMD_SMI_GPU_FUNCTIONS_BASE(_)                                               \
+  AMD_SMI_GPU_FUNCTIONS_24_7(_)                                               \
+  AMD_SMI_GPU_FUNCTIONS_25_0(_)
+#elif AMDSMI_VERSION_AT_LEAST(24, 7)
+#define AMD_SMI_GPU_FUNCTIONS(_)                                              \
+  AMD_SMI_GPU_FUNCTIONS_BASE(_)                                               \
+  AMD_SMI_GPU_FUNCTIONS_24_7(_)
 #else
 #define AMD_SMI_GPU_FUNCTIONS(_) AMD_SMI_GPU_FUNCTIONS_BASE(_)
 #endif

@@ -257,10 +257,6 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_id_p = sym("amdsmi_get_gpu_id", NULL);
   amdsmi_get_gpu_revision_p = sym("amdsmi_get_gpu_revision", NULL);
   amdsmi_get_gpu_subsystem_id_p = sym("amdsmi_get_gpu_subsystem_id", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_get_gpu_virtualization_mode_p =
-      sym("amdsmi_get_gpu_virtualization_mode", NULL);
-#endif
   amdsmi_get_gpu_process_isolation_p =
       sym("amdsmi_get_gpu_process_isolation", NULL);
   amdsmi_get_gpu_xcd_counter_p = sym("amdsmi_get_gpu_xcd_counter", NULL);
@@ -272,8 +268,25 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_power_profile_presets_p =
       sym("amdsmi_get_gpu_power_profile_presets", NULL);
 #if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_get_violation_status_p =
-      sym("amdsmi_get_violation_status", NULL);
+  // AMD SMI 24.7+ optional queries
+  amdsmi_get_violation_status_p = sym("amdsmi_get_violation_status", NULL);
+  amdsmi_get_gpu_accelerator_partition_profile_p =
+      sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
+  amdsmi_topo_get_p2p_status_p = sym("amdsmi_topo_get_p2p_status", NULL);
+  amdsmi_get_link_topology_nearest_p =
+      sym("amdsmi_get_link_topology_nearest", NULL);
+  amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+  // AMD SMI 25.0+ optional queries
+  amdsmi_get_gpu_virtualization_mode_p =
+      sym("amdsmi_get_gpu_virtualization_mode", NULL);
+  amdsmi_get_gpu_enumeration_info_p =
+      sym("amdsmi_get_gpu_enumeration_info", NULL);
+  amdsmi_get_gpu_memory_partition_config_p =
+      sym("amdsmi_get_gpu_memory_partition_config", NULL);
+  amdsmi_get_gpu_xgmi_link_status_p =
+      sym("amdsmi_get_gpu_xgmi_link_status", NULL);
+#endif
 #endif
   // Additional read-only queries
   amdsmi_get_lib_version_p = sym("amdsmi_get_lib_version", NULL);
@@ -283,10 +296,6 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_fw_info_p = sym("amdsmi_get_fw_info", NULL);
   amdsmi_get_gpu_vbios_info_p = sym("amdsmi_get_gpu_vbios_info", NULL);
   amdsmi_get_gpu_device_uuid_p = sym("amdsmi_get_gpu_device_uuid", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_get_gpu_enumeration_info_p =
-      sym("amdsmi_get_gpu_enumeration_info", NULL);
-#endif
   amdsmi_get_gpu_vendor_name_p = sym("amdsmi_get_gpu_vendor_name", NULL);
   amdsmi_get_gpu_vram_vendor_p = sym("amdsmi_get_gpu_vram_vendor", NULL);
   amdsmi_get_gpu_subsystem_name_p = sym("amdsmi_get_gpu_subsystem_name", NULL);
@@ -296,14 +305,8 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_topo_get_numa_node_number", NULL);
   amdsmi_topo_get_link_weight_p = sym("amdsmi_topo_get_link_weight", NULL);
   amdsmi_topo_get_link_type_p = sym("amdsmi_topo_get_link_type", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_topo_get_p2p_status_p = sym("amdsmi_topo_get_p2p_status", NULL);
-#endif
   amdsmi_is_P2P_accessible_p = sym("amdsmi_is_P2P_accessible", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_get_link_topology_nearest_p =
-      sym("amdsmi_get_link_topology_nearest", NULL);
-#endif
+
   amdsmi_get_gpu_device_bdf_p = sym("amdsmi_get_gpu_device_bdf", NULL);
   amdsmi_get_gpu_ecc_enabled_p = sym("amdsmi_get_gpu_ecc_enabled", NULL);
   amdsmi_get_gpu_total_ecc_count_p =
@@ -314,30 +317,15 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_get_gpu_compute_partition", NULL);
   amdsmi_get_gpu_memory_partition_p =
         sym("amdsmi_get_gpu_memory_partition", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-    amdsmi_get_gpu_memory_partition_config_p =
-        sym("amdsmi_get_gpu_memory_partition_config", NULL);
-#endif
   amdsmi_is_gpu_memory_partition_supported_p =
       sym("amdsmi_is_gpu_memory_partition_supported", NULL);
   amdsmi_get_gpu_memory_reserved_pages_p =
       sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
-#endif
   amdsmi_get_gpu_metrics_header_info_p =
         sym("amdsmi_get_gpu_metrics_header_info", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-    amdsmi_get_gpu_xgmi_link_status_p =
-        sym("amdsmi_get_gpu_xgmi_link_status", NULL);
-#endif
   amdsmi_get_xgmi_info_p = sym("amdsmi_get_xgmi_info", NULL);
   amdsmi_gpu_xgmi_error_status_p =
       sym("amdsmi_gpu_xgmi_error_status", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-  amdsmi_get_gpu_accelerator_partition_profile_p =
-      sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
-#endif
   amdsmi_get_gpu_cache_info_p = sym("amdsmi_get_gpu_cache_info", NULL);
   amdsmi_get_gpu_mem_overdrive_level_p =
       sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
@@ -2146,9 +2134,9 @@ static int init_event_table(void) {
       }
     }
     // GPU Virtualization Mode
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
     amdsmi_virtualization_mode_t vmode;
-    if (amds_lib_version_at_least(24, 7) && amdsmi_get_gpu_virtualization_mode_p &&
+    if (amds_lib_version_at_least(25, 0) && amdsmi_get_gpu_virtualization_mode_p &&
         amdsmi_get_gpu_virtualization_mode_p(device_handles[d], &vmode) ==
             AMDSMI_STATUS_SUCCESS) {
       snprintf(name_buf, sizeof(name_buf), "gpu_virtualization_mode:device=%d",
@@ -3191,8 +3179,8 @@ static int init_event_table(void) {
     }
 
     /* Enumeration info (drm render/card, hsa/hip ids) */
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-    if (amds_lib_version_at_least(24, 7) && amdsmi_get_gpu_enumeration_info_p) {
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+    if (amds_lib_version_at_least(25, 0) && amdsmi_get_gpu_enumeration_info_p) {
       amdsmi_enumeration_info_t einfo;
       if (amdsmi_get_gpu_enumeration_info_p(device_handles[d], &einfo) ==
           AMDSMI_STATUS_SUCCESS) {
@@ -3305,8 +3293,9 @@ static int init_event_table(void) {
       }
     }
     /*
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-    if (amdsmi_get_gpu_memory_partition_config_p) {
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+    if (amds_lib_version_at_least(25, 0) &&
+        amdsmi_get_gpu_memory_partition_config_p) {
       amdsmi_memory_partition_config_t cfg = {0};
       // Probe memory partition configuration 
       if (amdsmi_get_gpu_memory_partition_config_p(device_handles[d], &cfg) ==
@@ -3407,8 +3396,8 @@ static int init_event_table(void) {
         }
       }
     }
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-    if (amdsmi_get_gpu_xgmi_link_status_p) {
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+    if (amds_lib_version_at_least(25, 0) && amdsmi_get_gpu_xgmi_link_status_p) {
       amdsmi_xgmi_link_status_t st;
       if (amdsmi_get_gpu_xgmi_link_status_p(device_handles[d], &st) ==
           AMDSMI_STATUS_SUCCESS) {

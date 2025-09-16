@@ -171,10 +171,12 @@ int access_amdsmi_kfd_info(int mode, void *arg);
 int access_amdsmi_link_topology_nearest(int mode, void *arg);
 int access_amdsmi_p2p_status(int mode, void *arg);
 int access_amdsmi_violation_status(int mode, void *arg);
+int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_enumeration_info(int mode, void *arg);
 int access_amdsmi_memory_partition_config(int mode, void *arg);
 int access_amdsmi_xgmi_link_status(int mode, void *arg);
-int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+#endif
 #endif
 
 #ifndef AMDSMI_DISABLE_ESMI

@@ -135,11 +135,11 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_enumeration_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7) || !amdsmi_get_gpu_enumeration_info_p)
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_enumeration_info_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
@@ -283,9 +283,11 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
   return PAPI_OK;
 }
 
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_xgmi_link_status(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_xgmi_link_status_p)
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_xgmi_link_status_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
@@ -767,9 +769,11 @@ int access_amdsmi_memory_partition_hash(int mode, void *arg) {
   return PAPI_OK;
 }
 
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_memory_partition_config(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_memory_partition_config_p)
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_memory_partition_config_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
@@ -1209,9 +1213,9 @@ int access_amdsmi_gpu_info(int mode, void *arg) {
     }
     break;
   }
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
   case 4: {
-    if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7) || !amdsmi_get_gpu_virtualization_mode_p)
+    if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_virtualization_mode_p)
       return PAPI_ENOSUPP;
     amdsmi_virtualization_mode_t mode_val;
     status = amdsmi_get_gpu_virtualization_mode_p(device_handles[event->device], &mode_val);
