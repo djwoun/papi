@@ -203,7 +203,7 @@
   _(amdsmi_gpu_destroy_counter_p, amdsmi_status_t,                             \
     (amdsmi_event_handle_t))
 
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
 #define AMD_SMI_GPU_FUNCTIONS(_) \
   AMD_SMI_GPU_FUNCTIONS_BASE(_) \
   _(amdsmi_get_violation_status_p, amdsmi_status_t, \

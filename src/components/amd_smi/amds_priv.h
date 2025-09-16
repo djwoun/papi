@@ -9,6 +9,14 @@
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
+#ifndef AMDSMI_LIB_VERSION_MINOR
+#define AMDSMI_LIB_VERSION_MINOR 0
+#endif
+
+#define AMDSMI_VERSION_AT_LEAST(maj, min)                                      \
+  ((AMDSMI_LIB_VERSION_MAJOR > (maj)) ||                                      \
+   (AMDSMI_LIB_VERSION_MAJOR == (maj) &&                                      \
+    AMDSMI_LIB_VERSION_MINOR >= (min)))
 
 /* Mode enumeration used by accessors */
 typedef enum {
@@ -49,6 +57,7 @@ uint32_t *amds_get_cores_per_socket(void);
 void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
 uint32_t amds_get_lib_major(void);
+uint32_t amds_get_lib_minor(void);
 
 #ifndef AMDS_PRIV_IMPL
 #define device_handles (amds_get_device_handles())
@@ -60,6 +69,10 @@ uint32_t amds_get_lib_major(void);
 #define htable (amds_get_htable())
 #define ntv_table_p (amds_get_ntv_table())
 #define amdsmi_lib_major (amds_get_lib_major())
+#define amdsmi_lib_minor (amds_get_lib_minor())
+#define AMDS_RUNTIME_VERSION_AT_LEAST(maj, min)                                \
+  ((amdsmi_lib_major > (maj)) ||                                              \
+   (amdsmi_lib_major == (maj) && amdsmi_lib_minor >= (min)))
 #endif
 
 /* AMD SMI function pointers */
@@ -151,8 +164,8 @@ int access_amdsmi_event_notification(int mode, void *arg);
 int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 int access_amdsmi_utilization_count(int mode, void *arg);
 
-/* Consolidated AMDSMI_LIB_VERSION_MAJOR >= 25 block */
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+/* Consolidated AMD SMI additions introduced in 24.7 */
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
 int access_amdsmi_kfd_info(int mode, void *arg);
 int access_amdsmi_link_topology_nearest(int mode, void *arg);
