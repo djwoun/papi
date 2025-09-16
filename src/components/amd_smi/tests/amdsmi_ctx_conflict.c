@@ -26,7 +26,7 @@
 static unsigned long get_tid(void) { return (unsigned long)pthread_self(); }
 
 struct ThreadState {
-    int start_rc;
+    int start_papi_errno;
 };
 
 static _Atomic bool t1_started = false;
@@ -45,17 +45,17 @@ static void* thread_fn1(void* arg) {
     struct ThreadState* st = (struct ThreadState*)arg;
 
     int EventSet = PAPI_NULL;
-    int rc = PAPI_create_eventset(&EventSet);
-    if (rc != PAPI_OK) { NOTE("t1 create: %s", PAPI_strerror(rc)); st->start_rc = rc; PAPI_unregister_thread(); return NULL; }
+    int papi_errno = PAPI_create_eventset(&EventSet);
+    if (papi_errno != PAPI_OK) { NOTE("t1 create: %s", PAPI_strerror(papi_errno)); st->start_papi_errno = papi_errno; PAPI_unregister_thread(); return NULL; }
 
-    rc = PAPI_add_named_event(EventSet, g_event);
-    if (rc == PAPI_ENOEVNT) { SKIP("Event not supported on this platform"); }
-    if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) { SKIP("Cannot add event due to HW/resource limits"); }
-    if (rc != PAPI_OK) { NOTE("t1 add: %s", PAPI_strerror(rc)); st->start_rc = rc; PAPI_destroy_eventset(&EventSet); PAPI_unregister_thread(); return NULL; }
+    papi_errno = PAPI_add_named_event(EventSet, g_event);
+    if (papi_errno == PAPI_ENOEVNT) { SKIP("Event not supported on this platform"); }
+    if (papi_errno == PAPI_ECNFLCT || papi_errno == PAPI_EPERM) { SKIP("Cannot add event due to HW/resource limits"); }
+    if (papi_errno != PAPI_OK) { NOTE("t1 add: %s", PAPI_strerror(papi_errno)); st->start_papi_errno = papi_errno; PAPI_destroy_eventset(&EventSet); PAPI_unregister_thread(); return NULL; }
 
-    rc = PAPI_start(EventSet);
-    st->start_rc = rc;
-    if (rc == PAPI_OK) {
+    papi_errno = PAPI_start(EventSet);
+    st->start_papi_errno = papi_errno;
+    if (papi_errno == PAPI_OK) {
         /* Publish that t1 is actively running the event so t2 can attempt to collide. */
         atomic_store_explicit(&t1_started, true, memory_order_release);
         long long v = 0; (void)PAPI_read(EventSet, &v);
@@ -82,21 +82,21 @@ static void* thread_fn2(void* arg) {
     struct ThreadState* st = (struct ThreadState*)arg;
 
     int EventSet = PAPI_NULL;
-    int rc = PAPI_create_eventset(&EventSet);
-    if (rc != PAPI_OK) { NOTE("t2 create: %s", PAPI_strerror(rc)); st->start_rc = rc; PAPI_unregister_thread(); return NULL; }
+    int papi_errno = PAPI_create_eventset(&EventSet);
+    if (papi_errno != PAPI_OK) { NOTE("t2 create: %s", PAPI_strerror(papi_errno)); st->start_papi_errno = papi_errno; PAPI_unregister_thread(); return NULL; }
 
-    rc = PAPI_add_named_event(EventSet, g_event);
-    if (rc == PAPI_ENOEVNT) { SKIP("Event not supported on this platform"); }
-    if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) { SKIP("Cannot add event due to HW/resource limits"); }
-    if (rc != PAPI_OK) { NOTE("t2 add: %s", PAPI_strerror(rc)); st->start_rc = rc; (void)PAPI_destroy_eventset(&EventSet); PAPI_unregister_thread(); return NULL; }
+    papi_errno = PAPI_add_named_event(EventSet, g_event);
+    if (papi_errno == PAPI_ENOEVNT) { SKIP("Event not supported on this platform"); }
+    if (papi_errno == PAPI_ECNFLCT || papi_errno == PAPI_EPERM) { SKIP("Cannot add event due to HW/resource limits"); }
+    if (papi_errno != PAPI_OK) { NOTE("t2 add: %s", PAPI_strerror(papi_errno)); st->start_papi_errno = papi_errno; (void)PAPI_destroy_eventset(&EventSet); PAPI_unregister_thread(); return NULL; }
 
     /* Busy-wait until t1 has started the event (adequate for a short test). */
     while (!atomic_load_explicit(&t1_started, memory_order_acquire)) { /* spin */ }
 
-    rc = PAPI_start(EventSet);
-    st->start_rc = rc;
-    if (rc != PAPI_OK) {
-        NOTE("t2 start expected fail: %s", PAPI_strerror(rc));
+    papi_errno = PAPI_start(EventSet);
+    st->start_papi_errno = papi_errno;
+    if (papi_errno != PAPI_OK) {
+        NOTE("t2 start expected fail: %s", PAPI_strerror(papi_errno));
     } else {
         NOTE("t2 start unexpectedly succeeded");
         long long v = 0; (void)PAPI_stop(EventSet, &v);
@@ -129,8 +129,8 @@ int main(int argc, char** argv) {
     const char* root = getenv("PAPI_AMDSMI_ROOT");
     if (!root || !*root) SKIP("PAPI_AMDSMI_ROOT not set");
 
-    int rc = PAPI_library_init(PAPI_VER_CURRENT);
-    if (rc != PAPI_VER_CURRENT) { NOTE("PAPI_library_init failed: %s", PAPI_strerror(rc)); int e = eval_result(opts, 1); fflush(stdout); return e; }
+    int papi_errno = PAPI_library_init(PAPI_VER_CURRENT);
+    if (papi_errno != PAPI_VER_CURRENT) { NOTE("PAPI_library_init failed: %s", PAPI_strerror(papi_errno)); int e = eval_result(opts, 1); fflush(stdout); return e; }
 
     if (PAPI_thread_init(&get_tid) != PAPI_OK) { NOTE("PAPI_thread_init failed"); int e = eval_result(opts, 1); fflush(stdout); return e; }
 
@@ -138,8 +138,8 @@ int main(int argc, char** argv) {
 
     struct ThreadState s1;
     struct ThreadState s2;
-    s1.start_rc = PAPI_OK;
-    s2.start_rc = PAPI_OK;
+    s1.start_papi_errno = PAPI_OK;
+    s2.start_papi_errno = PAPI_OK;
 
     pthread_t th1, th2;
     pthread_create(&th1, NULL, thread_fn1, &s1);
@@ -149,15 +149,15 @@ int main(int argc, char** argv) {
 
     if (opts.print) {
         printf("event: %s\n", g_event);
-        printf("t1 start rc: %d (%s)\n", s1.start_rc, PAPI_strerror(s1.start_rc));
-        printf("t2 start rc: %d (%s)\n", s2.start_rc, PAPI_strerror(s2.start_rc));
+        printf("t1 start papi_errno: %d (%s)\n", s1.start_papi_errno, PAPI_strerror(s1.start_papi_errno));
+        printf("t2 start papi_errno: %d (%s)\n", s2.start_papi_errno, PAPI_strerror(s2.start_papi_errno));
     }
 
     /* PASS when expected contention occurred; else FAIL. */
-    int final_rc = (s1.start_rc == PAPI_OK && s2.start_rc == PAPI_ECNFLCT) ? 0 : 1;
-    if (final_rc != 0) NOTE("Unexpected results (wanted t1 OK, t2 PAPI_ECNFLCT).");
+    int final_status = (s1.start_papi_errno == PAPI_OK && s2.start_papi_errno == PAPI_ECNFLCT) ? 0 : 1;
+    if (final_status != 0) NOTE("Unexpected results (wanted t1 OK, t2 PAPI_ECNFLCT).");
 
-    int exit_code = eval_result(opts, final_rc);
+    int exit_code = eval_result(opts, final_status);
     fflush(stdout);
     return exit_code;
 }

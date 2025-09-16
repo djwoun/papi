@@ -13,9 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Return true if rc is a "warning, not failure" status for add/start/stop.
-static inline bool is_warning_rc(int rc) {
-  return (rc == PAPI_ENOEVNT) || (rc == PAPI_ECNFLCT) || (rc == PAPI_EPERM);
+// Return true if papi_errno is a "warning, not failure" status for add/start/stop.
+static inline bool is_warning_papi_errno(int papi_errno) {
+  return (papi_errno == PAPI_ENOEVNT) || (papi_errno == PAPI_ECNFLCT) ||
+         (papi_errno == PAPI_EPERM);
 }
 
 int main(int argc, char *argv[]) {
@@ -26,9 +27,9 @@ int main(int argc, char *argv[]) {
   HarnessOpts opts = parse_harness_cli(argc, argv);
 
   // 1) Initialize PAPI.
-  int ret = PAPI_library_init(PAPI_VER_CURRENT);
-  if (ret != PAPI_VER_CURRENT) {
-    NOTE("PAPI_library_init failed: %s", PAPI_strerror(ret));
+  int papi_errno = PAPI_library_init(PAPI_VER_CURRENT);
+  if (papi_errno != PAPI_VER_CURRENT) {
+    NOTE("PAPI_library_init failed: %s", PAPI_strerror(papi_errno));
     return eval_result(opts, 1);
   }
 
@@ -78,31 +79,34 @@ int main(int argc, char *argv[]) {
 
     // 4–7) Create a fresh EventSet, add the event, start, stop/read, print, cleanup.
     int eventSet = PAPI_NULL;
-    ret = PAPI_create_eventset(&eventSet);
-    if (ret != PAPI_OK) {
+    papi_errno = PAPI_create_eventset(&eventSet);
+    if (papi_errno != PAPI_OK) {
       // Hard failure to create an EventSet.
-      NOTE("  ?  create_eventset failed: %s", PAPI_strerror(ret));
+      NOTE("  ?  create_eventset failed: %s", PAPI_strerror(papi_errno));
       ++failed; ++event_index;
       continue;
     }
 
     // Explicitly assign the component.
-    ret = PAPI_assign_eventset_component(eventSet, cid);
-    if (ret != PAPI_OK) {
-      NOTE("  ?  assign_eventset_component failed: %s", PAPI_strerror(ret));
+    papi_errno = PAPI_assign_eventset_component(eventSet, cid);
+    if (papi_errno != PAPI_OK) {
+      NOTE("  ?  assign_eventset_component failed: %s",
+           PAPI_strerror(papi_errno));
       (void)PAPI_destroy_eventset(&eventSet);
       ++failed; ++event_index;
       continue;
     }
 
-    ret = PAPI_add_event(eventSet, ev_code);
-    if (ret != PAPI_OK) {
-      if (is_warning_rc(ret)) {
-        WARNF("Could not add %-50s (%s)", ev_name, PAPI_strerror(ret));
+    papi_errno = PAPI_add_event(eventSet, ev_code);
+    if (papi_errno != PAPI_OK) {
+      if (is_warning_papi_errno(papi_errno)) {
+        WARNF("Could not add %-50s (%s)", ev_name,
+              PAPI_strerror(papi_errno));
         (void)PAPI_destroy_eventset(&eventSet);
         ++warned; ++event_index;
       } else {
-        NOTE("  ?  Could not add %s (%s)", ev_name, PAPI_strerror(ret));
+        NOTE("  ?  Could not add %s (%s)", ev_name,
+             PAPI_strerror(papi_errno));
         (void)PAPI_destroy_eventset(&eventSet);
         ++failed; ++event_index;
       }
@@ -110,15 +114,16 @@ int main(int argc, char *argv[]) {
     }
 
     long long value = 0;
-    ret = PAPI_start(eventSet);
-    if (ret != PAPI_OK) {
-      if (is_warning_rc(ret)) {
-        WARNF("start %-54s (%s)", ev_name, PAPI_strerror(ret));
+    papi_errno = PAPI_start(eventSet);
+    if (papi_errno != PAPI_OK) {
+      if (is_warning_papi_errno(papi_errno)) {
+        WARNF("start %-54s (%s)", ev_name, PAPI_strerror(papi_errno));
         (void)PAPI_cleanup_eventset(eventSet);
         (void)PAPI_destroy_eventset(&eventSet);
         ++warned; ++event_index;
       } else {
-        NOTE("  ?  start failed for %s (%s)", ev_name, PAPI_strerror(ret));
+        NOTE("  ?  start failed for %s (%s)", ev_name,
+             PAPI_strerror(papi_errno));
         (void)PAPI_cleanup_eventset(eventSet);
         (void)PAPI_destroy_eventset(&eventSet);
         ++failed; ++event_index;
@@ -127,13 +132,14 @@ int main(int argc, char *argv[]) {
     }
 
     // Read once via stop().
-    ret = PAPI_stop(eventSet, &value);
-    if (ret != PAPI_OK) {
-      if (is_warning_rc(ret)) {
-        WARNF("stop  %-54s (%s)", ev_name, PAPI_strerror(ret));
+    papi_errno = PAPI_stop(eventSet, &value);
+    if (papi_errno != PAPI_OK) {
+      if (is_warning_papi_errno(papi_errno)) {
+        WARNF("stop  %-54s (%s)", ev_name, PAPI_strerror(papi_errno));
         ++warned;
       } else {
-        NOTE("  ?  stop failed for %s (%s)", ev_name, PAPI_strerror(ret));
+        NOTE("  ?  stop failed for %s (%s)", ev_name,
+             PAPI_strerror(papi_errno));
         ++failed;
       }
       (void)PAPI_cleanup_eventset(eventSet);
@@ -162,6 +168,6 @@ int main(int argc, char *argv[]) {
   PAPI_shutdown();
 
   // Final: fail only if we had real failures; warnings/skips are allowed.
-  int rc = (failed == 0) ? 0 : 1;
-  return eval_result(opts, rc);
+  int exit_status = (failed == 0) ? 0 : 1;
+  return eval_result(opts, exit_status);
 }
