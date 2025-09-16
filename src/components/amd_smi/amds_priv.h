@@ -29,12 +29,13 @@
  * ROCm 6.0/6.1 shipped AMD SMI 24.x headers that predated a number of helper
  * enums/struct fields used by the newer topology, clock and policy queries.
  * Probe for the accompanying macros so we can fence those call paths when
- * targeting SDKs older than 24.2.
+ * targeting SDKs older than 24.2.  The DPM policy helpers introduced at that
+ * point ship the AMDSMI_MAX_* policy/resource constants that earlier releases
+ * lack, so use those as our capability probe.
  */
-#if defined(AMDSMI_PROCESSOR_TYPE_AMD_GPU) &&                                  \
-    defined(AMDSMI_TEMPERATURE_TYPE_EDGE) &&                                   \
-    defined(AMDSMI_GPU_BLOCK_VCN) &&                                           \
-    defined(AMDSMI_CLK_TYPE_SYS)
+#if defined(AMDSMI_MAX_NUM_PM_POLICIES) &&                                      \
+    defined(AMDSMI_MAX_CP_PROFILE_RESOURCES) &&                                 \
+    defined(AMDSMI_MAX_ACCELERATOR_PARTITIONS)
 #define PAPI_AMDSMI_HAS_24_2_HEADERS 1
 #else
 #define PAPI_AMDSMI_HAS_24_2_HEADERS 0

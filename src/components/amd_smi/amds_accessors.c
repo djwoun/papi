@@ -2437,9 +2437,9 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
 
     amdsmi_vram_info_t vinf;
     memset(&vinf, 0, sizeof(vinf));
-    if (amdsmi_get_gpu_vram_info_p(device_handles[event->device], &vinf)
-        != AMDSMI_STATUS_SUCCESS) {
-      event->value = 0;   /* deterministic, not UB */
+    if (amdsmi_get_gpu_vram_info_p(device_handles[event->device], &vinf) !=
+        AMDSMI_STATUS_SUCCESS) {
+      event->value = 0;  /* deterministic, not UB */
       return PAPI_OK;
     }
     /* vinf.vram_size is reported in MB by AMD SMI */
@@ -2447,117 +2447,115 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
     return PAPI_OK;
   }
 
-#endif
-#if !PAPI_AMDSMI_BUILD_HAS_24_2
-  (void)mode;
-  (void)arg;
-  return PAPI_ENOSUPP;
-#else
-#endif
-#if !PAPI_AMDSMI_BUILD_HAS_24_2
-  (void)mode;
-  (void)arg;
-  return PAPI_ENOSUPP;
-#else
-#endif
-#if !PAPI_AMDSMI_BUILD_HAS_24_2
-  (void)mode;
-  (void)arg;
-  return PAPI_ENOSUPP;
-#else
-#endif
-#if !PAPI_AMDSMI_BUILD_HAS_24_2
-  (void)mode;
-  (void)arg;
-  return PAPI_ENOSUPP;
-#else
-#endif
-  /* USED: keep using vram_usage for the used number */
+  /* USED: keep using vram_usage for the used number */
   if (!amdsmi_get_gpu_vram_usage_p) return PAPI_ENOSUPP;
 
   amdsmi_vram_usage_t u;
   memset(&u, 0, sizeof(u));
-  if (amdsmi_get_gpu_vram_usage_p(device_handles[event->device], &u)
-      != AMDSMI_STATUS_SUCCESS) {
+  if (amdsmi_get_gpu_vram_usage_p(device_handles[event->device], &u) !=
+      AMDSMI_STATUS_SUCCESS) {
     event->value = 0;
     return PAPI_OK;
   }
   event->value = (uint64_t)u.vram_used;  /* MB */
   return PAPI_OK;
+#endif
 }
 
 
+#if PAPI_AMDSMI_BUILD_HAS_24_2
 int access_amdsmi_soc_pstate_id(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_soc_pstate_p)
-    return PAPI_ENOSUPP;
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_soc_pstate_p) return PAPI_ENOSUPP;
 
   amdsmi_dpm_policy_t pol = {0};
-  amdsmi_status_t st = amdsmi_get_soc_pstate_p(device_handles[event->device], &pol);
-  if (st != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
+  amdsmi_status_t st =
+      amdsmi_get_soc_pstate_p(device_handles[event->device], &pol);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
   event->value = (uint64_t)pol.current;
   return PAPI_OK;
 }
 
 int access_amdsmi_soc_pstate_supported(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_soc_pstate_p)
-    return PAPI_ENOSUPP;
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_soc_pstate_p) return PAPI_ENOSUPP;
 
   amdsmi_dpm_policy_t pol = {0};
-  amdsmi_status_t st = amdsmi_get_soc_pstate_p(device_handles[event->device], &pol);
-  if (st != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
+  amdsmi_status_t st =
+      amdsmi_get_soc_pstate_p(device_handles[event->device], &pol);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
   event->value = (uint64_t)pol.num_supported;
   return PAPI_OK;
 }
 
 int access_amdsmi_xgmi_plpd_id(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_xgmi_plpd_p)
-    return PAPI_ENOSUPP;
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_xgmi_plpd_p) return PAPI_ENOSUPP;
 
   amdsmi_dpm_policy_t pol = {0};
-  amdsmi_status_t st = amdsmi_get_xgmi_plpd_p(device_handles[event->device], &pol);
-  if (st != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
+  amdsmi_status_t st =
+      amdsmi_get_xgmi_plpd_p(device_handles[event->device], &pol);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
   event->value = (uint64_t)pol.current;
   return PAPI_OK;
 }
 
 int access_amdsmi_xgmi_plpd_supported(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
-  if (!amdsmi_get_xgmi_plpd_p)
-    return PAPI_ENOSUPP;
+  if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
+  if (!amdsmi_get_xgmi_plpd_p) return PAPI_ENOSUPP;
 
   amdsmi_dpm_policy_t pol = {0};
-  amdsmi_status_t st = amdsmi_get_xgmi_plpd_p(device_handles[event->device], &pol);
-  if (st != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
+  amdsmi_status_t st =
+      amdsmi_get_xgmi_plpd_p(device_handles[event->device], &pol);
+  if (st != AMDSMI_STATUS_SUCCESS) return PAPI_EMISC;
   event->value = (uint64_t)pol.num_supported;
   return PAPI_OK;
 }
+#else
+int access_amdsmi_soc_pstate_id(int mode, void *arg) {
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+}
+
+int access_amdsmi_soc_pstate_supported(int mode, void *arg) {
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+}
+
+int access_amdsmi_xgmi_plpd_id(int mode, void *arg) {
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+}
+
+int access_amdsmi_xgmi_plpd_supported(int mode, void *arg) {
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+}
+#endif
 
 int access_amdsmi_process_isolation(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
