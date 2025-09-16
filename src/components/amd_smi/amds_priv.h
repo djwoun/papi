@@ -19,6 +19,27 @@
     AMDSMI_LIB_VERSION_MINOR >= (min)))
 
 /*
+ * ROCm 6.0/6.1 shipped AMD SMI 24.x headers that predated a number of helper
+ * enums/struct fields used by the newer topology, clock and policy queries.
+ * Probe for the accompanying macros so we can fence those call paths when
+ * targeting SDKs older than 24.2.
+ */
+#if defined(AMDSMI_PROCESSOR_TYPE_AMD_GPU) &&                                  \
+    defined(AMDSMI_TEMPERATURE_TYPE_EDGE) &&                                   \
+    defined(AMDSMI_GPU_BLOCK_VCN) &&                                           \
+    defined(AMDSMI_CLK_TYPE_SYS)
+#define PAPI_AMDSMI_HAS_24_2_HEADERS 1
+#else
+#define PAPI_AMDSMI_HAS_24_2_HEADERS 0
+#endif
+
+#if PAPI_AMDSMI_HAS_24_2_HEADERS && AMDSMI_VERSION_AT_LEAST(24, 2)
+#define PAPI_AMDSMI_BUILD_HAS_24_2 1
+#else
+#define PAPI_AMDSMI_BUILD_HAS_24_2 0
+#endif
+
+/*
  * Some AMD SMI 24.7 symbols/types were introduced incrementally across ROCm
  * drops.  Older 24.x headers advertise the newer version numbers but lack the
  * associated structs/constants entirely.  Detect availability via the helper
@@ -36,6 +57,11 @@
 #define PAPI_AMDSMI_BUILD_HAS_24_7 1
 #else
 #define PAPI_AMDSMI_BUILD_HAS_24_7 0
+#endif
+
+#if PAPI_AMDSMI_BUILD_HAS_24_7 && !PAPI_AMDSMI_BUILD_HAS_24_2
+#undef PAPI_AMDSMI_BUILD_HAS_24_2
+#define PAPI_AMDSMI_BUILD_HAS_24_2 1
 #endif
 
 /* Mode enumeration used by accessors */
