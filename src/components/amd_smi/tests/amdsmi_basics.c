@@ -7,11 +7,13 @@
  */
  
  
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "papi.h"
-#include "test_harness.hpp"
+#include "test_harness.h"
 
 // Return true if rc is a "warning, not failure" status for add/start/stop.
 static inline bool is_warning_rc(int rc) {
@@ -20,10 +22,10 @@ static inline bool is_warning_rc(int rc) {
 
 int main(int argc, char *argv[]) {
   // Unbuffer stdout so the final status line shows promptly.
-   setvbuf(stdout, nullptr, _IONBF, 0);
+   setvbuf(stdout, NULL, _IONBF, 0);
 
   harness_accept_tests_quiet(&argc, argv);
-  auto opts = parse_harness_cli(argc, argv);
+  HarnessOpts opts = parse_harness_cli(argc, argv);
 
   // 1. Initialise PAPI
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
@@ -37,7 +39,7 @@ int main(int argc, char *argv[]) {
   const int ncomps = PAPI_num_components();
   for (int i = 0; i < ncomps && cid < 0; ++i) {
     const PAPI_component_info_t *cinfo = PAPI_get_component_info(i);
-    if (cinfo && std::strcmp(cinfo->name, "amd_smi") == 0) {
+    if (cinfo && strcmp(cinfo->name, "amd_smi") == 0) {
       cid = i;
     }
   }
@@ -59,7 +61,7 @@ int main(int argc, char *argv[]) {
   int passed = 0, warned = 0, failed = 0, skipped = 0;
 
   do {
-    char ev_name[PAPI_MAX_STR_LEN]{};
+    char ev_name[PAPI_MAX_STR_LEN] = {0};
     if (PAPI_event_code_to_name(ev_code, ev_name) != PAPI_OK) {
       // Shouldn't happen; skip silently
       ++skipped;
@@ -67,8 +69,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Preserve your original skip for process* events
-    if (std::strncmp(ev_name, "amd_smi:::process", 17) == 0 ||
-        std::strncmp(ev_name, "process", 7) == 0) {
+    if (strncmp(ev_name, "amd_smi:::process", 17) == 0 ||
+        strncmp(ev_name, "process", 7) == 0) {
       ++skipped;
       NOTE("[%4d] Skipping %s (process events not testable)\n", event_index++, ev_name);
       continue;

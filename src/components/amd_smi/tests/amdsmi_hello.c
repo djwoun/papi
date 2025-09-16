@@ -4,18 +4,20 @@
  *          djwoun@gmail.com
  *
  */
-#include <cstdio>
-#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+
 #include "papi.h"
-#include "test_harness.hpp"
+#include "test_harness.h"
 
 int main(int argc, char** argv) {
     // Unbuffer stdout so the final status line always shows.
-    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stdout, NULL, _IONBF, 0);
 
     harness_accept_tests_quiet(&argc, argv);
-    auto opts = parse_harness_cli(argc, argv);
+    HarnessOpts opts = parse_harness_cli(argc, argv);
 
     // Default event (can override via argv[1], e.g. "./amdsmi_hello amd_smi:::power_average:device=0")
     const char* ev = "amd_smi:::temp_current:device=0:sensor=1";

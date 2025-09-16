@@ -13,7 +13,7 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-#include "test_harness.hpp"
+#include "test_harness.h"
 
 #define M_DIM 7296
 #define K_DIM 14592
@@ -88,7 +88,7 @@ __global__ void dgemm_kernel(const double *A, const double *B, double *C,
     }
 }
 
-static int real_main(const HarnessOpts& opts) {
+static int real_main(const HarnessOpts *opts) {
     // Graceful AMD SMI availability check (library path)
     const char* root = getenv("PAPI_AMDSMI_ROOT");
     if (!root || !*root) {
@@ -148,7 +148,7 @@ static int real_main(const HarnessOpts& opts) {
     HIP_CHECK(hipSetDevice(1));
     hipDeviceProp_t deviceProp;
     HIP_CHECK(hipGetDeviceProperties(&deviceProp, 1));
-    if (opts.print) {
+    if (opts->print) {
         printf("Device Name: %s\n", deviceProp.name);
         printf("Compute Units: %d\n", deviceProp.multiProcessorCount);
         printf("Max Threads Per Block: %d\n", deviceProp.maxThreadsPerBlock);
@@ -159,7 +159,7 @@ static int real_main(const HarnessOpts& opts) {
     size_t size_B = ((size_t)K_DIM * N_DIM * sizeof(double));
     size_t size_C = ((size_t)M_DIM * N_DIM * sizeof(double));
 
-    double *h_A=nullptr, *h_B=nullptr, *h_C=nullptr;
+    double *h_A = NULL, *h_B = NULL, *h_C = NULL;
     HIP_CHECK(hipHostMalloc(&h_A, size_A, hipHostMallocDefault));
     HIP_CHECK(hipHostMalloc(&h_B, size_B, hipHostMallocDefault));
     HIP_CHECK(hipHostMalloc(&h_C, size_C, hipHostMallocDefault));
@@ -204,7 +204,7 @@ static int real_main(const HarnessOpts& opts) {
     pthread_t monitor_thread;
     struct monitor_params params;
     params.EventSet = EventSet;
-    params.print    = opts.print ? 1 : 0;
+    params.print    = opts->print ? 1 : 0;
     gettimeofday(&params.start_time, NULL);
     statusFlag = pthread_create(&monitor_thread, NULL, monitor_events, &params);
     if (statusFlag != 0) { fprintf(stderr, "pthread_create failed\n"); return 1; }
@@ -260,7 +260,7 @@ static int real_main(const HarnessOpts& opts) {
 
 int main(int argc, char *argv[]) {
     harness_accept_tests_quiet(&argc, argv);
-    auto opts = parse_harness_cli(argc, argv);
-    int rc = real_main(opts);
+    HarnessOpts opts = parse_harness_cli(argc, argv);
+    int rc = real_main(&opts);
     return eval_result(opts, rc);
 }

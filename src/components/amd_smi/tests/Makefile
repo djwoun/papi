@@ -6,7 +6,8 @@ HIPCC := $(HIP_PATH)/bin/hipcc
 
 # Toolchain / flags
 CFLAGS   ?= -DPAPI_NUM_COMP=3
-CXXFLAGS ?= $(CFLAGS) -std=c++17
+CSTD     ?= -std=c11
+HIPFLAGS ?= $(CFLAGS) -std=c++17
 OPTFLAGS ?= -O2
 
 UTILOBJS ?= ../../../testlib/libtestlib.a
@@ -44,25 +45,17 @@ all: amdsmi_hello amdsmi_basics amdsmi_gemm $(TESTS_AMDSMI)
 %.o: %.c
 	@echo "Compiling C source $< to $@..."
 	@echo "HIPCC: $(HIPCC)"
-	@echo "CFLAGS: $(CFLAGS) OPTFLAGS: $(OPTFLAGS)"
+	@echo "CFLAGS: $(CFLAGS) CSTD: $(CSTD) OPTFLAGS: $(OPTFLAGS)"
 	@echo "INCLUDES: $(EFFECTIVE_INCLUDE)"
-	$(HIPCC) $(CFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -c $< -o $@
-
-# .cpp -> .o (generic C++)
-%.o: %.cpp
-	@echo "Compiling C++ source $< to $@..."
-	@echo "HIPCC: $(HIPCC)"
-	@echo "CXXFLAGS: $(CXXFLAGS) OPTFLAGS: $(OPTFLAGS)"
-	@echo "INCLUDES: $(EFFECTIVE_INCLUDE)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -c $< -o $@
+	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -c $< -o $@
 
 # HIP override for the GEMM-like file (renamed): compile with -x hip
-amdsmi_gemm.o: amdsmi_gemm.cpp
+amdsmi_gemm.o: amdsmi_gemm.c
 	@echo "Compiling HIP source $< to $@..."
 	@echo "HIPCC: $(HIPCC)"
-	@echo "CXXFLAGS: $(CXXFLAGS) OPTFLAGS: $(OPTFLAGS)"
+	@echo "HIPFLAGS: $(HIPFLAGS) OPTFLAGS: $(OPTFLAGS)"
 	@echo "INCLUDES: $(EFFECTIVE_INCLUDE)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -x hip -c $< -o $@
+	$(HIPCC) $(HIPFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -x hip -c $< -o $@
 
 # ------------------------
 # Link rules
@@ -72,7 +65,7 @@ amdsmi_gemm.o: amdsmi_gemm.cpp
 amdsmi_hello: amdsmi_hello.o $(UTILOBJS) $(PAPILIB)
 	@echo "Linking $@..."
 	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_hello.o $(LDFLAGS_AMDSMI)
+	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_hello.o $(LDFLAGS_AMDSMI)
 
 # Back-compat alias: allow "make amdsmi_example" to build amdsmi_hello
 amdsmi_example: amdsmi_hello
@@ -81,24 +74,24 @@ amdsmi_example: amdsmi_hello
 amdsmi_basics: amdsmi_basics.o $(UTILOBJS) $(PAPILIB)
 	@echo "Linking $@..."
 	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_basics.o $(LDFLAGS_AMDSMI)
+	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_basics.o $(LDFLAGS_AMDSMI)
 
 # renamed GEMM target
 amdsmi_gemm: amdsmi_gemm.o $(UTILOBJS) $(PAPILIB)
 	@echo "Linking $@..."
 	@echo "Using LDFLAGS_GEMM: $(LDFLAGS_GEMM)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_gemm.o $(LDFLAGS_GEMM)
+	$(HIPCC) $(HIPFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_gemm.o $(LDFLAGS_GEMM)
 
 # New tests
 amdsmi_energy_monotonic: amdsmi_energy_monotonic.o $(UTILOBJS) $(PAPILIB)
 	@echo "Linking $@..."
 	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_energy_monotonic.o $(LDFLAGS_AMDSMI)
+	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_energy_monotonic.o $(LDFLAGS_AMDSMI)
 
 amdsmi_ctx_conflict: amdsmi_ctx_conflict.o $(UTILOBJS) $(PAPILIB)
 	@echo "Linking $@..."
 	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CXXFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_ctx_conflict.o $(LDFLAGS_AMDSMI)
+	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_ctx_conflict.o $(LDFLAGS_AMDSMI)
 
 # Convenience meta-target
 tests: $(TESTS_AMDSMI)
@@ -124,7 +117,8 @@ checkpath:
 	@echo "HIPCC = $(HIPCC)"
 	@echo "INCLUDES = $(EFFECTIVE_INCLUDE)"
 	@echo "CFLAGS = $(CFLAGS)"
-	@echo "CXXFLAGS = $(CXXFLAGS)"
+	@echo "CSTD = $(CSTD)"
+	@echo "HIPFLAGS = $(HIPFLAGS)"
 	@echo "OPTFLAGS = $(OPTFLAGS)"
 	@echo "UTILOBJS = $(UTILOBJS)"
 	@echo "PAPILIB = $(PAPILIB)"

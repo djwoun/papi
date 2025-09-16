@@ -1,23 +1,25 @@
 /**
  * @file    test_harness.h
- * @author  Dong Jun Woun 
+ * @author  Dong Jun Woun
  *          djwoun@gmail.com
  *
  */
 
-#ifndef TEST_HARNESS_HPP
-#define TEST_HARNESS_HPP
+#ifndef TEST_HARNESS_H
+#define TEST_HARNESS_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "papi.h"  // for PAPI_* error codes used by helper macros
 
-struct HarnessOpts {
+typedef struct HarnessOpts {
     bool print;
     bool expect_fail;
     int  had_warning;   // set to 1 if we hit ENOEVNT/ECNFLCT or any warning
-};
+} HarnessOpts;
 
 static HarnessOpts harness_opts;
 
@@ -60,7 +62,7 @@ static inline void harness_accept_tests_quiet(int *argc, char **argv) {
 }
 
 // Parse CLI
-static HarnessOpts parse_harness_cli(int argc, char **argv) {
+static inline HarnessOpts parse_harness_cli(int argc, char **argv) {
     /* Default to printing unless the legacy TESTS_QUIET token is
        present.  This mirrors src/run_tests.sh where invoking with -v
        unsets TESTS_QUIET, signalling that tests should emit output. */
@@ -92,7 +94,11 @@ static HarnessOpts parse_harness_cli(int argc, char **argv) {
 }
 
 // Final status line
-static int eval_result(const HarnessOpts &opts, int result_code) {
+static inline int eval_result(HarnessOpts opts, int result_code) {
+    if (harness_opts.had_warning) {
+        opts.had_warning = harness_opts.had_warning;
+    }
+
     bool passed = opts.expect_fail ? (result_code != 0) : (result_code == 0);
     if (passed) {
         if (opts.had_warning) printf("PASSED with WARNING\n");
@@ -140,4 +146,4 @@ static int eval_result(const HarnessOpts &opts, int result_code) {
 // Keep SKIP as a cant conduct success-with-warning
 #define SKIP(reason) EXIT_WARNING("%s", (reason))
 
-#endif // TEST_HARNESS_HPP
+#endif // TEST_HARNESS_H
