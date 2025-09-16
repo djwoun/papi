@@ -1,14 +1,12 @@
 /**
  * @file    amdsmi_basics.c
- * @author  Dong Jun Woun 
+ * @author  Dong Jun Woun
  *          djwoun@gmail.com
- *          Enumerates every native AMD-SMI event exposed through PAPI and measures
+ * @brief   Enumerates every native AMD-SMI event exposed through PAPI and measures
  *          them one at a time.
  */
- 
- 
-#include "test_harness.h"
 
+#include "test_harness.h"
 #include "papi.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -22,19 +20,19 @@ static inline bool is_warning_rc(int rc) {
 
 int main(int argc, char *argv[]) {
   // Unbuffer stdout so the final status line shows promptly.
-   setvbuf(stdout, NULL, _IONBF, 0);
+  setvbuf(stdout, NULL, _IONBF, 0);
 
   harness_accept_tests_quiet(&argc, argv);
   HarnessOpts opts = parse_harness_cli(argc, argv);
 
-  // 1. Initialise PAPI
+  // 1) Initialize PAPI.
   int ret = PAPI_library_init(PAPI_VER_CURRENT);
   if (ret != PAPI_VER_CURRENT) {
     NOTE("PAPI_library_init failed: %s", PAPI_strerror(ret));
     return eval_result(opts, 1);
   }
 
-  // 2. Locate the AMD-SMI component
+  // 2) Locate the AMD-SMI component.
   int cid = -1;
   const int ncomps = PAPI_num_components();
   for (int i = 0; i < ncomps && cid < 0; ++i) {
@@ -44,16 +42,16 @@ int main(int argc, char *argv[]) {
     }
   }
   if (cid < 0) {
-    // Can't conduct on this build/platform ¡æ pass with warning.
+    // Can't run this test on this build/platform (likely PAPI built without ROCm) — skip with warning.
     SKIP("Unable to locate the amd_smi component (PAPI built without ROCm?)");
   }
 
   NOTE("Using AMD-SMI component id %d\n", cid);
 
-  // 3. Enumerate every native event
+  // 3) Enumerate every native event.
   int ev_code = PAPI_NATIVE_MASK;
   if (PAPI_enum_cmp_event(&ev_code, PAPI_ENUM_FIRST, cid) != PAPI_OK) {
-    // No events ¡æ treat as ¡°nothing to do¡± (warning instead of failing)
+    // No events — treat as "nothing to do" (warning instead of failing).
     SKIP("No native events found for AMD-SMI component");
   }
 
@@ -63,12 +61,12 @@ int main(int argc, char *argv[]) {
   do {
     char ev_name[PAPI_MAX_STR_LEN] = {0};
     if (PAPI_event_code_to_name(ev_code, ev_name) != PAPI_OK) {
-      // Shouldn't happen; skip silently
+      // Shouldn't happen; skip silently.
       ++skipped;
       continue;
     }
 
-    // Preserve your original skip for process* events
+    // Skip process* events; these aren't testable in this harness.
     if (strncmp(ev_name, "amd_smi:::process", 17) == 0 ||
         strncmp(ev_name, "process", 7) == 0) {
       ++skipped;
@@ -78,17 +76,17 @@ int main(int argc, char *argv[]) {
 
     NOTE("[%4d] Testing %s...", event_index, ev_name);
 
-    // 4-7.  Create a fresh EventSet, read the event, print, cleanup
+    // 4–7) Create a fresh EventSet, add the event, start, stop/read, print, cleanup.
     int eventSet = PAPI_NULL;
     ret = PAPI_create_eventset(&eventSet);
     if (ret != PAPI_OK) {
-      // Hard failure to create an EventSet
+      // Hard failure to create an EventSet.
       NOTE("  ?  create_eventset failed: %s", PAPI_strerror(ret));
       ++failed; ++event_index;
       continue;
     }
 
-    // Keep original explicit assignment to the component
+    // Explicitly assign the component.
     ret = PAPI_assign_eventset_component(eventSet, cid);
     if (ret != PAPI_OK) {
       NOTE("  ?  assign_eventset_component failed: %s", PAPI_strerror(ret));
@@ -128,7 +126,7 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // Read once via stop (same as original)
+    // Read once via stop().
     ret = PAPI_stop(eventSet, &value);
     if (ret != PAPI_OK) {
       if (is_warning_rc(ret)) {
@@ -144,7 +142,7 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // Success path
+    // Success path.
     ++passed;
     if (opts.print) {
       printf("      %-60s = %lld\n\n", ev_name, value);

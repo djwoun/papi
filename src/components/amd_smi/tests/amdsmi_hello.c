@@ -1,9 +1,13 @@
 /**
  * @file    amdsmi_hello.c
- * @author  Dong Jun Woun 
- *          djwoun@gmail.com
- *
+ * @author  Dong Jun Woun <djwoun@gmail.com>
+ * @brief   Minimal example that reads a single AMD-SMI event via PAPI's AMD-SMI component.
+ * @details Selects the event from argv[1] if provided; otherwise defaults to
+ *          "amd_smi:::temp_current:device=0:sensor=1". Requires PAPI_AMDSMI_ROOT
+ *          so the component can dlopen the AMD-SMI library. Uses the test harness
+ *          (test_harness.h) for consistent output and skip handling.
  */
+
 #include "test_harness.h"
 
 #include "papi.h"
@@ -13,30 +17,32 @@
 #include <unistd.h>
 
 int main(int argc, char** argv) {
-    // Unbuffer stdout so the final status line always shows.
+    // Disable stdout buffering so the harness status line appears immediately.
     setvbuf(stdout, NULL, _IONBF, 0);
 
     harness_accept_tests_quiet(&argc, argv);
     HarnessOpts opts = parse_harness_cli(argc, argv);
 
-    // Default event (can override via argv[1], e.g. "./amdsmi_hello amd_smi:::power_average:device=0")
+    // Event to measure (override with argv[1], e.g.:
+    //   ./amdsmi_hello amd_smi:::power_average:device=0
+    // )
     const char* ev = "amd_smi:::temp_current:device=0:sensor=1";
     if (argc > 1 && strncmp(argv[1], "--", 2) != 0) ev = argv[1];
 
-    // Require AMD SMI root so the component can dlopen the library
+    // Check AMD-SMI root so the component can dlopen the library.
     const char* root = getenv("PAPI_AMDSMI_ROOT");
     if (!root || !*root) {
         SKIP("PAPI_AMDSMI_ROOT not set");
     }
 
-    // Init PAPI
+    // Initialize PAPI.
     int rc = PAPI_library_init(PAPI_VER_CURRENT);
     if (rc != PAPI_VER_CURRENT) {
         NOTE("PAPI_library_init failed: %s", PAPI_strerror(rc));
         return eval_result(opts, 1);
     }
 
-    // Create an EventSet
+    // Create an EventSet.
     int EventSet = PAPI_NULL;
     rc = PAPI_create_eventset(&EventSet);
     if (rc != PAPI_OK) {
@@ -44,7 +50,7 @@ int main(int argc, char** argv) {
         return eval_result(opts, 1);
     }
 
-    // Add event
+    // Add the selected event.
     rc = PAPI_add_named_event(EventSet, ev);
     if (rc == PAPI_ENOEVNT || rc == PAPI_ECNFLCT || rc == PAPI_EPERM) {
         NOTE("Event unavailable or HW/resource-limited: %s (%s)", ev, PAPI_strerror(rc));
@@ -55,7 +61,7 @@ int main(int argc, char** argv) {
         return eval_result(opts, 1);
     }
 
-    // Start | short wait | stop/read
+    // Start counters -> short wait -> stop/read.
     rc = PAPI_start(EventSet);
     if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) {
         NOTE("Cannot start counters: %s", PAPI_strerror(rc));
@@ -66,7 +72,8 @@ int main(int argc, char** argv) {
         return eval_result(opts, 1);
     }
 
-    usleep(100000); // ~100ms
+    usleep(100000); // ~100 ms sampling interval for this simple demo.
+
     long long val = 0;
     rc = PAPI_stop(EventSet, &val);
     if (rc != PAPI_OK) {
@@ -79,8 +86,10 @@ int main(int argc, char** argv) {
     (void)PAPI_destroy_eventset(&EventSet);
     PAPI_shutdown();
 
+    // If --print was requested via the harness, emit the event name and value.
     if (opts.print) {
         printf("Event: %s\nValue: %lld\n", ev, val);
     }
+
     return eval_result(opts, 0);
 }

@@ -1,8 +1,16 @@
 /**
  * @file    amdsmi_gemm.c
- * @author  Dong Jun Woun 
+ * @author  Dong Jun Woun
  *          djwoun@gmail.com
+ * @brief   Launches a large HIP DGEMM workload (on device 1) while sampling a
+ *          small set of AMD SMI counters via PAPI (temperature, VRAM, power).
  *
+ * The monitor thread polls the PAPI EventSet ~3 times per second while the kernel runs.
+ * This is intended for simple integration/soak testing rather than performance tuning.
+ *
+ * NOTE: The sampled AMD SMI events below target device=0, while the HIP workload
+ *       runs on device 1. If you want the metrics for the same device that runs
+ *       the kernel, change `device=0` to `device=1` in the event strings.
  */
 
 #include "test_harness.h"
@@ -15,6 +23,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+/* ----------------------------- Configuration ----------------------------- */
+
 #define M_DIM 7296
 #define K_DIM 14592
 #define N_DIM 7296
@@ -22,10 +32,13 @@
 #define NUM_STREAMS 1
 #define ITERATIONS_PER_STREAM 1
 
+/* --------------------------- HIP error helpers --------------------------- */
+
 #define HIP_CHECK(cmd) do { \
     hipError_t e = cmd; \
     if (e != hipSuccess) { \
-        fprintf(stderr, "Failed: HIP error %s:%d '%s' (code: %d)\n", __FILE__, __LINE__, hipGetErrorString(e), e); \
+        fprintf(stderr, "Failed: HIP error %s:%d '%s' (code: %d)\n", \
+                __FILE__, __LINE__, hipGetErrorString(e), e); \
         return 1; \
     } \
 } while(0)
@@ -33,10 +46,18 @@
 #define HIP_CHECK_CLEANUP(cmd) do { \
     hipError_t e = cmd; \
     if (e != hipSuccess) { \
-        fprintf(stderr, "Warning: HIP cleanup error %s:%d '%s' (code: %d)\n", __FILE__, __LINE__, hipGetErrorString(e), e); \
+        fprintf(stderr, "Warning: HIP cleanup error %s:%d '%s' (code: %d)\n", \
+                __FILE__, __LINE__, hipGetErrorString(e), e); \
     } \
 } while(0)
 
+/* --------------------------- Monitoring thread --------------------------- */
+
+/**
+ * @brief Background poller for PAPI EventSet values.
+ *
+ * If params->print is 1, it writes one line per sample to stdout with a timestamp.
+ */
 static volatile int stop_monitor = 0;
 
 struct monitor_params {
@@ -69,11 +90,17 @@ static void *monitor_events(void *args) {
             fflush(stdout);
         }
 
-        usleep(300000);
+        usleep(300000); // ~3 Hz
     }
     return NULL;
 }
 
+/* ------------------------------- Workload -------------------------------- */
+
+/**
+ * @brief Naive DGEMM: C = alpha * A * B + beta * C
+ *        A: MxK, B: KxN, C: MxN (row-major)
+ */
 __global__ void dgemm_kernel(const double *A, const double *B, double *C,
                              int M, int N, int K, double alpha, double beta) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -88,21 +115,23 @@ __global__ void dgemm_kernel(const double *A, const double *B, double *C,
     }
 }
 
+/* ------------------------------- Test body -------------------------------- */
+
 static int real_main(const HarnessOpts *opts) {
-    // Graceful AMD SMI availability check (library path)
+    /* Gracefully skip if the PAPI AMD SMI component isn't available. */
     const char* root = getenv("PAPI_AMDSMI_ROOT");
     if (!root || !*root) {
         SKIP("PAPI_AMDSMI_ROOT not set");
     }
 
-    // Initialize PAPI
+    /* Initialize PAPI */
     int statusFlag = PAPI_library_init(PAPI_VER_CURRENT);
     if (statusFlag != PAPI_VER_CURRENT) {
         fprintf(stderr, "PAPI shared library version error: %s\n", PAPI_strerror(statusFlag));
         return 1;
     }
 
-    // Create EventSet
+    /* Create EventSet */
     int EventSet = PAPI_NULL;
     statusFlag = PAPI_create_eventset(&EventSet);
     if (statusFlag != PAPI_OK) {
@@ -110,41 +139,43 @@ static int real_main(const HarnessOpts *opts) {
         return 1;
     }
 
-    // Required events (same as your original)
+    /* AMD SMI events to sample.
+     * NOTE: These target device=0. See the NOTE in the file header regarding device selection.
+     */
     const char *event1 = "amd_smi:::temp_current:device=0:sensor=1";
     const char *event2 = "amd_smi:::temp_current:device=0:sensor=2";
     const char *event3 = "amd_smi:::mem_total_VRAM:device=0";
     const char *event4 = "amd_smi:::mem_usage_VRAM:device=0";
     const char *event5 = "amd_smi:::power_average:device=0";
 
-    // Add events; treat ENOEVNT as SKIP so the test suite stays portable
+    /* Add events; treat ENOEVNT as SKIP so the test suite stays portable. */
     statusFlag = PAPI_add_named_event(EventSet, event1);
-    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: mem_total_VRAM:device=0");
+    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: temp_current:device=0:sensor=1");
     if (statusFlag != PAPI_OK) { fprintf(stderr, "add %s: %s\n", event1, PAPI_strerror(statusFlag)); return 1; }
 
     statusFlag = PAPI_add_named_event(EventSet, event2);
-    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: temp_current:device=0:sensor=1");
+    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: temp_current:device=0:sensor=2");
     if (statusFlag != PAPI_OK) { fprintf(stderr, "add %s: %s\n", event2, PAPI_strerror(statusFlag)); return 1; }
 
     statusFlag = PAPI_add_named_event(EventSet, event3);
-    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: temp_current:device=0:sensor=2");
+    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: mem_total_VRAM:device=0");
     if (statusFlag != PAPI_OK) { fprintf(stderr, "add %s: %s\n", event3, PAPI_strerror(statusFlag)); return 1; }
 
     statusFlag = PAPI_add_named_event(EventSet, event4);
-    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: clk_freq_current:device=0");
+    if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: mem_usage_VRAM:device=0");
     if (statusFlag != PAPI_OK) { fprintf(stderr, "add %s: %s\n", event4, PAPI_strerror(statusFlag)); return 1; }
 
     statusFlag = PAPI_add_named_event(EventSet, event5);
     if (statusFlag == PAPI_ENOEVNT) SKIP("Event not supported: power_average:device=0");
     if (statusFlag != PAPI_OK) { fprintf(stderr, "add %s: %s\n", event5, PAPI_strerror(statusFlag)); return 1; }
 
-    // HIP runtime preflight so HIP_CHECK won't hard-exit
+    /* HIP runtime preflight so HIP_CHECK won't hard-exit. */
     int device_count = 0;
     if (hipGetDeviceCount(&device_count) != hipSuccess || device_count <= 1) {
         SKIP("HIP device 1 not available");
     }
 
-    // Set device 1 and show properties (only when output is enabled)
+    /* Use device 1 and (optionally) print basic properties. */
     HIP_CHECK(hipSetDevice(1));
     hipDeviceProp_t deviceProp;
     HIP_CHECK(hipGetDeviceProperties(&deviceProp, 1));
@@ -154,7 +185,7 @@ static int real_main(const HarnessOpts *opts) {
         printf("Max Threads Per Block: %d\n", deviceProp.maxThreadsPerBlock);
     }
 
-    // Host buffers (pinned)
+    /* Host buffers (pinned) */
     size_t size_A = ((size_t)M_DIM * K_DIM * sizeof(double));
     size_t size_B = ((size_t)K_DIM * N_DIM * sizeof(double));
     size_t size_C = ((size_t)M_DIM * N_DIM * sizeof(double));
@@ -175,7 +206,7 @@ static int real_main(const HarnessOpts *opts) {
     for (int i = 0; i < K_DIM * N_DIM; i++) h_B[i] = (double)(i % 100);
     for (int i = 0; i < M_DIM * N_DIM; i++) h_C[i] = 0.0;
 
-    // Device buffers
+    /* Device buffers per stream */
     double *d_A[NUM_STREAMS], *d_B[NUM_STREAMS], *d_C[NUM_STREAMS];
     for (int s = 0; s < NUM_STREAMS; s++) {
         HIP_CHECK(hipMalloc((void**)&d_A[s], size_A));
@@ -190,26 +221,33 @@ static int real_main(const HarnessOpts *opts) {
         HIP_CHECK(hipEventCreate(&events[s]));
     }
 
+    /* H2D copies */
     for (int s = 0; s < NUM_STREAMS; s++) {
         HIP_CHECK(hipMemcpyAsync(d_A[s], h_A, size_A, hipMemcpyHostToDevice, streams[s]));
         HIP_CHECK(hipMemcpyAsync(d_B[s], h_B, size_B, hipMemcpyHostToDevice, streams[s]));
         HIP_CHECK(hipMemcpyAsync(d_C[s], h_C, size_C, hipMemcpyHostToDevice, streams[s]));
     }
 
-    // Start PAPI
+    /* Start counters */
     statusFlag = PAPI_start(EventSet);
-    if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_start: %s\n", PAPI_strerror(statusFlag)); return 1; }
+    if (statusFlag != PAPI_OK) {
+        fprintf(stderr, "PAPI_start: %s\n", PAPI_strerror(statusFlag));
+        return 1;
+    }
 
-    // Launch monitor thread (prints unless suppressed)
+    /* Launch monitor thread (prints unless suppressed) */
     pthread_t monitor_thread;
     struct monitor_params params;
     params.EventSet = EventSet;
     params.print    = opts->print ? 1 : 0;
     gettimeofday(&params.start_time, NULL);
     statusFlag = pthread_create(&monitor_thread, NULL, monitor_events, &params);
-    if (statusFlag != 0) { fprintf(stderr, "pthread_create failed\n"); return 1; }
+    if (statusFlag != 0) {
+        fprintf(stderr, "pthread_create failed\n");
+        return 1;
+    }
 
-    // Ensure copies are done
+    /* Ensure copies are done */
     for (int s = 0; s < NUM_STREAMS; s++) HIP_CHECK(hipStreamSynchronize(streams[s]));
 
     double alpha = 0.75;
@@ -226,14 +264,14 @@ static int real_main(const HarnessOpts *opts) {
                                M_DIM, N_DIM, K_DIM, alpha, beta);
             HIP_CHECK(hipEventRecord(events[s], streams[s]));
             HIP_CHECK(hipStreamSynchronize(streams[s]));
-            usleep(3000000);
+            usleep(3000000); // Allow the monitor to capture a few samples
         }
     }
 
+    /* Stop the monitor and clean up */
     stop_monitor = 1;
     pthread_join(monitor_thread, NULL);
 
-    // Cleanup
     for (int s = 0; s < NUM_STREAMS; s++) {
         HIP_CHECK_CLEANUP(hipEventDestroy(events[s]));
         HIP_CHECK_CLEANUP(hipStreamDestroy(streams[s]));
@@ -252,11 +290,13 @@ static int real_main(const HarnessOpts *opts) {
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_cleanup_eventset: %s\n", PAPI_strerror(statusFlag)); return 1; }
     statusFlag = PAPI_destroy_eventset(&EventSet);
     if (statusFlag != PAPI_OK) { fprintf(stderr, "PAPI_destroy_eventset: %s\n", PAPI_strerror(statusFlag)); return 1; }
-    
-    HIP_CHECK_CLEANUP(hipDeviceReset());   // optional but reduces still reachable from the HIP runtime
-    PAPI_shutdown();    // triggers component cleanup + AMD SMI shutdown
+
+    HIP_CHECK_CLEANUP(hipDeviceReset());   // Optional; reduces "still reachable" reports from HIP in leak checkers
+    PAPI_shutdown();                       // Triggers component cleanup and AMD SMI shutdown
     return 0;
 }
+
+/* --------------------------- Test harness glue --------------------------- */
 
 int main(int argc, char *argv[]) {
     harness_accept_tests_quiet(&argc, argv);

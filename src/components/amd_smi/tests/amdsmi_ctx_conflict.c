@@ -1,12 +1,19 @@
 /**
  * @file    amdsmi_ctx_conflict.c
- * @author  Dong Jun Woun 
+ * @author  Dong Jun Woun
  *          djwoun@gmail.com
+ * @brief   Validates that an AMD-SMI native event exposed via PAPI is context-exclusive
+ *          by attempting to start the same event in two threads. Expected result:
+ *          thread 1 starts successfully; thread 2 fails with PAPI_ECNFLCT.
  *
+ * Usage:
+ *   ./amdsmi_ctx_conflict [<amd_smi native event string>] [harness options]
+ *   If no event is provided, defaults to "amd_smi:::temp_current:device=0:sensor=1".
  */
-#include "test_harness.h"
 
+#include "test_harness.h"
 #include "papi.h"
+
 #include <stdbool.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -15,6 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
+/** PAPI thread-id callback. */
 static unsigned long get_tid(void) { return (unsigned long)pthread_self(); }
 
 struct ThreadState {
@@ -23,9 +31,15 @@ struct ThreadState {
 
 static _Atomic bool t1_started = false;
 
-// Default event; you can override with argv[1] (any amd_smi native event string)
+/* Default event; can be overridden by argv[1] (any AMD-SMI native event string). */
 static const char* g_event = "amd_smi:::temp_current:device=0:sensor=1";
 
+/**
+ * Thread 1:
+ * - Creates an EventSet, adds the selected event, and starts it.
+ * - Keeps it running briefly so thread 2 collides on start.
+ * Expected: PAPI_start succeeds.
+ */
 static void* thread_fn1(void* arg) {
     PAPI_register_thread();
     struct ThreadState* st = (struct ThreadState*)arg;
@@ -42,12 +56,13 @@ static void* thread_fn1(void* arg) {
     rc = PAPI_start(EventSet);
     st->start_rc = rc;
     if (rc == PAPI_OK) {
+        /* Publish that t1 is actively running the event so t2 can attempt to collide. */
         atomic_store_explicit(&t1_started, true, memory_order_release);
-        long long v=0; (void)PAPI_read(EventSet, &v);
-        usleep(100000); // keep running long enough for thread2 to collide
+        long long v = 0; (void)PAPI_read(EventSet, &v);
+        usleep(100000); /* run long enough for thread 2 to attempt start */
         (void)PAPI_stop(EventSet, &v);
     } else {
-        // If thread 1 cannot start, we cannot conduct the test => PASS with WARNING
+        /* If t1 cannot start, the test cannot be executed cleanly: skip due to HW/resource limits. */
         SKIP("Cannot start thread1 due to HW/resource limits");
     }
 
@@ -57,6 +72,11 @@ static void* thread_fn1(void* arg) {
     return NULL;
 }
 
+/**
+ * Thread 2:
+ * - Waits until t1 is running, then attempts to start the same event.
+ * Expected: PAPI_start fails with PAPI_ECNFLCT (resource conflict).
+ */
 static void* thread_fn2(void* arg) {
     PAPI_register_thread();
     struct ThreadState* st = (struct ThreadState*)arg;
@@ -68,9 +88,9 @@ static void* thread_fn2(void* arg) {
     rc = PAPI_add_named_event(EventSet, g_event);
     if (rc == PAPI_ENOEVNT) { SKIP("Event not supported on this platform"); }
     if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) { SKIP("Cannot add event due to HW/resource limits"); }
-    if (rc != PAPI_OK) { NOTE("t2 add: %s", PAPI_strerror(rc)); st->start_rc = rc; PAPI_destroy_eventset(&EventSet); PAPI_unregister_thread(); return NULL; }
+    if (rc != PAPI_OK) { NOTE("t2 add: %s", PAPI_strerror(rc)); st->start_rc = rc; (void)PAPI_destroy_eventset(&EventSet); PAPI_unregister_thread(); return NULL; }
 
-    // Wait until thread1 is actually running the event
+    /* Busy-wait until t1 has started the event (adequate for a short test). */
     while (!atomic_load_explicit(&t1_started, memory_order_acquire)) { /* spin */ }
 
     rc = PAPI_start(EventSet);
@@ -79,7 +99,7 @@ static void* thread_fn2(void* arg) {
         NOTE("t2 start expected fail: %s", PAPI_strerror(rc));
     } else {
         NOTE("t2 start unexpectedly succeeded");
-        long long v=0; (void)PAPI_stop(EventSet, &v);
+        long long v = 0; (void)PAPI_stop(EventSet, &v);
     }
 
     (void)PAPI_cleanup_eventset(EventSet);
@@ -88,13 +108,22 @@ static void* thread_fn2(void* arg) {
     return NULL;
 }
 
+/**
+ * Program entry:
+ * - Parses harness options and optional event override.
+ * - Ensures PAPI_AMDSMI_ROOT is set and PAPI is initialized for threading.
+ * - Runs the two-thread contention test and evaluates pass/fail:
+ *   PASS  => t1 start == PAPI_OK and t2 start == PAPI_ECNFLCT
+ *   FAIL  => any other combination.
+ */
 int main(int argc, char** argv) {
-    // Unbuffer stdout so the final status line always shows promptly
+    /* Unbuffer stdout so the final status line always shows promptly. */
     setvbuf(stdout, NULL, _IONBF, 0);
 
     harness_accept_tests_quiet(&argc, argv);
     HarnessOpts opts = parse_harness_cli(argc, argv);
-    // Optional override of the event: ./amdsmi_ctx_conflict "<event>"
+
+    /* Optional override of the event: ./amdsmi_ctx_conflict "<event>" */
     if (argc > 1 && strncmp(argv[1], "--", 2) != 0) g_event = argv[1];
 
     const char* root = getenv("PAPI_AMDSMI_ROOT");
@@ -111,6 +140,7 @@ int main(int argc, char** argv) {
     struct ThreadState s2;
     s1.start_rc = PAPI_OK;
     s2.start_rc = PAPI_OK;
+
     pthread_t th1, th2;
     pthread_create(&th1, NULL, thread_fn1, &s1);
     pthread_create(&th2, NULL, thread_fn2, &s2);
@@ -123,7 +153,7 @@ int main(int argc, char** argv) {
         printf("t2 start rc: %d (%s)\n", s2.start_rc, PAPI_strerror(s2.start_rc));
     }
 
-    // PASS when expected contention occurred; else FAIL.
+    /* PASS when expected contention occurred; else FAIL. */
     int final_rc = (s1.start_rc == PAPI_OK && s2.start_rc == PAPI_ECNFLCT) ? 0 : 1;
     if (final_rc != 0) NOTE("Unexpected results (wanted t1 OK, t2 PAPI_ECNFLCT).");
 
