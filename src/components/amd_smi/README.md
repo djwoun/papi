@@ -3,7 +3,7 @@
 The **AMD_SMI** (AMD System Management Interface) component exposes hardware
 management counters (and selected controls) for AMD GPUs — e.g., power usage,
 temperatures, clocks, PCIe link metrics, VRAM information, and RAS/ECC status —
-by querying the AMD SMI library at runtime (ROCm ≥ 6.4.0).
+by querying the AMD SMI library at runtime (ROCm ≥ 6.3.4).
 
 - [Environment Variables](#environment-variables)
 - [Enabling the AMD_SMI Component](#enabling-the-amd_smi-component)
