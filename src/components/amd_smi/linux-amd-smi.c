@@ -162,6 +162,12 @@ static int _amd_smi_update_control_state(hwd_control_state_t *ctrl, NativeInfo_t
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
+    if (amdsmi_ctl->amds_ctx) {
+        (void)amds_ctx_stop(amdsmi_ctl->amds_ctx);
+        (void)amds_ctx_close(amdsmi_ctl->amds_ctx);
+        amdsmi_ctl->amds_ctx = NULL;
+        amdsmi_ctx->state &= ~(AMDS_EVENTS_OPENED | AMDS_EVENTS_RUNNING);
+    }
     return PAPI_OK;
 }
 
@@ -173,18 +179,29 @@ static int _amd_smi_start(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
     if (amdsmi_ctx->state & AMDS_EVENTS_RUNNING) {
         return PAPI_EMISC;
     }
-    papi_errno = amds_ctx_open(amdsmi_ctl->events_id, amdsmi_ctl->num_events, &amdsmi_ctl->amds_ctx);
+    if (!amdsmi_ctl->amds_ctx) {
+        papi_errno = amds_ctx_open(amdsmi_ctl->events_id, amdsmi_ctl->num_events,
+                                   &amdsmi_ctl->amds_ctx);
+        if (papi_errno != PAPI_OK) {
+            return papi_errno;
+        }
+    }
+
+    amdsmi_ctx->state |= AMDS_EVENTS_OPENED;
+
+    papi_errno = amds_ctx_reset(amdsmi_ctl->amds_ctx);
     if (papi_errno != PAPI_OK) {
+        amds_ctx_close(amdsmi_ctl->amds_ctx);
+        amdsmi_ctl->amds_ctx = NULL;
+        amdsmi_ctx->state &= ~(AMDS_EVENTS_OPENED | AMDS_EVENTS_RUNNING);
         return papi_errno;
     }
-    amdsmi_ctx->state = AMDS_EVENTS_OPENED;
 
     papi_errno = amds_ctx_start(amdsmi_ctl->amds_ctx);
     if (papi_errno != PAPI_OK) {
-        // If start fails, close the context and reset state
         amds_ctx_close(amdsmi_ctl->amds_ctx);
-        amdsmi_ctx->state = 0;
         amdsmi_ctl->amds_ctx = NULL;
+        amdsmi_ctx->state &= ~(AMDS_EVENTS_OPENED | AMDS_EVENTS_RUNNING);
         return papi_errno;
     }
     amdsmi_ctx->state |= AMDS_EVENTS_RUNNING;
