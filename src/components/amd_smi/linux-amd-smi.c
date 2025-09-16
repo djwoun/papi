@@ -1,9 +1,9 @@
-//-----------------------------------------------------------------------------
-// @file    linux-amd-smi.c
-// @ingroup amd_smi_components
-//
-// @brief PAPI component for AMD GPU management via the AMD SMI library.
-//-----------------------------------------------------------------------------
+/**
+ * @file    linux-amd-smi.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
 
 #include <stdlib.h>
 #include <stdio.h>

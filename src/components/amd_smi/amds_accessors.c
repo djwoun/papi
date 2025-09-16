@@ -1,3 +1,10 @@
+/**
+ * @file    amds_accessors.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #include "amds_priv.h"
 #include "papi.h"
 #include "papi_memory.h"

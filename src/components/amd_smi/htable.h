@@ -1,3 +1,12 @@
+/**
+ * @file    htable.c
+ * @author  Giuseppe Congiu
+ *          gcongiu@icl.utk.edu
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #ifndef __HTABLE_H__
 #define __HTABLE_H__
 

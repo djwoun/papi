@@ -1,3 +1,10 @@
+/**
+ * @file    amds_funcs.h
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #ifndef AMDS_FUNCS_H
 #define AMDS_FUNCS_H
 

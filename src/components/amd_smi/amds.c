@@ -1,3 +1,10 @@
+/**
+ * @file    amds.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #include "amds.h"
 #define AMDS_PRIV_IMPL
 #include "amds_priv.h"

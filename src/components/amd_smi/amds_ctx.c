@@ -1,3 +1,10 @@
+/**
+ * @file    amds_ctx.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #include "amds.h"
 #include "amds_priv.h"
 #include "papi.h"

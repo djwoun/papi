@@ -1,3 +1,10 @@
+/**
+ * @file    amds_priv.h
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #ifndef __AMDS_PRIV_H__
 #define __AMDS_PRIV_H__
 
