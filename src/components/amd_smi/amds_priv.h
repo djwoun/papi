@@ -160,6 +160,9 @@ int access_amdsmi_ras_block_state(int mode, void *arg);
 int access_amdsmi_reg_count(int mode, void *arg);
 int access_amdsmi_reg_value(int mode, void *arg);
 int access_amdsmi_voltage(int mode, void *arg);
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
+#endif
 int access_amdsmi_vram_width(int mode, void *arg);
 int access_amdsmi_vram_size(int mode, void *arg);
 int access_amdsmi_vram_type(int mode, void *arg);
@@ -198,7 +201,6 @@ int access_amdsmi_xgmi_link_status(int mode, void *arg);
 #endif
 #endif
 
-int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);

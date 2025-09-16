@@ -2539,22 +2539,28 @@ int access_amdsmi_fw_version(int mode, void *arg) {
   return PAPI_EMISC;
 }
 
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   if (!amdsmi_get_gpu_vram_info_p)
     return PAPI_ENOSUPP;
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0))
+    return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_vram_info_t info;
   memset(&info, 0, sizeof(info));
-  amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
+  amdsmi_status_t st =
+      amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)info.vram_max_bandwidth; /* GB/s */
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_memory_reserved_pages(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_memory_reserved_pages_p)

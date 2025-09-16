@@ -2319,7 +2319,8 @@ static int init_event_table(void) {
       }
     }
 
-    if (amdsmi_get_gpu_vram_info_p) {
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
+    if (amdsmi_get_gpu_vram_info_p && amds_lib_version_at_least(25, 0)) {
       amdsmi_vram_info_t vinfo;
       if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) ==
           AMDSMI_STATUS_SUCCESS) {
@@ -2333,6 +2334,7 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
       }
     }
+#endif
 
     if (amdsmi_get_gpu_memory_reserved_pages_p) {
       uint32_t nump = 0;
