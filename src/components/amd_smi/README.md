@@ -46,7 +46,7 @@ PAPI with this component enabled. For example:
 
 ```bash
 ./configure --with-components="amd_smi"
-make -j
+make
 ```
 
 You can verify availability with the utilities in `papi/src/utils/`:
