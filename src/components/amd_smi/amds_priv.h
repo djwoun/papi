@@ -29,20 +29,23 @@
 #define AMDSMI_LIB_VERSION_PATCHLEVEL 0
 #endif
 
+#define AMDSMI_VERSION_ENCODE_RAW(M, m, p)                                     \
+  (((M) * 10000u) + ((m) * 100u) + (p))
+
 #define AMDSMI_VERSION_ENCODE(M, m, p)                                         \
-  ((uint32_t)((M) * 10000u + (m) * 100u + (p)))
+  ((uint32_t)AMDSMI_VERSION_ENCODE_RAW((M), (m), (p)))
 
 #define AMDSMI_COMPILETIME_VERSION                                             \
-  AMDSMI_VERSION_ENCODE(AMDSMI_LIB_VERSION_MAJOR, AMDSMI_LIB_VERSION_MINOR,   \
-                        AMDSMI_LIB_VERSION_PATCHLEVEL)
+  AMDSMI_VERSION_ENCODE_RAW(AMDSMI_LIB_VERSION_MAJOR, AMDSMI_LIB_VERSION_MINOR,\
+                            AMDSMI_LIB_VERSION_PATCHLEVEL)
 
 #define AMDSMI_VERSION_AT_LEAST(M, m, p)                                       \
   (AMDSMI_COMPILETIME_VERSION >=                                             \
-   AMDSMI_VERSION_ENCODE((M), (m), (p)))
+   AMDSMI_VERSION_ENCODE_RAW((M), (m), (p)))
 
 #define AMDSMI_VERSION_UNDER(M, m, p)                                          \
   (AMDSMI_COMPILETIME_VERSION <                                              \
-   AMDSMI_VERSION_ENCODE((M), (m), (p)))
+   AMDSMI_VERSION_ENCODE_RAW((M), (m), (p)))
 
 /* Mode enumeration used by accessors */
 typedef enum {
