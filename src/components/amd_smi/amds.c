@@ -750,10 +750,10 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
 
 static int add_counter_event(int *idx_ptr, const char *name, const char *descr,
                              int device, uint32_t variant, uint32_t subvariant) {
-  int ret = add_event(idx_ptr, name, descr, device, variant, subvariant,
-                      PAPI_MODE_READ, access_amdsmi_gpu_counter);
-  if (ret != PAPI_OK)
-    return ret;
+  int papi_errno = add_event(idx_ptr, name, descr, device, variant, subvariant,
+                             PAPI_MODE_READ, access_amdsmi_gpu_counter);
+  if (papi_errno != PAPI_OK)
+    return papi_errno;
   native_event_t *ev = &ntv_table.events[*idx_ptr - 1];
   ev->open_func = open_counter;
   ev->close_func = close_counter;

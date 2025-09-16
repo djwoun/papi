@@ -216,9 +216,9 @@ static int _amd_smi_stop(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
   amdsmi_control_t *amdsmi_ctl = (amdsmi_control_t *)ctrl;
   if (!(amdsmi_ctx->state & AMDS_EVENTS_RUNNING)) return PAPI_EMISC;
 
-  int rc = amds_ctx_stop(amdsmi_ctl->amds_ctx);
+  int papi_errno = amds_ctx_stop(amdsmi_ctl->amds_ctx);
   amdsmi_ctx->state &= ~AMDS_EVENTS_RUNNING;
-  return rc;
+  return papi_errno;
 }
 
 static int _amd_smi_reset(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
