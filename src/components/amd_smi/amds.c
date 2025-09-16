@@ -62,6 +62,7 @@ uint32_t *amds_get_cores_per_socket(void) { return cores_per_socket; }
 native_event_table_t *amds_get_ntv_table(void) { return ntv_table_p; }
 void *amds_get_htable(void) { return htable; }
 uint32_t amds_get_lib_major(void) { return amdsmi_lib_major; }
+uint32_t amds_get_lib_minor(void) { return amdsmi_lib_minor; }
 
 #define CHECK_EVENT_IDX(i)                                                     \
   do {                                                                        \
@@ -272,8 +273,10 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_energy_count_p = sym("amdsmi_get_energy_count", NULL);
   amdsmi_get_gpu_power_profile_presets_p =
       sym("amdsmi_get_gpu_power_profile_presets", NULL);
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
   amdsmi_get_violation_status_p =
       sym("amdsmi_get_violation_status", NULL);
+#endif
   // Additional read-only queries
   amdsmi_get_lib_version_p = sym("amdsmi_get_lib_version", NULL);
   amdsmi_get_gpu_driver_info_p = sym("amdsmi_get_gpu_driver_info", NULL);
@@ -295,10 +298,14 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_topo_get_numa_node_number", NULL);
   amdsmi_topo_get_link_weight_p = sym("amdsmi_topo_get_link_weight", NULL);
   amdsmi_topo_get_link_type_p = sym("amdsmi_topo_get_link_type", NULL);
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
   amdsmi_topo_get_p2p_status_p = sym("amdsmi_topo_get_p2p_status", NULL);
+#endif
   amdsmi_is_P2P_accessible_p = sym("amdsmi_is_P2P_accessible", NULL);
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
   amdsmi_get_link_topology_nearest_p =
       sym("amdsmi_get_link_topology_nearest", NULL);
+#endif
   amdsmi_get_gpu_device_bdf_p = sym("amdsmi_get_gpu_device_bdf", NULL);
   amdsmi_get_gpu_ecc_enabled_p = sym("amdsmi_get_gpu_ecc_enabled", NULL);
   amdsmi_get_gpu_total_ecc_count_p =
@@ -317,7 +324,9 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_is_gpu_memory_partition_supported", NULL);
   amdsmi_get_gpu_memory_reserved_pages_p =
       sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
   amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
+#endif
   amdsmi_get_gpu_metrics_header_info_p =
         sym("amdsmi_get_gpu_metrics_header_info", NULL);
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
@@ -327,8 +336,10 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_xgmi_info_p = sym("amdsmi_get_xgmi_info", NULL);
   amdsmi_gpu_xgmi_error_status_p =
       sym("amdsmi_gpu_xgmi_error_status", NULL);
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
   amdsmi_get_gpu_accelerator_partition_profile_p =
       sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
+#endif
   amdsmi_get_gpu_cache_info_p = sym("amdsmi_get_gpu_cache_info", NULL);
   amdsmi_get_gpu_mem_overdrive_level_p =
       sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
@@ -711,6 +722,7 @@ int amds_shutdown(void) {
   cpu_count = 0;
   ntv_table_p = NULL;
   amdsmi_lib_major = 0;
+  amdsmi_lib_minor = 0;
 
   return (st == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_EMISC;
 }
@@ -862,13 +874,17 @@ static int init_event_table(void) {
       amdsmi_vram_info_t vram_info;
       if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vram_info) ==
           AMDSMI_STATUS_SUCCESS) {
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf), "vram_bus_width:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d VRAM bus width (bits)", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_vram_width) != PAPI_OK)
-          return PAPI_ENOMEM;
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
+        if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7)) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "vram_bus_width:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d VRAM bus width (bits)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                        access_amdsmi_vram_width) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
+#endif
 
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "vram_size_bytes:device=%d", d);
@@ -1010,14 +1026,18 @@ static int init_event_table(void) {
                       access_amdsmi_pcie_info) != PAPI_OK)
           return PAPI_ENOMEM;
 
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "pcie_other_end_recovery_count:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d PCIe other-end recovery count", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 13, 0, PAPI_MODE_READ,
-                      access_amdsmi_pcie_info) != PAPI_OK)
-          return PAPI_ENOMEM;
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
+        if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7)) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf),
+                   "pcie_other_end_recovery_count:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d PCIe other-end recovery count", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 13, 0, PAPI_MODE_READ,
+                        access_amdsmi_pcie_info) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
+#endif
       }
     }
     // GPU Overdrive level events
@@ -1930,19 +1950,23 @@ static int init_event_table(void) {
                       access_amdsmi_utilization_count) != PAPI_OK)
           return PAPI_ENOMEM;
       }
-      uc.type = AMDSMI_COARSE_DECODER_ACTIVITY;
-      if (amdsmi_get_utilization_count_p(device_handles[d], &uc, 1, &ts) ==
-          AMDSMI_STATUS_SUCCESS) {
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf),
-                 "util_counter_dec:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d coarse grain decoder activity counter", d);
-        if (add_event(&idx, name_buf, descr_buf, d,
-                      AMDSMI_COARSE_DECODER_ACTIVITY, 0, PAPI_MODE_READ,
-                      access_amdsmi_utilization_count) != PAPI_OK)
-          return PAPI_ENOMEM;
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
+      if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7)) {
+        uc.type = AMDSMI_COARSE_DECODER_ACTIVITY;
+        if (amdsmi_get_utilization_count_p(device_handles[d], &uc, 1, &ts) ==
+            AMDSMI_STATUS_SUCCESS) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf),
+                   "util_counter_dec:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d coarse grain decoder activity counter", d);
+          if (add_event(&idx, name_buf, descr_buf, d,
+                        AMDSMI_COARSE_DECODER_ACTIVITY, 0, PAPI_MODE_READ,
+                        access_amdsmi_utilization_count) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
       }
+#endif
     }
   }
   /* GPU clock frequency levels for multiple clock domains */
@@ -2098,7 +2122,8 @@ static int init_event_table(void) {
         }
       }
     }
-    if (amdsmi_get_gpu_kfd_info_p) {
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
+    if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7) && amdsmi_get_gpu_kfd_info_p) {
       amdsmi_kfd_info_t kinfo;
       if (amdsmi_get_gpu_kfd_info_p(device_handles[d], &kinfo) ==
           AMDSMI_STATUS_SUCCESS) {
@@ -2117,6 +2142,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     // NUMA node via topology API
     if (amdsmi_topo_get_numa_node_number_p) {
       uint32_t node;
@@ -2679,8 +2705,9 @@ static int init_event_table(void) {
                   access_amdsmi_power_profile_status) != PAPI_OK)
       return PAPI_ENOMEM;
   }
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
   /* GPU violation status metrics */
-  if (amdsmi_get_violation_status_p) {
+  if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7) && amdsmi_get_violation_status_p) {
     for (int d = 0; d < gpu_count; ++d) {
       amdsmi_violation_status_t vinfo;
       if (amdsmi_get_violation_status_p(device_handles[d], &vinfo) !=
@@ -2712,6 +2739,7 @@ static int init_event_table(void) {
       }
     }
   }
+#endif
 #ifndef AMDSMI_DISABLE_ESMI
   /* CPU metrics events */
   if (cpu_count > 0) {
@@ -3249,13 +3277,17 @@ static int init_event_table(void) {
                       access_amdsmi_asic_info) != PAPI_OK)
           return PAPI_ENOSUPP;
 
-        CHECK_EVENT_IDX(idx);
-        snprintf(name_buf, sizeof(name_buf), "compute_units:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d number of compute units", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 5, 0, PAPI_MODE_READ,
-                      access_amdsmi_asic_info) != PAPI_OK)
-          return PAPI_ENOSUPP;
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
+        if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7)) {
+          CHECK_EVENT_IDX(idx);
+          snprintf(name_buf, sizeof(name_buf), "compute_units:device=%d", d);
+          snprintf(descr_buf, sizeof(descr_buf),
+                   "Device %d number of compute units", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 5, 0, PAPI_MODE_READ,
+                        access_amdsmi_asic_info) != PAPI_OK)
+            return PAPI_ENOSUPP;
+        }
+#endif
       }
     }
     if (amdsmi_get_gpu_compute_partition_p) {
@@ -3424,7 +3456,8 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
       }
     }
-    if (amdsmi_get_link_topology_nearest_p) {
+#if AMDSMI_VERSION_AT_LEAST(24, 7)
+    if (!AMDSMI_RUNTIME_VERSION_UNDER(24, 7) && amdsmi_get_link_topology_nearest_p) {
       amdsmi_link_type_t lt_types[] = {AMDSMI_LINK_TYPE_XGMI,
                                        AMDSMI_LINK_TYPE_PCIE};
       const char *lt_names[] = {"xgmi", "pcie"};
@@ -3445,6 +3478,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     for (int p = 0; p < gpu_count; ++p) {
       if (p == d)
         continue;
