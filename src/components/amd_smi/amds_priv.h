@@ -13,6 +13,10 @@
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
+#ifndef AMDSMI_LIB_VERSION_YEAR
+#define AMDSMI_LIB_VERSION_YEAR 0
+#endif
+
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
@@ -21,10 +25,20 @@
 #define AMDSMI_LIB_VERSION_MINOR 0
 #endif
 
-#define AMDSMI_VERSION_AT_LEAST(MAJ, MIN)                                      \
-  ((AMDSMI_LIB_VERSION_MAJOR > (MAJ)) ||                                      \
-   (AMDSMI_LIB_VERSION_MAJOR == (MAJ) &&                                      \
-    AMDSMI_LIB_VERSION_MINOR >= (MIN)))
+#define AMDSMI_VERSION_ENCODE(Y, M, m)                                         \
+  ((uint32_t)((Y) * 10000u + (M) * 100u + (m)))
+
+#define AMDSMI_COMPILETIME_VERSION                                             \
+  AMDSMI_VERSION_ENCODE(AMDSMI_LIB_VERSION_YEAR, AMDSMI_LIB_VERSION_MAJOR,     \
+                        AMDSMI_LIB_VERSION_MINOR)
+
+#define AMDSMI_VERSION_AT_LEAST(Y, M, m)                                       \
+  (AMDSMI_COMPILETIME_VERSION >=                                             \
+   AMDSMI_VERSION_ENCODE((Y), (M), (m)))
+
+#define AMDSMI_VERSION_UNDER(Y, M, m)                                          \
+  (AMDSMI_COMPILETIME_VERSION <                                              \
+   AMDSMI_VERSION_ENCODE((Y), (M), (m)))
 
 /* Mode enumeration used by accessors */
 typedef enum {
@@ -64,6 +78,7 @@ amdsmi_processor_handle **amds_get_cpu_core_handles(void);
 uint32_t *amds_get_cores_per_socket(void);
 void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
+uint32_t amds_get_lib_year(void);
 uint32_t amds_get_lib_major(void);
 uint32_t amds_get_lib_minor(void);
 
@@ -76,30 +91,32 @@ uint32_t amds_get_lib_minor(void);
 #define cores_per_socket (amds_get_cores_per_socket())
 #define htable (amds_get_htable())
 #define ntv_table_p (amds_get_ntv_table())
+#define amdsmi_lib_year (amds_get_lib_year())
 #define amdsmi_lib_major (amds_get_lib_major())
 #define amdsmi_lib_minor (amds_get_lib_minor())
 #endif
 
-#ifdef AMDS_PRIV_IMPL
+#define AMDSMI_RUNTIME_YEAR() (amdsmi_lib_year)
 #define AMDSMI_RUNTIME_MAJOR() (amdsmi_lib_major)
 #define AMDSMI_RUNTIME_MINOR() (amdsmi_lib_minor)
-#else
-#define AMDSMI_RUNTIME_MAJOR() (amdsmi_lib_major)
-#define AMDSMI_RUNTIME_MINOR() (amdsmi_lib_minor)
-#endif
 
 #define AMDSMI_RUNTIME_VERSION_KNOWN()                                         \
-  (AMDSMI_RUNTIME_MAJOR() != 0 || AMDSMI_RUNTIME_MINOR() != 0)
-#define AMDSMI_RUNTIME_VERSION_AT_LEAST(MAJ, MIN)                              \
+  (AMDSMI_RUNTIME_YEAR() != 0 || AMDSMI_RUNTIME_MAJOR() != 0 ||               \
+   AMDSMI_RUNTIME_MINOR() != 0)
+
+#define AMDSMI_RUNTIME_VERSION_VALUE()                                         \
+  AMDSMI_VERSION_ENCODE(AMDSMI_RUNTIME_YEAR(), AMDSMI_RUNTIME_MAJOR(),         \
+                        AMDSMI_RUNTIME_MINOR())
+
+#define AMDSMI_RUNTIME_VERSION_AT_LEAST(Y, M, m)                               \
   (!AMDSMI_RUNTIME_VERSION_KNOWN() ||                                         \
-   AMDSMI_RUNTIME_MAJOR() > (MAJ) ||                                          \
-   (AMDSMI_RUNTIME_MAJOR() == (MAJ) &&                                        \
-    AMDSMI_RUNTIME_MINOR() >= (MIN)))
-#define AMDSMI_RUNTIME_VERSION_UNDER(MAJ, MIN)                                 \
+   AMDSMI_RUNTIME_VERSION_VALUE() >=                                          \
+       AMDSMI_VERSION_ENCODE((Y), (M), (m)))
+
+#define AMDSMI_RUNTIME_VERSION_UNDER(Y, M, m)                                  \
   (AMDSMI_RUNTIME_VERSION_KNOWN() &&                                          \
-   (AMDSMI_RUNTIME_MAJOR() < (MAJ) ||                                         \
-    (AMDSMI_RUNTIME_MAJOR() == (MAJ) &&                                       \
-     AMDSMI_RUNTIME_MINOR() < (MIN))))
+   AMDSMI_RUNTIME_VERSION_VALUE() <                                           \
+       AMDSMI_VERSION_ENCODE((Y), (M), (m)))
 
 /* AMD SMI function pointers */
 #include "amds_funcs.h"
@@ -195,8 +212,8 @@ int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 int access_amdsmi_utilization_count(int mode, void *arg);
 int access_amdsmi_violation_status(int mode, void *arg);
 
-/* Consolidated AMDSMI_LIB_VERSION_MAJOR >= 25 block */
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+/* Consolidated AMD SMI >= 25 block */
+#if AMDSMI_VERSION_AT_LEAST(25, 0, 0)
 int access_amdsmi_enumeration_info(int mode, void *arg);
 int access_amdsmi_memory_partition_config(int mode, void *arg);
 int access_amdsmi_xgmi_link_status(int mode, void *arg);

@@ -211,7 +211,7 @@
   _(amdsmi_gpu_destroy_counter_p, amdsmi_status_t,                             \
     (amdsmi_event_handle_t))
 
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if AMDSMI_VERSION_AT_LEAST(24, 7, 0)
 #define AMD_SMI_GPU_FUNCTIONS_V24_7(_)                                         \
   _(amdsmi_get_violation_status_p, amdsmi_status_t,                           \
     (amdsmi_processor_handle, amdsmi_violation_status_t *))                   \
@@ -230,7 +230,7 @@
 #define AMD_SMI_GPU_FUNCTIONS_V24_7(_)
 #endif
 
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(25, 0, 0)
 #define AMD_SMI_GPU_FUNCTIONS(_) \
   AMD_SMI_GPU_FUNCTIONS_BASE(_) \
   _(amdsmi_get_gpu_memory_partition_config_p, amdsmi_status_t, \
