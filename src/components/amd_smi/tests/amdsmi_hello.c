@@ -36,38 +36,40 @@ int main(int argc, char** argv) {
     }
 
     // Initialize PAPI.
-    int rc = PAPI_library_init(PAPI_VER_CURRENT);
-    if (rc != PAPI_VER_CURRENT) {
-        NOTE("PAPI_library_init failed: %s", PAPI_strerror(rc));
+    int papi_errno = PAPI_library_init(PAPI_VER_CURRENT);
+    if (papi_errno != PAPI_VER_CURRENT) {
+        NOTE("PAPI_library_init failed: %s", PAPI_strerror(papi_errno));
         return eval_result(opts, 1);
     }
 
     // Create an EventSet.
     int EventSet = PAPI_NULL;
-    rc = PAPI_create_eventset(&EventSet);
-    if (rc != PAPI_OK) {
-        NOTE("PAPI_create_eventset: %s", PAPI_strerror(rc));
+    papi_errno = PAPI_create_eventset(&EventSet);
+    if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_create_eventset: %s", PAPI_strerror(papi_errno));
         return eval_result(opts, 1);
     }
 
     // Add the selected event.
-    rc = PAPI_add_named_event(EventSet, ev);
-    if (rc == PAPI_ENOEVNT || rc == PAPI_ECNFLCT || rc == PAPI_EPERM) {
-        NOTE("Event unavailable or HW/resource-limited: %s (%s)", ev, PAPI_strerror(rc));
+    papi_errno = PAPI_add_named_event(EventSet, ev);
+    if (papi_errno == PAPI_ENOEVNT || papi_errno == PAPI_ECNFLCT ||
+        papi_errno == PAPI_EPERM) {
+        NOTE("Event unavailable or HW/resource-limited: %s (%s)", ev,
+             PAPI_strerror(papi_errno));
         SKIP("Event unavailable or HW/resource-limited");
-    } else if (rc != PAPI_OK) {
-        NOTE("PAPI_add_named_event(%s): %s", ev, PAPI_strerror(rc));
+    } else if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_add_named_event(%s): %s", ev, PAPI_strerror(papi_errno));
         PAPI_destroy_eventset(&EventSet);
         return eval_result(opts, 1);
     }
 
     // Start counters -> short wait -> stop/read.
-    rc = PAPI_start(EventSet);
-    if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) {
-        NOTE("Cannot start counters: %s", PAPI_strerror(rc));
+    papi_errno = PAPI_start(EventSet);
+    if (papi_errno == PAPI_ECNFLCT || papi_errno == PAPI_EPERM) {
+        NOTE("Cannot start counters: %s", PAPI_strerror(papi_errno));
         SKIP("Cannot start counters");
-    } else if (rc != PAPI_OK) {
-        NOTE("PAPI_start: %s", PAPI_strerror(rc));
+    } else if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_start: %s", PAPI_strerror(papi_errno));
         PAPI_destroy_eventset(&EventSet);
         return eval_result(opts, 1);
     }
@@ -75,9 +77,9 @@ int main(int argc, char** argv) {
     usleep(100000); // ~100 ms sampling interval for this simple demo.
 
     long long val = 0;
-    rc = PAPI_stop(EventSet, &val);
-    if (rc != PAPI_OK) {
-        NOTE("PAPI_stop: %s", PAPI_strerror(rc));
+    papi_errno = PAPI_stop(EventSet, &val);
+    if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_stop: %s", PAPI_strerror(papi_errno));
         PAPI_destroy_eventset(&EventSet);
         return eval_result(opts, 1);
     }

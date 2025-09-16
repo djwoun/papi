@@ -1701,9 +1701,9 @@ int access_amdsmi_cpu_prochot_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   uint32_t status = 0;
-  amdsmi_status_t ret = amdsmi_get_cpu_prochot_status_p(
+  amdsmi_status_t smi_status = amdsmi_get_cpu_prochot_status_p(
       device_handles[event->device], &status);
-  if (ret != AMDSMI_STATUS_SUCCESS)
+  if (smi_status != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = status;
   return PAPI_OK;
@@ -2359,7 +2359,7 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
     return PAPI_OK;
   }
 
-  /* USED: keep using vram_usage for the “used” number */
+  /* USED: keep using vram_usage for the Â“usedÂ” number */
   if (!amdsmi_get_gpu_vram_usage_p) return PAPI_ENOSUPP;
 
   amdsmi_vram_usage_t u;

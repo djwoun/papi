@@ -33,42 +33,42 @@ int main(int argc, char **argv) {
     }
 
     // Initialize the PAPI library.
-    int ret = PAPI_library_init(PAPI_VER_CURRENT);
-    if (ret != PAPI_VER_CURRENT) {
-        NOTE("PAPI_library_init failed: %s", PAPI_strerror(ret));
+    int papi_errno = PAPI_library_init(PAPI_VER_CURRENT);
+    if (papi_errno != PAPI_VER_CURRENT) {
+        NOTE("PAPI_library_init failed: %s", PAPI_strerror(papi_errno));
         return eval_result(opts, 1);
     }
 
     // Create an empty event set and add the AMD-SMI energy counter for device 0.
     int EventSet = PAPI_NULL;
-    ret = PAPI_create_eventset(&EventSet);
-    if (ret != PAPI_OK) {
-        NOTE("PAPI_create_eventset: %s", PAPI_strerror(ret));
+    papi_errno = PAPI_create_eventset(&EventSet);
+    if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_create_eventset: %s", PAPI_strerror(papi_errno));
         return eval_result(opts, 1);
     }
 
     const char *ev = "amd_smi:::energy_consumed:device=0";
-    ret = PAPI_add_named_event(EventSet, ev);
-    if (ret == PAPI_ENOEVNT) {
+    papi_errno = PAPI_add_named_event(EventSet, ev);
+    if (papi_errno == PAPI_ENOEVNT) {
         SKIP("energy_consumed:device=0 not supported");
-    } else if (ret != PAPI_OK) {
-        NOTE("PAPI_add_named_event(%s): %s", ev, PAPI_strerror(ret));
+    } else if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_add_named_event(%s): %s", ev, PAPI_strerror(papi_errno));
         return eval_result(opts, 1);
     }
 
     // Begin counting.
-    ret = PAPI_start(EventSet);
-    if (ret != PAPI_OK) {
-        NOTE("PAPI_start: %s", PAPI_strerror(ret));
+    papi_errno = PAPI_start(EventSet);
+    if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_start: %s", PAPI_strerror(papi_errno));
         return eval_result(opts, 1);
     }
 
     long long v1 = 0, v2 = 0;
 
     // First sample.
-    ret = PAPI_read(EventSet, &v1);
-    if (ret != PAPI_OK) {
-        NOTE("PAPI_read(1): %s", PAPI_strerror(ret));
+    papi_errno = PAPI_read(EventSet, &v1);
+    if (papi_errno != PAPI_OK) {
+        NOTE("PAPI_read(1): %s", PAPI_strerror(papi_errno));
         long long dummy = 0; PAPI_stop(EventSet, &dummy);
         return eval_result(opts, 1);
     }
@@ -77,9 +77,9 @@ int main(int argc, char **argv) {
     for (int i = 0; i < 10; ++i) {
         usleep(100000); // 100 ms
 
-        ret = PAPI_read(EventSet, &v2);
-        if (ret != PAPI_OK) {
-            NOTE("PAPI_read(2): %s", PAPI_strerror(ret));
+        papi_errno = PAPI_read(EventSet, &v2);
+        if (papi_errno != PAPI_OK) {
+            NOTE("PAPI_read(2): %s", PAPI_strerror(papi_errno));
             long long dummy = 0; PAPI_stop(EventSet, &dummy);
             return eval_result(opts, 1);
         }

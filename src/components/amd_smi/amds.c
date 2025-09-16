@@ -121,10 +121,10 @@ static int open_counter(native_event_t *event) {
   counter_priv_t *priv = (counter_priv_t *)papi_calloc(1, sizeof(counter_priv_t));
   if (!priv)
     return PAPI_ENOMEM;
-  amdsmi_status_t ret = amdsmi_gpu_create_counter_p(
+  amdsmi_status_t status = amdsmi_gpu_create_counter_p(
       device_handles[event->device], (amdsmi_event_type_t)event->variant,
       &priv->handle);
-  if (ret != AMDSMI_STATUS_SUCCESS) {
+  if (status != AMDSMI_STATUS_SUCCESS) {
     papi_free(priv);
     return PAPI_ENOSUPP;
   }
@@ -148,18 +148,18 @@ static int start_counter(native_event_t *event) {
   if (!priv || !amdsmi_gpu_control_counter_p)
     return PAPI_ENOSUPP;
   priv->accum = 0;
-  amdsmi_status_t ret = amdsmi_gpu_control_counter_p(
+  amdsmi_status_t status = amdsmi_gpu_control_counter_p(
       priv->handle, AMDSMI_CNTR_CMD_START, NULL);
-  return (ret == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_ENOSUPP;
+  return (status == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_ENOSUPP;
 }
 
 static int stop_counter(native_event_t *event) {
   counter_priv_t *priv = (counter_priv_t *)event->priv;
   if (!priv || !amdsmi_gpu_control_counter_p)
     return PAPI_ENOSUPP;
-  amdsmi_status_t ret =
+  amdsmi_status_t status =
       amdsmi_gpu_control_counter_p(priv->handle, AMDSMI_CNTR_CMD_STOP, NULL);
-  return (ret == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_ENOSUPP;
+  return (status == AMDSMI_STATUS_SUCCESS) ? PAPI_OK : PAPI_ENOSUPP;
 }
 
 static int access_amdsmi_gpu_counter(int mode, void *arg) {
@@ -3276,10 +3276,10 @@ static int init_event_table(void) {
     if (amdsmi_get_gpu_memory_partition_p) {
       char part[128] = {0};
       uint32_t len = (uint32_t)sizeof(part);
-      amdsmi_status_t rc =
+      amdsmi_status_t status =
           amdsmi_get_gpu_memory_partition_p(device_handles[d], part, len);
       part[sizeof(part) - 1] = '\0';  // belt-and-suspenders NUL
-      if (rc == AMDSMI_STATUS_SUCCESS && part[0] != '\0') {
+      if (status == AMDSMI_STATUS_SUCCESS && part[0] != '\0') {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d memory partition (hash)", d);
@@ -3315,9 +3315,9 @@ static int init_event_table(void) {
     if (amdsmi_get_gpu_accelerator_partition_profile_p) {
       amdsmi_accelerator_partition_profile_t prof = {0};
       uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
-      amdsmi_status_t rc =
+      amdsmi_status_t status =
           amdsmi_get_gpu_accelerator_partition_profile_p(device_handles[d], &prof, ids);
-      if (rc == AMDSMI_STATUS_SUCCESS &&
+      if (status == AMDSMI_STATUS_SUCCESS &&
           prof.num_partitions > 0 &&
           prof.num_partitions <= AMDSMI_MAX_ACCELERATOR_PARTITIONS) {
         CHECK_EVENT_IDX(idx);

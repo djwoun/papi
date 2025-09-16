@@ -301,6 +301,6 @@ static int real_main(const HarnessOpts *opts) {
 int main(int argc, char *argv[]) {
     harness_accept_tests_quiet(&argc, argv);
     HarnessOpts opts = parse_harness_cli(argc, argv);
-    int rc = real_main(&opts);
-    return eval_result(opts, rc);
+    int papi_errno = real_main(&opts);
+    return eval_result(opts, papi_errno);
 }
