@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Quiet by default; use -v/--verbose to see output from the tests.
 
-# Be reasonably strict but compatible with older bash
 set -e
 set -u
 ( set -o pipefail ) 2>/dev/null || true

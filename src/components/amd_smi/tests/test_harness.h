@@ -67,7 +67,7 @@ static inline void harness_accept_tests_quiet(int *argc, char **argv) {
 
 // Parse CLI
 static inline HarnessOpts parse_harness_cli(int argc, char **argv) {
-    /* Default to printing unless the legacy TESTS_QUIET token is
+    /* Default to printing unless the TESTS_QUIET token is
        present.  This mirrors src/run_tests.sh where invoking with -v
        unsets TESTS_QUIET, signalling that tests should emit output. */
     harness_opts.print = true;
@@ -108,7 +108,7 @@ static inline int eval_result(HarnessOpts opts, int result_code) {
         if (opts.had_warning) printf("PASSED with WARNING\n");
         else                  printf("PASSED\n");
     } else {
-        printf("FAILED!!!\n");  // always the shouty failure you wanted
+        printf("FAILED!!!\n");  
     }
     return passed ? 0 : 1;
 }

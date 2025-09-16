@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         return eval_result(opts, 1);
     }
 
-    // Start ¡æ short wait ¡æ stop/read
+    // Start | short wait | stop/read
     rc = PAPI_start(EventSet);
     if (rc == PAPI_ECNFLCT || rc == PAPI_EPERM) {
         NOTE("Cannot start counters: %s", PAPI_strerror(rc));
