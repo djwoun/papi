@@ -12,7 +12,7 @@
 #include "papi_internal.h"
 
 unsigned int _amd_smi_lock;
-static int32_t device_mask = 0;
+static uint64_t device_mask = 0;
 
 static int acquire_devices(unsigned int *events_id, int num_events, int32_t *bitmask) {
   int32_t mask_acq = 0;
