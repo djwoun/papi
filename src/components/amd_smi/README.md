@@ -58,6 +58,8 @@ papi_native_avail -i amd_smi    # lists native events for this component
 
 ---
 
+## File-by-file Summary
+
 - **`linux-amd-smi.c`**  
   Declares the `papi_vector_t` for this component; initializes on first use; hands off work to `amds_*` for device/event management; implements PAPI hooks (`init_component`, `update_control_state`, `start`, `read`, `stop`, `reset`, `shutdown`, and native-event queries).
 
