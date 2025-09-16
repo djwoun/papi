@@ -13,10 +13,6 @@
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
-#ifndef AMDSMI_LIB_VERSION_YEAR
-#define AMDSMI_LIB_VERSION_YEAR 0
-#endif
-
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
@@ -25,20 +21,28 @@
 #define AMDSMI_LIB_VERSION_MINOR 0
 #endif
 
-#define AMDSMI_VERSION_ENCODE(Y, M, m)                                         \
-  ((uint32_t)((Y) * 10000u + (M) * 100u + (m)))
+#if defined(AMDSMI_LIB_VERSION_PATCH)
+#define AMDSMI_LIB_VERSION_PATCHLEVEL AMDSMI_LIB_VERSION_PATCH
+#elif defined(AMDSMI_LIB_VERSION_RELEASE)
+#define AMDSMI_LIB_VERSION_PATCHLEVEL AMDSMI_LIB_VERSION_RELEASE
+#else
+#define AMDSMI_LIB_VERSION_PATCHLEVEL 0
+#endif
+
+#define AMDSMI_VERSION_ENCODE(M, m, p)                                         \
+  ((uint32_t)((M) * 10000u + (m) * 100u + (p)))
 
 #define AMDSMI_COMPILETIME_VERSION                                             \
-  AMDSMI_VERSION_ENCODE(AMDSMI_LIB_VERSION_YEAR, AMDSMI_LIB_VERSION_MAJOR,     \
-                        AMDSMI_LIB_VERSION_MINOR)
+  AMDSMI_VERSION_ENCODE(AMDSMI_LIB_VERSION_MAJOR, AMDSMI_LIB_VERSION_MINOR,   \
+                        AMDSMI_LIB_VERSION_PATCHLEVEL)
 
-#define AMDSMI_VERSION_AT_LEAST(Y, M, m)                                       \
+#define AMDSMI_VERSION_AT_LEAST(M, m, p)                                       \
   (AMDSMI_COMPILETIME_VERSION >=                                             \
-   AMDSMI_VERSION_ENCODE((Y), (M), (m)))
+   AMDSMI_VERSION_ENCODE((M), (m), (p)))
 
-#define AMDSMI_VERSION_UNDER(Y, M, m)                                          \
+#define AMDSMI_VERSION_UNDER(M, m, p)                                          \
   (AMDSMI_COMPILETIME_VERSION <                                              \
-   AMDSMI_VERSION_ENCODE((Y), (M), (m)))
+   AMDSMI_VERSION_ENCODE((M), (m), (p)))
 
 /* Mode enumeration used by accessors */
 typedef enum {
@@ -78,7 +82,6 @@ amdsmi_processor_handle **amds_get_cpu_core_handles(void);
 uint32_t *amds_get_cores_per_socket(void);
 void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
-uint32_t amds_get_lib_year(void);
 uint32_t amds_get_lib_major(void);
 uint32_t amds_get_lib_minor(void);
 
@@ -91,32 +94,28 @@ uint32_t amds_get_lib_minor(void);
 #define cores_per_socket (amds_get_cores_per_socket())
 #define htable (amds_get_htable())
 #define ntv_table_p (amds_get_ntv_table())
-#define amdsmi_lib_year (amds_get_lib_year())
 #define amdsmi_lib_major (amds_get_lib_major())
 #define amdsmi_lib_minor (amds_get_lib_minor())
 #endif
 
-#define AMDSMI_RUNTIME_YEAR() (amdsmi_lib_year)
 #define AMDSMI_RUNTIME_MAJOR() (amdsmi_lib_major)
 #define AMDSMI_RUNTIME_MINOR() (amdsmi_lib_minor)
 
 #define AMDSMI_RUNTIME_VERSION_KNOWN()                                         \
-  (AMDSMI_RUNTIME_YEAR() != 0 || AMDSMI_RUNTIME_MAJOR() != 0 ||               \
-   AMDSMI_RUNTIME_MINOR() != 0)
+  (AMDSMI_RUNTIME_MAJOR() != 0 || AMDSMI_RUNTIME_MINOR() != 0)
 
 #define AMDSMI_RUNTIME_VERSION_VALUE()                                         \
-  AMDSMI_VERSION_ENCODE(AMDSMI_RUNTIME_YEAR(), AMDSMI_RUNTIME_MAJOR(),         \
-                        AMDSMI_RUNTIME_MINOR())
+  AMDSMI_VERSION_ENCODE(AMDSMI_RUNTIME_MAJOR(), AMDSMI_RUNTIME_MINOR(), 0)
 
-#define AMDSMI_RUNTIME_VERSION_AT_LEAST(Y, M, m)                               \
+#define AMDSMI_RUNTIME_VERSION_AT_LEAST(M, m, p)                               \
   (!AMDSMI_RUNTIME_VERSION_KNOWN() ||                                         \
    AMDSMI_RUNTIME_VERSION_VALUE() >=                                          \
-       AMDSMI_VERSION_ENCODE((Y), (M), (m)))
+       AMDSMI_VERSION_ENCODE((M), (m), (p)))
 
-#define AMDSMI_RUNTIME_VERSION_UNDER(Y, M, m)                                  \
+#define AMDSMI_RUNTIME_VERSION_UNDER(M, m, p)                                  \
   (AMDSMI_RUNTIME_VERSION_KNOWN() &&                                          \
    AMDSMI_RUNTIME_VERSION_VALUE() <                                           \
-       AMDSMI_VERSION_ENCODE((Y), (M), (m)))
+       AMDSMI_VERSION_ENCODE((M), (m), (p)))
 
 /* AMD SMI function pointers */
 #include "amds_funcs.h"

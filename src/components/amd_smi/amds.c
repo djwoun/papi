@@ -39,7 +39,6 @@ static uint32_t *cores_per_socket = NULL;
 static void *amds_dlp = NULL;
 static void *htable = NULL;
 static char error_string[PAPI_MAX_STR_LEN + 1];
-static uint32_t amdsmi_lib_year = 0;
 static uint32_t amdsmi_lib_major = 0;
 static uint32_t amdsmi_lib_minor = 0;
 // Forward declarations for internal helpers
@@ -62,7 +61,6 @@ amdsmi_processor_handle **amds_get_cpu_core_handles(void) {
 uint32_t *amds_get_cores_per_socket(void) { return cores_per_socket; }
 native_event_table_t *amds_get_ntv_table(void) { return ntv_table_p; }
 void *amds_get_htable(void) { return htable; }
-uint32_t amds_get_lib_year(void) { return amdsmi_lib_year; }
 uint32_t amds_get_lib_major(void) { return amdsmi_lib_major; }
 uint32_t amds_get_lib_minor(void) { return amdsmi_lib_minor; }
 
@@ -499,7 +497,6 @@ int amds_init(void) {
   if (amdsmi_get_lib_version_p) {
     amdsmi_version_t vinfo;
     if (amdsmi_get_lib_version_p(&vinfo) == AMDSMI_STATUS_SUCCESS) {
-      amdsmi_lib_year = vinfo.year;
       amdsmi_lib_major = vinfo.major;
       amdsmi_lib_minor = vinfo.minor;
     }
@@ -724,7 +721,6 @@ int amds_shutdown(void) {
   gpu_count = 0;
   cpu_count = 0;
   ntv_table_p = NULL;
-  amdsmi_lib_year = 0;
   amdsmi_lib_major = 0;
   amdsmi_lib_minor = 0;
 
