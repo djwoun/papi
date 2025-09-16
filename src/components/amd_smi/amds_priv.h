@@ -18,6 +18,26 @@
    (AMDSMI_LIB_VERSION_MAJOR == (maj) &&                                      \
     AMDSMI_LIB_VERSION_MINOR >= (min)))
 
+/*
+ * Some AMD SMI 24.7 symbols/types were introduced incrementally across ROCm
+ * drops.  Older 24.x headers advertise the newer version numbers but lack the
+ * associated structs/constants entirely.  Detect availability via the helper
+ * macros that accompany those additions so we can compile cleanly against
+ * pre-24.7 SDKs.
+ */
+#if defined(AMDSMI_COARSE_DECODER_ACTIVITY) &&                                 \
+    defined(AMDSMI_MAX_ACCELERATOR_PARTITIONS)
+#define PAPI_AMDSMI_HAS_24_7_HEADERS 1
+#else
+#define PAPI_AMDSMI_HAS_24_7_HEADERS 0
+#endif
+
+#if PAPI_AMDSMI_HAS_24_7_HEADERS && AMDSMI_VERSION_AT_LEAST(24, 7)
+#define PAPI_AMDSMI_BUILD_HAS_24_7 1
+#else
+#define PAPI_AMDSMI_BUILD_HAS_24_7 0
+#endif
+
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,
@@ -165,19 +185,20 @@ int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 int access_amdsmi_utilization_count(int mode, void *arg);
 
 /* Consolidated AMD SMI additions introduced in 24.7 */
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
 int access_amdsmi_kfd_info(int mode, void *arg);
 int access_amdsmi_link_topology_nearest(int mode, void *arg);
 int access_amdsmi_p2p_status(int mode, void *arg);
 int access_amdsmi_violation_status(int mode, void *arg);
-int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
 #if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_enumeration_info(int mode, void *arg);
 int access_amdsmi_memory_partition_config(int mode, void *arg);
 int access_amdsmi_xgmi_link_status(int mode, void *arg);
 #endif
 #endif
+
+int access_amdsmi_vram_max_bandwidth(int mode, void *arg);
 
 #ifndef AMDSMI_DISABLE_ESMI
 int access_amdsmi_cpu_socket_power(int mode, void *arg);

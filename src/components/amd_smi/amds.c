@@ -267,7 +267,7 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_energy_count_p = sym("amdsmi_get_energy_count", NULL);
   amdsmi_get_gpu_power_profile_presets_p =
       sym("amdsmi_get_gpu_power_profile_presets", NULL);
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
   // AMD SMI 24.7+ optional queries
   amdsmi_get_violation_status_p = sym("amdsmi_get_violation_status", NULL);
   amdsmi_get_gpu_accelerator_partition_profile_p =
@@ -929,7 +929,7 @@ static int init_event_table(void) {
                       access_amdsmi_pcie_info) != PAPI_OK)
           return PAPI_ENOMEM;
 
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
         if (amds_lib_version_at_least(24, 7)) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
@@ -2098,7 +2098,7 @@ static int init_event_table(void) {
         }
       }
     }
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
     if (amdsmi_get_gpu_kfd_info_p) {
       amdsmi_kfd_info_t kinfo;
       if (amdsmi_get_gpu_kfd_info_p(device_handles[d], &kinfo) ==
@@ -2320,22 +2320,18 @@ static int init_event_table(void) {
     }
 
     if (amdsmi_get_gpu_vram_info_p) {
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
-      if (amds_lib_version_at_least(24, 7)) {
-        amdsmi_vram_info_t vinfo;
-        if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) ==
-            AMDSMI_STATUS_SUCCESS) {
-          CHECK_EVENT_IDX(idx);
-          snprintf(name_buf, sizeof(name_buf),
-                   "vram_max_bandwidth:device=%d", d);
-          snprintf(descr_buf, sizeof(descr_buf),
-                   "Device %d VRAM max bandwidth (GB/s)", d);
-          if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                        access_amdsmi_vram_max_bandwidth) != PAPI_OK)
-            return PAPI_ENOMEM;
-        }
+      amdsmi_vram_info_t vinfo;
+      if (amdsmi_get_gpu_vram_info_p(device_handles[d], &vinfo) ==
+          AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        snprintf(name_buf, sizeof(name_buf),
+                 "vram_max_bandwidth:device=%d", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d VRAM max bandwidth (GB/s)", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                      access_amdsmi_vram_max_bandwidth) != PAPI_OK)
+          return PAPI_ENOMEM;
       }
-#endif
     }
 
     if (amdsmi_get_gpu_memory_reserved_pages_p) {
@@ -2436,7 +2432,7 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
 
         /* Register socket power in microwatts */
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
         if (amds_lib_version_at_least(24, 7)) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
@@ -2681,7 +2677,7 @@ static int init_event_table(void) {
                   access_amdsmi_power_profile_status) != PAPI_OK)
       return PAPI_ENOMEM;
   }
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
   /* GPU violation status metrics */
   if (amdsmi_get_violation_status_p) {
     for (int d = 0; d < gpu_count; ++d) {
@@ -3429,7 +3425,7 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
       }
     }
-#if AMDSMI_VERSION_AT_LEAST(24, 7)
+#if PAPI_AMDSMI_BUILD_HAS_24_7
     if (amdsmi_get_link_topology_nearest_p) {
       amdsmi_link_type_t lt_types[] = {AMDSMI_LINK_TYPE_XGMI,
                                        AMDSMI_LINK_TYPE_PCIE};
