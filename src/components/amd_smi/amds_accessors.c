@@ -142,11 +142,11 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
   event->value = (int64_t)_str_to_u64_hash(buf);
   return PAPI_OK;
 }
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_enumeration_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_enumeration_info_p)
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_enumeration_info_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
@@ -204,15 +204,25 @@ int access_amdsmi_asic_info(int mode, void *arg) {
   case 4:
     event->value = (int64_t)info.rev_id;
     break;
+#if PAPI_AMDSMI_BUILD_HAS_24_7
   case 5:
     event->value = (int64_t)info.num_of_compute_units;
     break;
+#else
+  case 5:
+    return PAPI_ENOSUPP;
+#endif
   default:
     return PAPI_EMISC;
   }
   return PAPI_OK;
 }
 int access_amdsmi_link_metrics(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ || !amdsmi_get_link_metrics_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
@@ -283,11 +293,14 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
     total = (uint64_t)INT64_MAX;
   event->value = (int64_t)total;
   return PAPI_OK;
+#endif
 }
 
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_xgmi_link_status(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_xgmi_link_status_p)
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_xgmi_link_status_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
@@ -367,6 +380,7 @@ int access_amdsmi_link_type(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if PAPI_AMDSMI_BUILD_HAS_24_7
 int access_amdsmi_p2p_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_topo_get_p2p_status_p)
     return PAPI_ENOSUPP;
@@ -423,6 +437,7 @@ int access_amdsmi_p2p_status(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#endif
 
 int access_amdsmi_p2p_accessible(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_is_P2P_accessible_p)
@@ -441,6 +456,7 @@ int access_amdsmi_p2p_accessible(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if PAPI_AMDSMI_BUILD_HAS_24_7
 int access_amdsmi_link_topology_nearest(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_link_topology_nearest_p)
     return PAPI_ENOSUPP;
@@ -457,6 +473,7 @@ int access_amdsmi_link_topology_nearest(int mode, void *arg) {
   event->value = (int64_t)info.count;
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_topo_numa(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_topo_get_numa_node_number_p)
@@ -474,6 +491,11 @@ int access_amdsmi_topo_numa(int mode, void *arg) {
 }
 
 int access_amdsmi_device_bdf(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_device_bdf_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
@@ -502,8 +524,10 @@ int access_amdsmi_device_bdf(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   return PAPI_OK;
+#endif
 }
 
+#if PAPI_AMDSMI_BUILD_HAS_24_7
 int access_amdsmi_kfd_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_kfd_info_p)
     return PAPI_ENOSUPP;
@@ -531,6 +555,7 @@ int access_amdsmi_kfd_info(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_xgmi_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_xgmi_info_p)
@@ -622,6 +647,11 @@ int access_amdsmi_process_info(int mode, void *arg) {
   return PAPI_OK;
 }
 int access_amdsmi_ecc_total(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_total_ecc_count_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
@@ -654,9 +684,15 @@ int access_amdsmi_ecc_total(int mode, void *arg) {
     val = (uint64_t)INT64_MAX;
   event->value = (int64_t)val;
   return PAPI_OK;
+#endif
 }
 
 int access_amdsmi_ecc_block(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_ecc_count_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
@@ -690,6 +726,7 @@ int access_amdsmi_ecc_block(int mode, void *arg) {
     val = (uint64_t)INT64_MAX;
   event->value = (int64_t)val;
   return PAPI_OK;
+#endif
 }
 
 int access_amdsmi_ecc_status(int mode, void *arg) {
@@ -763,9 +800,11 @@ int access_amdsmi_memory_partition_hash(int mode, void *arg) {
   return PAPI_OK;
 }
 
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_memory_partition_config(int mode, void *arg) {
-  if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_memory_partition_config_p)
+  if (mode != PAPI_MODE_READ)
+    return PAPI_ENOSUPP;
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_memory_partition_config_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
@@ -800,6 +839,7 @@ int access_amdsmi_memory_partition_config(int mode, void *arg) {
   return PAPI_OK;
 }
 #endif
+#if PAPI_AMDSMI_BUILD_HAS_24_7
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_accelerator_partition_profile_p)
     return PAPI_ENOSUPP;
@@ -816,6 +856,8 @@ int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
   event->value = (int64_t)prof.num_partitions;
   return PAPI_OK;
 }
+#endif
+
 /* Access function implementations (read/write operations for each event) */
 int access_amdsmi_temp_metric(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
@@ -1007,6 +1049,11 @@ int access_amdsmi_pci_replay_counter(int mode, void *arg) {
   return PAPI_OK;
 }
 int access_amdsmi_clk_freq(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
       !device_handles || !device_handles[event->device]) {
@@ -1042,10 +1089,16 @@ int access_amdsmi_clk_freq(int mode, void *arg) {
     }
   }
   return PAPI_OK;
+#endif
 }
 
 
 int access_amdsmi_clock_info(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count ||
       !device_handles[event->device]) {
@@ -1078,6 +1131,7 @@ int access_amdsmi_clock_info(int mode, void *arg) {
     default: return PAPI_EMISC;
   }
   return PAPI_OK;
+#endif
 }
 
 
@@ -1109,6 +1163,11 @@ int access_amdsmi_metrics_header_info(int mode, void *arg) {
   return PAPI_OK;
 }
 int access_amdsmi_gpu_metrics(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
@@ -1159,6 +1218,7 @@ int access_amdsmi_gpu_metrics(int mode, void *arg) {
     return PAPI_ENOSUPP;
   }
   return PAPI_OK;
+#endif
 }
 int access_amdsmi_gpu_info(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
@@ -1202,9 +1262,9 @@ int access_amdsmi_gpu_info(int mode, void *arg) {
     }
     break;
   }
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
   case 4: {
-    if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_virtualization_mode_p)
+    if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0) || !amdsmi_get_gpu_virtualization_mode_p)
       return PAPI_ENOSUPP;
     amdsmi_virtualization_mode_t mode_val;
     status = amdsmi_get_gpu_virtualization_mode_p(device_handles[event->device], &mode_val);
@@ -1844,6 +1904,11 @@ int access_amdsmi_smu_fw_version(int mode, void *arg) {
 #endif
 
 int access_amdsmi_cache_stat(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
@@ -1879,6 +1944,7 @@ int access_amdsmi_cache_stat(int mode, void *arg) {
   }
   event->value = val;
   return PAPI_OK;
+#endif
 }
 
 int access_amdsmi_overdrive_level(int mode, void *arg) {
@@ -2069,7 +2135,7 @@ int access_amdsmi_pm_metrics_count(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_pm_metrics_info_p)
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7) || !amdsmi_get_gpu_pm_metrics_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_name_value_t *metrics = NULL;
@@ -2090,7 +2156,7 @@ int access_amdsmi_pm_metric_value(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_pm_metrics_info_p)
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7) || !amdsmi_get_gpu_pm_metrics_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_name_value_t *metrics = NULL;
@@ -2197,7 +2263,7 @@ int access_amdsmi_reg_count(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_reg_table_info_p)
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7) || !amdsmi_get_gpu_reg_table_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_reg_type_t reg_type = (amdsmi_reg_type_t)event->variant; /* set at registration */
@@ -2219,7 +2285,7 @@ int access_amdsmi_reg_value(int mode, void *arg) {
   }
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_reg_table_info_p)
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7) || !amdsmi_get_gpu_reg_table_info_p)
     return PAPI_ENOSUPP;
 
   amdsmi_reg_type_t reg_type = (amdsmi_reg_type_t)event->variant;
@@ -2257,6 +2323,11 @@ int access_amdsmi_voltage(int mode, void *arg) {
 }
 
 int access_amdsmi_vram_width(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
@@ -2271,11 +2342,22 @@ int access_amdsmi_vram_width(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
+#if PAPI_AMDSMI_BUILD_HAS_24_7
   event->value = (uint64_t)info.vram_bit_width;
   return PAPI_OK;
+#else
+  (void)info;
+  return PAPI_ENOSUPP;
+#endif
+#endif
 }
 
 int access_amdsmi_vram_size(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
@@ -2293,6 +2375,7 @@ int access_amdsmi_vram_size(int mode, void *arg) {
   /* vram_size reported in MB */
   event->value = (uint64_t)info.vram_size * 1024ULL * 1024ULL;
   return PAPI_OK;
+#endif
 }
 
 int access_amdsmi_vram_type(int mode, void *arg) {
@@ -2334,6 +2417,11 @@ int access_amdsmi_vram_vendor(int mode, void *arg) {
 }
 
 int access_amdsmi_vram_usage(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ) return PAPI_ENOSUPP;
 
   native_event_t *event = (native_event_t *)arg;
@@ -2359,7 +2447,32 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
     return PAPI_OK;
   }
 
-  /* USED: keep using vram_usage for the “used” number */
+#endif
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
+#endif
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
+#endif
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
+#endif
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
+#endif
+  /* USED: keep using vram_usage for the Â“usedÂ” number */
   if (!amdsmi_get_gpu_vram_usage_p) return PAPI_ENOSUPP;
 
   amdsmi_vram_usage_t u;
@@ -2496,6 +2609,11 @@ int access_amdsmi_board_serial_hash(int mode, void *arg) {
 }
 
 int access_amdsmi_fw_version(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   if (!amdsmi_get_fw_info_p)
@@ -2521,20 +2639,25 @@ int access_amdsmi_fw_version(int mode, void *arg) {
     }
   }
   return PAPI_EMISC;
+#endif
 }
 
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if AMDSMI_VERSION_AT_LEAST(25, 0)
 int access_amdsmi_vram_max_bandwidth(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_vram_info_p)
+  if (!amdsmi_get_gpu_vram_info_p)
+    return PAPI_ENOSUPP;
+  if (!AMDS_RUNTIME_VERSION_AT_LEAST(25, 0))
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
+  if (event->device < 0 || event->device >= device_count ||
+      !device_handles || !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_vram_info_t info;
   memset(&info, 0, sizeof(info));
-  amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
+  amdsmi_status_t st =
+      amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)info.vram_max_bandwidth; /* GB/s */
@@ -2654,7 +2777,7 @@ int access_amdsmi_power_sensor(int mode, void *arg) {
   switch (event->variant) {
     case 0: event->value = (int64_t)info.current_socket_power; break; /* W */
     case 1: event->value = (int64_t)info.average_socket_power; break; /* W */
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if PAPI_AMDSMI_BUILD_HAS_24_7
     case 2: event->value = (int64_t)info.socket_power; break;         /* uW */
 #endif
     case 3: event->value = (int64_t)info.gfx_voltage; break;          /* mV */
@@ -2668,6 +2791,11 @@ int access_amdsmi_power_sensor(int mode, void *arg) {
 
 
 int access_amdsmi_pcie_info(int mode, void *arg) {
+#if !PAPI_AMDSMI_BUILD_HAS_24_2
+  (void)mode;
+  (void)arg;
+  return PAPI_ENOSUPP;
+#else
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
   if (!amdsmi_get_pcie_info_p)
@@ -2682,7 +2810,7 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
     return PAPI_EMISC;
   // Variant mapping:
   // 0 max width, 1 max speed, 2 interface version, 3 slot type,
-  // 4 max interface version (lib >=25),
+  // 4 max interface version (lib >=24.7),
   // 5 current width, 6 current speed, 7 bandwidth,
   // 8 replay count, 9 L0->recovery count, 10 replay rollover count,
   // 11 NAK sent count, 12 NAK received count,
@@ -2700,9 +2828,9 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
   case 3:
     event->value = (int64_t)info.pcie_static.slot_type;
     break;
-#if AMDSMI_LIB_VERSION_MAJOR >= 25
+#if PAPI_AMDSMI_BUILD_HAS_24_7
   case 4:
-    if (amdsmi_lib_major < 25)
+    if (!AMDS_RUNTIME_VERSION_AT_LEAST(24, 7))
       return PAPI_ENOSUPP;
     event->value = (int64_t)info.pcie_static.max_pcie_interface_version;
     break;
@@ -2731,13 +2859,19 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
   case 12:
     event->value = (int64_t)info.pcie_metric.pcie_nak_received_count;
     break;
+#if PAPI_AMDSMI_BUILD_HAS_24_7
   case 13:
     event->value = (int64_t)info.pcie_metric.pcie_lc_perf_other_end_recovery_count;
     break;
+#else
+  case 13:
+    return PAPI_ENOSUPP;
+#endif
   default:
     return PAPI_ENOSUPP;
   }
   return PAPI_OK;
+#endif
 }
 
 int access_amdsmi_event_notification(int mode, void *arg) {
@@ -2793,6 +2927,7 @@ int access_amdsmi_utilization_count(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if PAPI_AMDSMI_BUILD_HAS_24_7
 int access_amdsmi_violation_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
@@ -2841,3 +2976,4 @@ int access_amdsmi_violation_status(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif
