@@ -1,4 +1,9 @@
-// amdsmi_ctx_conflict.cpp ? contention test (refactor)
+/**
+ * @file    amdsmi_ctx_conflict.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <atomic>

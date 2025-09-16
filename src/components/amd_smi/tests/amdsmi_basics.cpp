@@ -1,10 +1,12 @@
-//-----------------------------------------------------------------------------
-// amdsmi_basics.cpp (harness-integrated)
-// Enumerates every native AMD-SMI event exposed through PAPI and measures
-// them one at a time. Minimal changes from your original: now uses the
-// test_harness.hpp for consistent output and final PASS/FAIL lines.
-//-----------------------------------------------------------------------------
-
+/**
+ * @file    amdsmi_basics.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *          Enumerates every native AMD-SMI event exposed through PAPI and measures
+ *          them one at a time.
+ */
+ 
+ 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

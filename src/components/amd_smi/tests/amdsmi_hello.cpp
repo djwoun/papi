@@ -1,4 +1,9 @@
-// amdsmi_hello.cpp ? minimal harness-aware AMD SMI smoke test
+/**
+ * @file    amdsmi_hello.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>

@@ -1,5 +1,10 @@
-// gemm.cpp ? harness-integrated, keeps your HIP threading/monitoring logic,
-// removes CSV output (prints readings unless suppressed), default PASS/FAIL.
+/**
+ * @file    amdsmi_gemm.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "papi.h"

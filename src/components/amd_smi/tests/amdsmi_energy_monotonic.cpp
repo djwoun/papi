@@ -1,4 +1,9 @@
-// amdsmi_energy_monotonic.cpp
+/**
+ * @file    amdsmi_energy_monotonic.c
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>

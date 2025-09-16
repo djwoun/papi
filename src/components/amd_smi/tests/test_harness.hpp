@@ -1,3 +1,10 @@
+/**
+ * @file    test_harness.h
+ * @author  Dong Jun Woun 
+ *          djwoun@gmail.com
+ *
+ */
+
 #ifndef TEST_HARNESS_HPP
 #define TEST_HARNESS_HPP
 
@@ -18,7 +25,7 @@ static HarnessOpts harness_opts;
 //  - remove it from argv so it can't be mistaken for a positional arg,
 //  - enable quiet mode via env for the harness to pick up.
 static inline void harness_accept_tests_quiet(int *argc, char **argv) {
-    /* The PAPI test harness historically invokes each test with a single
+    /* The PAPI test harness invokes each test with a single
        positional token holding the value of the TESTS_QUIET environment
        variable.  Only the literal string "TESTS_QUIET" should trigger quiet
        mode.  If any other value is present we drop it from argv and ignore

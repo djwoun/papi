@@ -1,7 +1,7 @@
-# ***NOTE*** The Environment Variable PAPI_ROCM_ROOT must be defined for
+# ***NOTE*** The Environment Variable PAPI_AMDSMI_ROOT must be defined for
 # programs to compile correctly. One typical location is /opt/rocm.
-PAPI_ROCM_ROOT ?= /opt/rocm-6.4.0
-HIP_PATH := $(PAPI_ROCM_ROOT)
+PAPI_AMDSMI_ROOT ?= /opt/rocm-6.4.0
+HIP_PATH := $(PAPI_AMDSMI_ROOT)
 HIPCC := $(HIP_PATH)/bin/hipcc
 
 # Toolchain / flags
@@ -18,17 +18,17 @@ PAPI_DIR_INCLUDE ?= /home/dwoun/apps/papi/include
 
 EFFECTIVE_INCLUDE := $(BASE_INCLUDES_FROM_LOG)
 EFFECTIVE_INCLUDE += -I$(PAPI_DIR_INCLUDE)
-EFFECTIVE_INCLUDE += -I$(PAPI_ROCM_ROOT)/include
-EFFECTIVE_INCLUDE += -I$(PAPI_ROCM_ROOT)/include/rocm_smi
-EFFECTIVE_INCLUDE += -I$(PAPI_ROCM_ROOT)/include/hip
-EFFECTIVE_INCLUDE += -I$(PAPI_ROCM_ROOT)/include/hsa
-EFFECTIVE_INCLUDE += -I$(PAPI_ROCM_ROOT)/include/rocprofiler
-EFFECTIVE_INCLUDE += -I$(PAPI_ROCM_ROOT)/include/rocblas
+EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include
+EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/rocm_smi
+EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/hip
+EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/hsa
+EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/rocprofiler
+EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/rocblas
 
 # Linker flags
 COMMON_LDFLAGS  = -ldl -g -lpthread
-LDFLAGS_AMDSMI  = $(UTILOBJS) $(PAPILIB) -L$(PAPI_ROCM_ROOT)/lib -lamd_smi $(COMMON_LDFLAGS)
-LDFLAGS_GEMM    = $(UTILOBJS) $(PAPILIB) -L$(PAPI_ROCM_ROOT)/lib -lrocblas $(COMMON_LDFLAGS)
+LDFLAGS_AMDSMI  = $(UTILOBJS) $(PAPILIB) -L$(PAPI_AMDSMI_ROOT)/lib -lamd_smi $(COMMON_LDFLAGS)
+LDFLAGS_GEMM    = $(UTILOBJS) $(PAPILIB) -L$(PAPI_AMDSMI_ROOT)/lib -lrocblas $(COMMON_LDFLAGS)
 
 # New AMD SMI tests
 TESTS_AMDSMI := amdsmi_energy_monotonic amdsmi_ctx_conflict
@@ -120,7 +120,7 @@ clean:
 
 checkpath:
 	@echo "--- Variables ---"
-	@echo "PAPI_ROCM_ROOT = $(PAPI_ROCM_ROOT)"
+	@echo "PAPI_AMDSMI_ROOT = $(PAPI_AMDSMI_ROOT)"
 	@echo "HIPCC = $(HIPCC)"
 	@echo "INCLUDES = $(EFFECTIVE_INCLUDE)"
 	@echo "CFLAGS = $(CFLAGS)"

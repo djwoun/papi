@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# AMD SMI test runner (no build) mirroring run_tests.sh semantics.
 # Quiet by default; use -v/--verbose to see output from the tests.
 
 # Be reasonably strict but compatible with older bash
