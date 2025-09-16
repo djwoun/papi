@@ -127,9 +127,9 @@ int amds_ctx_stop(amds_ctx_t ctx) {
   for (int i = 0; i < ctx->num_events; ++i) {
     native_event_t *ev = &ntv_table_p->events[ctx->events_id[i]];
     if (ev->stop_func) {
-      int ret = ev->stop_func(ev);
+      int papi_errno_stop = ev->stop_func(ev);
       if (papi_errno == PAPI_OK)
-        papi_errno = ret;
+        papi_errno = papi_errno_stop;
     }
   }
   ctx->state &= ~AMDS_EVENTS_RUNNING;
@@ -150,14 +150,14 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
     unsigned int id = ctx->events_id[i];
     native_event_t *ev = &ntv_table_p->events[id];
 
-    int rc = PAPI_OK;
+    int papi_errno_access = PAPI_OK;
     if (ev->access_func) {
-      rc = ev->access_func(PAPI_MODE_READ, ev);
+      papi_errno_access = ev->access_func(PAPI_MODE_READ, ev);
     }
-    if (rc == PAPI_OK) {
+    if (papi_errno_access == PAPI_OK) {
       ctx->counters[i] = (long long)ev->value;
     } else if (papi_errno == PAPI_OK) {
-      papi_errno = rc;  /* remember, but keep going */
+      papi_errno = papi_errno_access;  /* remember, but keep going */
     }
   }
 
