@@ -97,12 +97,9 @@ int access_amdsmi_asic_info(int mode, void *arg);
 int access_amdsmi_link_metrics(int mode, void *arg);
 int access_amdsmi_link_weight(int mode, void *arg);
 int access_amdsmi_link_type(int mode, void *arg);
-int access_amdsmi_p2p_status(int mode, void *arg);
 int access_amdsmi_p2p_accessible(int mode, void *arg);
-int access_amdsmi_link_topology_nearest(int mode, void *arg);
 int access_amdsmi_topo_numa(int mode, void *arg);
 int access_amdsmi_device_bdf(int mode, void *arg);
-int access_amdsmi_kfd_info(int mode, void *arg);
 int access_amdsmi_xgmi_info(int mode, void *arg);
 int access_amdsmi_process_info(int mode, void *arg);
 int access_amdsmi_ecc_total(int mode, void *arg);
@@ -112,7 +109,6 @@ int access_amdsmi_ecc_enabled_mask(int mode, void *arg);
 int access_amdsmi_compute_partition_hash(int mode, void *arg);
 int access_amdsmi_memory_partition_hash(int mode, void *arg);
 int access_amdsmi_memory_reserved_pages(int mode, void *arg);
-int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
 int access_amdsmi_lib_version(int mode, void *arg);
 int access_amdsmi_cache_stat(int mode, void *arg);
 int access_amdsmi_overdrive_level(int mode, void *arg);
@@ -154,10 +150,14 @@ int access_amdsmi_pcie_info(int mode, void *arg);
 int access_amdsmi_event_notification(int mode, void *arg);
 int access_amdsmi_xgmi_bandwidth(int mode, void *arg);
 int access_amdsmi_utilization_count(int mode, void *arg);
-int access_amdsmi_violation_status(int mode, void *arg);
 
 /* Consolidated AMDSMI_LIB_VERSION_MAJOR >= 25 block */
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
+int access_amdsmi_accelerator_num_partitions(int mode, void *arg);
+int access_amdsmi_kfd_info(int mode, void *arg);
+int access_amdsmi_link_topology_nearest(int mode, void *arg);
+int access_amdsmi_p2p_status(int mode, void *arg);
+int access_amdsmi_violation_status(int mode, void *arg);
 int access_amdsmi_enumeration_info(int mode, void *arg);
 int access_amdsmi_memory_partition_config(int mode, void *arg);
 int access_amdsmi_xgmi_link_status(int mode, void *arg);

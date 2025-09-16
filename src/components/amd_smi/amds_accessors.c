@@ -197,9 +197,14 @@ int access_amdsmi_asic_info(int mode, void *arg) {
   case 4:
     event->value = (int64_t)info.rev_id;
     break;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   case 5:
     event->value = (int64_t)info.num_of_compute_units;
     break;
+#else
+  case 5:
+    return PAPI_ENOSUPP;
+#endif
   default:
     return PAPI_EMISC;
   }
@@ -360,6 +365,7 @@ int access_amdsmi_link_type(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_p2p_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_topo_get_p2p_status_p)
     return PAPI_ENOSUPP;
@@ -416,6 +422,7 @@ int access_amdsmi_p2p_status(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#endif
 
 int access_amdsmi_p2p_accessible(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_is_P2P_accessible_p)
@@ -434,6 +441,7 @@ int access_amdsmi_p2p_accessible(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_link_topology_nearest(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_link_topology_nearest_p)
     return PAPI_ENOSUPP;
@@ -450,6 +458,7 @@ int access_amdsmi_link_topology_nearest(int mode, void *arg) {
   event->value = (int64_t)info.count;
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_topo_numa(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_topo_get_numa_node_number_p)
@@ -497,6 +506,7 @@ int access_amdsmi_device_bdf(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_kfd_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_kfd_info_p)
     return PAPI_ENOSUPP;
@@ -524,6 +534,7 @@ int access_amdsmi_kfd_info(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif
 
 int access_amdsmi_xgmi_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_xgmi_info_p)
@@ -793,6 +804,7 @@ int access_amdsmi_memory_partition_config(int mode, void *arg) {
   return PAPI_OK;
 }
 #endif
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_gpu_accelerator_partition_profile_p)
     return PAPI_ENOSUPP;
@@ -809,6 +821,8 @@ int access_amdsmi_accelerator_num_partitions(int mode, void *arg) {
   event->value = (int64_t)prof.num_partitions;
   return PAPI_OK;
 }
+#endif
+
 /* Access function implementations (read/write operations for each event) */
 int access_amdsmi_temp_metric(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
@@ -2264,8 +2278,13 @@ int access_amdsmi_vram_width(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_vram_info_p(device_handles[event->device], &info);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   event->value = (uint64_t)info.vram_bit_width;
   return PAPI_OK;
+#else
+  (void)info;
+  return PAPI_ENOSUPP;
+#endif
 }
 
 int access_amdsmi_vram_size(int mode, void *arg) {
@@ -2352,7 +2371,7 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
     return PAPI_OK;
   }
 
-  /* USED: keep using vram_usage for the “used” number */
+  /* USED: keep using vram_usage for the Â“usedÂ” number */
   if (!amdsmi_get_gpu_vram_usage_p) return PAPI_ENOSUPP;
 
   amdsmi_vram_usage_t u;
@@ -2724,9 +2743,14 @@ int access_amdsmi_pcie_info(int mode, void *arg) {
   case 12:
     event->value = (int64_t)info.pcie_metric.pcie_nak_received_count;
     break;
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   case 13:
     event->value = (int64_t)info.pcie_metric.pcie_lc_perf_other_end_recovery_count;
     break;
+#else
+  case 13:
+    return PAPI_ENOSUPP;
+#endif
   default:
     return PAPI_ENOSUPP;
   }
@@ -2786,6 +2810,7 @@ int access_amdsmi_utilization_count(int mode, void *arg) {
   return PAPI_OK;
 }
 
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
 int access_amdsmi_violation_status(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
@@ -2834,3 +2859,4 @@ int access_amdsmi_violation_status(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+#endif

@@ -265,8 +265,10 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_energy_count_p = sym("amdsmi_get_energy_count", NULL);
   amdsmi_get_gpu_power_profile_presets_p =
       sym("amdsmi_get_gpu_power_profile_presets", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_get_violation_status_p =
       sym("amdsmi_get_violation_status", NULL);
+#endif
   // Additional read-only queries
   amdsmi_get_lib_version_p = sym("amdsmi_get_lib_version", NULL);
   amdsmi_get_gpu_driver_info_p = sym("amdsmi_get_gpu_driver_info", NULL);
@@ -288,10 +290,14 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_topo_get_numa_node_number", NULL);
   amdsmi_topo_get_link_weight_p = sym("amdsmi_topo_get_link_weight", NULL);
   amdsmi_topo_get_link_type_p = sym("amdsmi_topo_get_link_type", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_topo_get_p2p_status_p = sym("amdsmi_topo_get_p2p_status", NULL);
+#endif
   amdsmi_is_P2P_accessible_p = sym("amdsmi_is_P2P_accessible", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_get_link_topology_nearest_p =
       sym("amdsmi_get_link_topology_nearest", NULL);
+#endif
   amdsmi_get_gpu_device_bdf_p = sym("amdsmi_get_gpu_device_bdf", NULL);
   amdsmi_get_gpu_ecc_enabled_p = sym("amdsmi_get_gpu_ecc_enabled", NULL);
   amdsmi_get_gpu_total_ecc_count_p =
@@ -310,7 +316,9 @@ static int load_amdsmi_sym(void) {
       sym("amdsmi_is_gpu_memory_partition_supported", NULL);
   amdsmi_get_gpu_memory_reserved_pages_p =
       sym("amdsmi_get_gpu_memory_reserved_pages", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_get_gpu_kfd_info_p = sym("amdsmi_get_gpu_kfd_info", NULL);
+#endif
   amdsmi_get_gpu_metrics_header_info_p =
         sym("amdsmi_get_gpu_metrics_header_info", NULL);
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
@@ -320,8 +328,10 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_xgmi_info_p = sym("amdsmi_get_xgmi_info", NULL);
   amdsmi_gpu_xgmi_error_status_p =
       sym("amdsmi_gpu_xgmi_error_status", NULL);
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   amdsmi_get_gpu_accelerator_partition_profile_p =
       sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
+#endif
   amdsmi_get_gpu_cache_info_p = sym("amdsmi_get_gpu_cache_info", NULL);
   amdsmi_get_gpu_mem_overdrive_level_p =
       sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
@@ -1923,6 +1933,7 @@ static int init_event_table(void) {
                       access_amdsmi_utilization_count) != PAPI_OK)
           return PAPI_ENOMEM;
       }
+#ifdef AMDSMI_COARSE_DECODER_ACTIVITY
       uc.type = AMDSMI_COARSE_DECODER_ACTIVITY;
       if (amdsmi_get_utilization_count_p(device_handles[d], &uc, 1, &ts) ==
           AMDSMI_STATUS_SUCCESS) {
@@ -1936,6 +1947,7 @@ static int init_event_table(void) {
                       access_amdsmi_utilization_count) != PAPI_OK)
           return PAPI_ENOMEM;
       }
+#endif
     }
   }
   /* GPU clock frequency levels for multiple clock domains */
@@ -2091,6 +2103,7 @@ static int init_event_table(void) {
         }
       }
     }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
     if (amdsmi_get_gpu_kfd_info_p) {
       amdsmi_kfd_info_t kinfo;
       if (amdsmi_get_gpu_kfd_info_p(device_handles[d], &kinfo) ==
@@ -2110,6 +2123,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     // NUMA node via topology API
     if (amdsmi_topo_get_numa_node_number_p) {
       uint32_t node;
@@ -2672,6 +2686,7 @@ static int init_event_table(void) {
                   access_amdsmi_power_profile_status) != PAPI_OK)
       return PAPI_ENOMEM;
   }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
   /* GPU violation status metrics */
   if (amdsmi_get_violation_status_p) {
     for (int d = 0; d < gpu_count; ++d) {
@@ -2705,6 +2720,7 @@ static int init_event_table(void) {
       }
     }
   }
+#endif
 #ifndef AMDSMI_DISABLE_ESMI
   /* CPU metrics events */
   if (cpu_count > 0) {
@@ -3417,6 +3433,7 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
       }
     }
+#if AMDSMI_LIB_VERSION_MAJOR >= 25
     if (amdsmi_get_link_topology_nearest_p) {
       amdsmi_link_type_t lt_types[] = {AMDSMI_LINK_TYPE_XGMI,
                                        AMDSMI_LINK_TYPE_PCIE};
@@ -3438,6 +3455,7 @@ static int init_event_table(void) {
         }
       }
     }
+#endif
     for (int p = 0; p < gpu_count; ++p) {
       if (p == d)
         continue;
