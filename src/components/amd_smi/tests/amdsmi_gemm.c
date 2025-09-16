@@ -5,15 +5,15 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "test_harness.h"
+
 #include "papi.h"
 #include "hip/hip_runtime.h"
-#include <unistd.h>
-#include <sys/time.h>
 #include <pthread.h>
-
-#include "test_harness.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #define M_DIM 7296
 #define K_DIM 14592

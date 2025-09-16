@@ -8,6 +8,10 @@
 #ifndef TEST_HARNESS_H
 #define TEST_HARNESS_H
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

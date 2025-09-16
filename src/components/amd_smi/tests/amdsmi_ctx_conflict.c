@@ -4,16 +4,16 @@
  *          djwoun@gmail.com
  *
  */
+#include "test_harness.h"
+
+#include "papi.h"
 #include <stdbool.h>
+#include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <unistd.h>
-
-#include "papi.h"
-#include "test_harness.h"
 
 static unsigned long get_tid(void) { return (unsigned long)pthread_self(); }
 

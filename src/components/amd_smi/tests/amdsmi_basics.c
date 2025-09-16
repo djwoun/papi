@@ -7,13 +7,13 @@
  */
  
  
+#include "test_harness.h"
+
+#include "papi.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "papi.h"
-#include "test_harness.h"
 
 // Return true if rc is a "warning, not failure" status for add/start/stop.
 static inline bool is_warning_rc(int rc) {

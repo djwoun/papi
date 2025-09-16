@@ -93,6 +93,9 @@ amdsmi_ctx_conflict: amdsmi_ctx_conflict.o $(UTILOBJS) $(PAPILIB)
 	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
 	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_ctx_conflict.o $(LDFLAGS_AMDSMI)
 
+$(UTILOBJS):
+	$(MAKE) -C ../../../testlib libtestlib.a
+
 # Convenience meta-target
 tests: $(TESTS_AMDSMI)
 

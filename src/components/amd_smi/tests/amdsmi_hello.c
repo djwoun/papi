@@ -4,13 +4,13 @@
  *          djwoun@gmail.com
  *
  */
+#include "test_harness.h"
+
+#include "papi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "papi.h"
-#include "test_harness.h"
 
 int main(int argc, char** argv) {
     // Unbuffer stdout so the final status line always shows.

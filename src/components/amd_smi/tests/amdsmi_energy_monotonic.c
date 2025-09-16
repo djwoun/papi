@@ -4,12 +4,12 @@
  *          djwoun@gmail.com
  *
  */
+#include "test_harness.h"
+
+#include "papi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#include "papi.h"
-#include "test_harness.h"
 
 int main(int argc, char **argv) {
     harness_accept_tests_quiet(&argc, argv);
