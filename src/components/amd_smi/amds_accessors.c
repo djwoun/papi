@@ -2869,7 +2869,7 @@ int access_amdsmi_violation_status(int mode, void *arg) {
   if (AMDSMI_RUNTIME_VERSION_UNDER(24, 7, 0))
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count ||
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
       !device_handles[event->device])
     return PAPI_EMISC;
   amdsmi_violation_status_t info;
@@ -2879,7 +2879,7 @@ int access_amdsmi_violation_status(int mode, void *arg) {
     return PAPI_EMISC;
   switch (event->variant) {
   case 0:
-    event->value = (int64_t)info.acc_ppt;
+    event->value = (int64_t)info.acc_ppt_pwr;
     break;
   case 1:
     event->value = (int64_t)info.acc_socket_thrm;
@@ -2888,16 +2888,16 @@ int access_amdsmi_violation_status(int mode, void *arg) {
     event->value = (int64_t)info.acc_vr_thrm;
     break;
   case 3:
-    event->value = (int64_t)info.pct_ppt;
+    event->value = (int64_t)info.per_ppt_pwr;
     break;
   case 4:
-    event->value = (int64_t)info.pct_socket_thrm;
+    event->value = (int64_t)info.per_socket_thrm;
     break;
   case 5:
-    event->value = (int64_t)info.pct_vr_thrm;
+    event->value = (int64_t)info.per_vr_thrm;
     break;
   case 6:
-    event->value = (int64_t)info.active_ppt;
+    event->value = (int64_t)info.active_ppt_pwr;
     break;
   case 7:
     event->value = (int64_t)info.active_socket_thrm;
