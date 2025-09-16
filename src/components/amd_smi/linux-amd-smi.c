@@ -222,11 +222,15 @@ static int _amd_smi_stop(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
 }
 
 static int _amd_smi_reset(hwd_context_t *ctx, hwd_control_state_t *ctrl) {
-    amdsmi_context_t *amdsmi_ctx = (amdsmi_context_t *) ctx;
+    (void) ctx;
     amdsmi_control_t *amdsmi_ctl = (amdsmi_control_t *) ctrl;
-    if (!(amdsmi_ctx->state & AMDS_EVENTS_RUNNING)) {
-        return PAPI_EMISC;
+
+    if (!amdsmi_ctl->amds_ctx) {
+        /* Resetting is allowed even if the EventSet was never started. */
+        return PAPI_OK;
     }
+
+    /* Clear accumulated values regardless of whether the EventSet is running. */
     return amds_ctx_reset(amdsmi_ctl->amds_ctx);
 }
 
