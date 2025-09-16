@@ -70,12 +70,10 @@ papi_native_avail -i amd_smi    # lists native events for this component
   Implements the **accessors** that read/write individual metrics (e.g., temperatures, fans, PCIe, energy, power caps, RAS/ECC, clocks, VRAM, link topology, XGMI/PCIe metrics, firmware/board info, etc.). Each accessor maps an event’s `(variant, subvariant)` to the right SMI call and returns the value.
 
 - **`amds_ctx.c`**  
-  Provides the **per-eventset context**:
-
-  - `amds_ctx_open/close` — acquire/release devices, run per-event open/close hooks.
-  - `amds_ctx_start/stop` — start/stop counters where needed.
+  Provides the **per-eventset context**:  
+  - `amds_ctx_open/close` — acquire/release devices, run per-event open/close hooks.  
+  - `amds_ctx_start/stop` — start/stop counters where needed.  
   - `amds_ctx_read/write/reset` — read current values, optionally write supported controls (e.g., power cap), zero software view.  
-    Enforces **exclusive GPU usage** across event sets to avoid conflicts.
 
 - **`amds_evtapi.c`**  
   Implements native-event enumeration for PAPI (`enum`, `code_to_name`, `name_to_code`, `code_to_descr`) using the in-memory event table and a small hash map for fast lookups.
