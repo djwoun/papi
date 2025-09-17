@@ -176,7 +176,7 @@ static int real_main(const HarnessOpts *opts) {
     }
 
     /* Use device 1 and (optionally) print basic properties. */
-    HIP_CHECK(hipSetDevice(1));
+    HIP_CHECK(hipSetDevice(0));
     hipDeviceProp_t deviceProp;
     HIP_CHECK(hipGetDeviceProperties(&deviceProp, 1));
     if (opts->print) {
