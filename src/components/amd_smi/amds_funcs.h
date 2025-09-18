@@ -129,10 +129,10 @@
     (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *))            \
   _(amdsmi_topo_get_link_type_p, amdsmi_status_t,                              \
     (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,             \
-     amdsmi_io_link_type_t *))                                                \
+     amdsmi_iolink_type_compat_t *))                                          \
   _(amdsmi_topo_get_p2p_status_p, amdsmi_status_t,                             \
-    (amdsmi_processor_handle, amdsmi_processor_handle, amdsmi_io_link_type_t *,\
-     amdsmi_p2p_capability_t *))                                              \
+    (amdsmi_processor_handle, amdsmi_processor_handle,                         \
+     amdsmi_iolink_type_compat_t *, amdsmi_p2p_capability_t *))               \
   _(amdsmi_is_P2P_accessible_p, amdsmi_status_t,                               \
     (amdsmi_processor_handle, amdsmi_processor_handle, bool *))                \
   _(amdsmi_get_link_topology_nearest_p, amdsmi_status_t,                       \
