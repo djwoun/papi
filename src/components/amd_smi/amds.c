@@ -10,11 +10,6 @@
 #include "amds_priv.h"
 #include <amd_smi/amdsmi.h>
 
-/* Fallback for name-length constant: ROCm 7.x no longer defines the old macro */
-#ifndef MAX_AMDSMI_NAME_LENGTH
-#define MAX_AMDSMI_NAME_LENGTH 256
-#endif
-
 #include "htable.h"
 #include "papi.h"
 #include "papi_memory.h"
@@ -1113,25 +1108,28 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
         }
 
+        const bool pm_names_usable =
+            (metrics != NULL && amdsmi_lib_major == AMDSMI_LIB_VERSION_MAJOR);
         for (uint32_t i = 0; i < mcount; ++i) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             if (metrics) free(metrics);
             CHECK_EVENT_IDX(idx);
           }
           char metric_name[MAX_AMDSMI_NAME_LENGTH];
-          if (metrics[i].name) {
+          bool have_metric_name = false;
+          if (pm_names_usable && metrics[i].name) {
             sanitize_name(metrics[i].name, metric_name, sizeof(metric_name));
-            if (metric_name[0] == '\0') {
-              snprintf(metric_name, sizeof(metric_name), "metric_%u", i);
-            }
-          } else {
-            snprintf(metric_name, sizeof(metric_name), "metric_%u", i);
+            if (metric_name[0] != '\0')
+              have_metric_name = true;
           }
+          if (!have_metric_name)
+            snprintf(metric_name, sizeof(metric_name), "m%u", i);
           snprintf(name_buf, sizeof(name_buf), "pm_%s:device=%d", metric_name, d);
-          const char *metric_descr_name =
-              (metrics[i].name && metrics[i].name[0]) ? metrics[i].name : metric_name;
-          snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %s", d,
-                   metric_descr_name);
+          if (have_metric_name)
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %s", d,
+                     metric_name);
+          else
+            snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %u", d, i);
           if (add_event(&idx, name_buf, descr_buf, d, i, 0, PAPI_MODE_READ,
                         access_amdsmi_pm_metric_value) != PAPI_OK) {
             if (metrics) free(metrics);
@@ -1609,6 +1607,8 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           }
 
+          const bool reg_names_usable = (reg_metrics != NULL &&
+                                         amdsmi_lib_major == AMDSMI_LIB_VERSION_MAJOR);
           for (uint32_t i = 0; i < num_metrics; ++i) {
             if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
               if (reg_metrics)
@@ -1616,12 +1616,24 @@ static int init_event_table(void) {
               CHECK_EVENT_IDX(idx);
             }
             char reg_metric_name[MAX_AMDSMI_NAME_LENGTH];
-            sanitize_name(reg_metrics[i].name, reg_metric_name,
-                          sizeof(reg_metric_name));
+            bool have_reg_metric_name = false;
+            if (reg_names_usable && reg_metrics[i].name) {
+              sanitize_name(reg_metrics[i].name, reg_metric_name,
+                            sizeof(reg_metric_name));
+              if (reg_metric_name[0] != '\0')
+                have_reg_metric_name = true;
+            }
+            if (!have_reg_metric_name)
+              snprintf(reg_metric_name, sizeof(reg_metric_name), "m%u", i);
             snprintf(name_buf, sizeof(name_buf), "reg_%s_%s:device=%d",
                      reg_names[rt], reg_metric_name, d);
-            snprintf(descr_buf, sizeof(descr_buf), "Device %d %s register %s",
-                     d, reg_names[rt], reg_metrics[i].name);
+            if (have_reg_metric_name)
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d %s register %s", d, reg_names[rt],
+                       reg_metric_name);
+            else
+              snprintf(descr_buf, sizeof(descr_buf),
+                       "Device %d %s register metric %u", d, reg_names[rt], i);
             if (add_event(&idx, name_buf, descr_buf, d, (uint32_t)reg_types[rt],
                           i, PAPI_MODE_READ, access_amdsmi_reg_value) != PAPI_OK) {
               if (reg_metrics) free(reg_metrics);
