@@ -17,6 +17,41 @@
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
 
+/*
+ * AMD SMI 7.0 (library v26) renamed amdsmi_io_link_type_t to
+ * amdsmi_link_type_t.  Provide aliases so the component can be built
+ * against either v25 or v26 headers while continuing to use the older
+ * symbol names internally.
+ */
+#if AMDSMI_LIB_VERSION_MAJOR >= 26
+typedef amdsmi_link_type_t amdsmi_io_link_type_t;
+#else
+typedef amdsmi_io_link_type_t amdsmi_link_type_t;
+#endif
+
+typedef amdsmi_link_type_t papi_amdsmi_link_type_t;
+
+#if AMDSMI_LIB_VERSION_MAJOR > 0 && AMDSMI_LIB_VERSION_MAJOR < 25
+#error "AMD SMI library version 25 or newer is required"
+#endif
+
+/* Convenience macros for the link type constants used by the component. */
+#if defined(AMDSMI_LINK_TYPE_XGMI)
+#define PAPI_AMDSMI_LINK_TYPE_XGMI AMDSMI_LINK_TYPE_XGMI
+#elif defined(AMDSMI_IOLINK_TYPE_XGMI)
+#define PAPI_AMDSMI_LINK_TYPE_XGMI AMDSMI_IOLINK_TYPE_XGMI
+#else
+#define PAPI_AMDSMI_LINK_TYPE_XGMI 0
+#endif
+
+#if defined(AMDSMI_LINK_TYPE_PCIE)
+#define PAPI_AMDSMI_LINK_TYPE_PCIE AMDSMI_LINK_TYPE_PCIE
+#elif defined(AMDSMI_IOLINK_TYPE_PCIE)
+#define PAPI_AMDSMI_LINK_TYPE_PCIE AMDSMI_IOLINK_TYPE_PCIE
+#else
+#define PAPI_AMDSMI_LINK_TYPE_PCIE 0
+#endif
+
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,

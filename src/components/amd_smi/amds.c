@@ -3372,10 +3372,12 @@ static int init_event_table(void) {
       amdsmi_link_metrics_t lm;
       if (amdsmi_get_link_metrics_p(device_handles[d], &lm) ==
           AMDSMI_STATUS_SUCCESS) {
-        int types[] = {AMDSMI_LINK_TYPE_XGMI, AMDSMI_LINK_TYPE_PCIE};
+        int types[] = {PAPI_AMDSMI_LINK_TYPE_XGMI, PAPI_AMDSMI_LINK_TYPE_PCIE};
         const char *type_names[] = {"xgmi", "pcie"};
         for (int ti = 0; ti < 2; ++ti) {
           uint32_t link_type = (uint32_t)types[ti];
+          if (link_type == 0)
+            continue;
           uint32_t sv = (link_type << 16) | 0xFFFF;
           int present = 0;
           uint32_t n = lm.num_links;
@@ -3442,10 +3444,12 @@ static int init_event_table(void) {
       }
     }
     if (amdsmi_get_link_topology_nearest_p) {
-      amdsmi_link_type_t lt_types[] = {AMDSMI_LINK_TYPE_XGMI,
-                                       AMDSMI_LINK_TYPE_PCIE};
+      papi_amdsmi_link_type_t lt_types[] = {PAPI_AMDSMI_LINK_TYPE_XGMI,
+                                            PAPI_AMDSMI_LINK_TYPE_PCIE};
       const char *lt_names[] = {"xgmi", "pcie"};
       for (int ti = 0; ti < 2; ++ti) {
+        if (lt_types[ti] == 0)
+          continue;
         amdsmi_topology_nearest_t info;
         memset(&info, 0, sizeof(info));
         if (amdsmi_get_link_topology_nearest_p(device_handles[d], lt_types[ti],

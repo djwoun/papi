@@ -451,7 +451,7 @@ int access_amdsmi_link_topology_nearest(int mode, void *arg) {
   amdsmi_topology_nearest_t info;
   memset(&info, 0, sizeof(info));
   if (amdsmi_get_link_topology_nearest_p(
-          device_handles[event->device], (amdsmi_link_type_t)event->variant,
+          device_handles[event->device], (papi_amdsmi_link_type_t)event->variant,
           &info) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (int64_t)info.count;
