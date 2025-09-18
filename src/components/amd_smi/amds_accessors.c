@@ -351,7 +351,7 @@ int access_amdsmi_link_type(int mode, void *arg) {
       !device_handles[src] || !device_handles[dst] || src == dst)
     return PAPI_EMISC;
   uint64_t hops = 0;
-  amdsmi_io_link_type_t type;
+  amdsmi_iolink_type_compat_t type;
   if (amdsmi_topo_get_link_type_p(device_handles[src], device_handles[dst],
                                   &hops, &type) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -386,7 +386,7 @@ int access_amdsmi_p2p_status(int mode, void *arg) {
                                  &accessible) == AMDSMI_STATUS_SUCCESS &&
       accessible) {
     // 2) Only for accessible pairs, ask for detailed capabilities:
-    amdsmi_io_link_type_t type = 0;
+    amdsmi_iolink_type_compat_t type = 0;
     amdsmi_p2p_capability_t cap = {0};
     if (amdsmi_topo_get_p2p_status_p(device_handles[src], device_handles[dst],
                                      &type, &cap) != AMDSMI_STATUS_SUCCESS)
@@ -409,7 +409,7 @@ int access_amdsmi_p2p_status(int mode, void *arg) {
   // amdsmi_topo_get_link_type; the rest are false by definition.
   if (event->variant == 0 && amdsmi_topo_get_link_type_p) {
     uint64_t hops = 0;
-    amdsmi_io_link_type_t type = 0; // UNKNOWN/PCIE/XGMI per platform
+    amdsmi_iolink_type_compat_t type = 0; // UNKNOWN/PCIE/XGMI per platform
     if (amdsmi_topo_get_link_type_p(device_handles[src], device_handles[dst],
                                     &hops, &type) == AMDSMI_STATUS_SUCCESS) {
       event->value = (int64_t)type;
