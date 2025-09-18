@@ -8,6 +8,16 @@
 #ifndef AMDS_FUNCS_H
 #define AMDS_FUNCS_H
 
+/* --- Compatibility typedefs for ROCm 6.x (AMDSMI 25) vs ROCm 7.x (AMDSMI 26+) --- */
+#ifndef AMDSMI_LINK_TYPE_COMPAT_T_DEFINED
+#define AMDSMI_LINK_TYPE_COMPAT_T_DEFINED
+#if defined(AMDSMI_LIB_VERSION_MAJOR) && (AMDSMI_LIB_VERSION_MAJOR >= 26)
+typedef amdsmi_link_type_t amdsmi_link_type_compat_t;
+#else
+typedef amdsmi_io_link_type_t amdsmi_link_type_compat_t;
+#endif
+#endif
+
 #define AMD_SMI_GPU_FUNCTIONS_BASE(_)                                          \
   _(amdsmi_init_p, amdsmi_status_t, (uint64_t))                                \
   _(amdsmi_shut_down_p, amdsmi_status_t, (void))                               \
@@ -129,10 +139,10 @@
     (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *))            \
   _(amdsmi_topo_get_link_type_p, amdsmi_status_t,                              \
     (amdsmi_processor_handle, amdsmi_processor_handle, uint64_t *,             \
-     amdsmi_iolink_type_compat_t *))                                          \
+     amdsmi_link_type_compat_t *))                                            \
   _(amdsmi_topo_get_p2p_status_p, amdsmi_status_t,                             \
     (amdsmi_processor_handle, amdsmi_processor_handle,                         \
-     amdsmi_iolink_type_compat_t *, amdsmi_p2p_capability_t *))               \
+     amdsmi_link_type_compat_t *, amdsmi_p2p_capability_t *))                 \
   _(amdsmi_is_P2P_accessible_p, amdsmi_status_t,                               \
     (amdsmi_processor_handle, amdsmi_processor_handle, bool *))                \
   _(amdsmi_get_link_topology_nearest_p, amdsmi_status_t,                       \

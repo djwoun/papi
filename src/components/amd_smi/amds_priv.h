@@ -17,23 +17,6 @@
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
 
-/* ------------------------------------------------------------------ */
-/* AMD SMI v25->v26 compatibility shims                               */
-/* In v26 the IO link enum was renamed:
- *   v25: amdsmi_io_link_type_t  ->  v26+: amdsmi_link_type_t
- * Provide a single alias that we can use everywhere in our code.     */
-#if AMDSMI_LIB_VERSION_MAJOR >= 26
-typedef amdsmi_link_type_t amdsmi_iolink_type_compat_t;
-#else
-typedef amdsmi_io_link_type_t amdsmi_iolink_type_compat_t;
-#endif
-
-/* Some SDKs don't define this macro; keep our code stable. */
-#ifndef MAX_AMDSMI_NAME_LENGTH
-#define MAX_AMDSMI_NAME_LENGTH 256
-#endif
-/* ------------------------------------------------------------------ */
-
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,

@@ -9,6 +9,12 @@
 #define AMDS_PRIV_IMPL
 #include "amds_priv.h"
 #include <amd_smi/amdsmi.h>
+
+/* Fallback for name-length constant: ROCm 7.x no longer defines the old macro */
+#ifndef MAX_AMDSMI_NAME_LENGTH
+#define MAX_AMDSMI_NAME_LENGTH 256
+#endif
+
 #include "htable.h"
 #include "papi.h"
 #include "papi_memory.h"
@@ -187,6 +193,10 @@ static int access_amdsmi_gpu_counter(int mode, void *arg) {
 // Replace any non-alphanumeric characters with '_' to build safe event names
 static void sanitize_name(const char *src, char *dst, size_t len) {
   if (len == 0) return;
+  if (src == NULL) {
+    dst[0] = '\0';
+    return;
+  }
   size_t j = 0;
   for (size_t i = 0; src[i] && j < len - 1; ++i) {
     char c = src[i];
@@ -1109,10 +1119,19 @@ static int init_event_table(void) {
             CHECK_EVENT_IDX(idx);
           }
           char metric_name[MAX_AMDSMI_NAME_LENGTH];
-          sanitize_name(metrics[i].name, metric_name, sizeof(metric_name));
+          if (metrics[i].name) {
+            sanitize_name(metrics[i].name, metric_name, sizeof(metric_name));
+            if (metric_name[0] == '\0') {
+              snprintf(metric_name, sizeof(metric_name), "metric_%u", i);
+            }
+          } else {
+            snprintf(metric_name, sizeof(metric_name), "metric_%u", i);
+          }
           snprintf(name_buf, sizeof(name_buf), "pm_%s:device=%d", metric_name, d);
+          const char *metric_descr_name =
+              (metrics[i].name && metrics[i].name[0]) ? metrics[i].name : metric_name;
           snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %s", d,
-                   metrics[i].name);
+                   metric_descr_name);
           if (add_event(&idx, name_buf, descr_buf, d, i, 0, PAPI_MODE_READ,
                         access_amdsmi_pm_metric_value) != PAPI_OK) {
             if (metrics) free(metrics);
