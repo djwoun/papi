@@ -1108,7 +1108,7 @@ static int init_event_table(void) {
             if (metrics) free(metrics);
             CHECK_EVENT_IDX(idx);
           }
-          char metric_name[MAX_AMDSMI_NAME_LENGTH];
+          char metric_name[PAPI_MAX_STR_LEN];
           sanitize_name(metrics[i].name, metric_name, sizeof(metric_name));
           snprintf(name_buf, sizeof(name_buf), "pm_%s:device=%d", metric_name, d);
           snprintf(descr_buf, sizeof(descr_buf), "Device %d PM metric %s", d,
@@ -1596,7 +1596,7 @@ static int init_event_table(void) {
                 free(reg_metrics);
               CHECK_EVENT_IDX(idx);
             }
-            char reg_metric_name[MAX_AMDSMI_NAME_LENGTH];
+            char reg_metric_name[PAPI_MAX_STR_LEN];
             sanitize_name(reg_metrics[i].name, reg_metric_name,
                           sizeof(reg_metric_name));
             snprintf(name_buf, sizeof(name_buf), "reg_%s_%s:device=%d",
