@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <ctype.h>
 #define MAX_EVENTS_PER_DEVICE 1024
 
 // Pointers to AMD SMI library functions (dynamically loaded)
@@ -197,6 +198,18 @@ static void sanitize_name(const char *src, char *dst, size_t len) {
       dst[j++] = '_';
   }
   dst[j] = '\0';
+}
+
+static void sanitize_description_text(char *str) {
+  if (!str)
+    return;
+  for (size_t i = 0; str[i]; ++i) {
+    unsigned char c = (unsigned char)str[i];
+    if (c == '\n' || c == '\r' || c == '\t')
+      str[i] = ' ';
+    else if (!isprint(c))
+      str[i] = '?';
+  }
 }
 
 // Dynamic load of AMD SMI library symbols
@@ -3154,9 +3167,11 @@ static int init_event_table(void) {
       char tmp[256] = {0};
       if (amdsmi_get_gpu_vendor_name_p(device_handles[d], tmp, sizeof(tmp)) ==
           AMDSMI_STATUS_SUCCESS) {
+        sanitize_description_text(tmp);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "vendor_name_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d vendor name (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d vendor name '%s' (hash)", d, tmp);
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3168,9 +3183,11 @@ static int init_event_table(void) {
       if (amdsmi_get_gpu_vram_vendor_p(device_handles[d], tmp,
                                        (uint32_t)sizeof(tmp)) ==
           AMDSMI_STATUS_SUCCESS) {
+        sanitize_description_text(tmp);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "vram_vendor_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d VRAM vendor (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d VRAM vendor '%s' (hash)", d, tmp);
         if (add_event(&idx, name_buf, descr_buf, d, 1, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3181,10 +3198,11 @@ static int init_event_table(void) {
       char tmp[256] = {0};
       if (amdsmi_get_gpu_subsystem_name_p(device_handles[d], tmp, sizeof(tmp)) ==
           AMDSMI_STATUS_SUCCESS) {
+        sanitize_description_text(tmp);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "subsystem_name_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d subsystem name (hash)", d);
+                 "Device %d subsystem name '%s' (hash)", d, tmp);
         if (add_event(&idx, name_buf, descr_buf, d, 2, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
