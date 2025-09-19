@@ -212,6 +212,10 @@ static void sanitize_description_text(char *str) {
   }
 }
 
+static const char *display_or_empty(const char *str) {
+  return (str && str[0]) ? str : "<empty>";
+}
+
 // Dynamic load of AMD SMI library symbols
 static void *sym(const char *preferred, const char *fallback) {
   void *p = dlsym(amds_dlp, preferred);
@@ -2335,12 +2339,15 @@ static int init_event_table(void) {
 
     if (amdsmi_get_gpu_board_info_p) {
       amdsmi_board_info_t binfo;
+      memset(&binfo, 0, sizeof(binfo));
       if (amdsmi_get_gpu_board_info_p(device_handles[d], &binfo) ==
           AMDSMI_STATUS_SUCCESS) {
+        sanitize_description_text(binfo.product_serial);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "board_serial_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d board serial number (hash)", d);
+                 "Device %d board serial number hash of '%s'", d,
+                 display_or_empty(binfo.product_serial));
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_board_serial_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3143,14 +3150,16 @@ static int init_event_table(void) {
       amdsmi_status_t st =
           amdsmi_get_gpu_device_uuid_p(device_handles[d], &uuid_len, NULL);
       /* Some builds require preflight to get length; we just attempt a fixed buffer */
-      char uuid_buf[128];
+      char uuid_buf[128] = {0};
       uuid_len = sizeof(uuid_buf);
       st = amdsmi_get_gpu_device_uuid_p(device_handles[d], &uuid_len, uuid_buf);
       if (st == AMDSMI_STATUS_SUCCESS) {
+        uuid_buf[sizeof(uuid_buf) - 1] = '\0';
+        sanitize_description_text(uuid_buf);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "uuid_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d UUID (djb2 64-bit hash)", d);
+                 "Device %d UUID hash of '%s'", d, display_or_empty(uuid_buf));
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_uuid_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3171,7 +3180,8 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "vendor_name_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d vendor name '%s' (hash)", d, tmp);
+                 "Device %d vendor name hash of '%s'", d,
+                 display_or_empty(tmp));
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3187,7 +3197,8 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "vram_vendor_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d VRAM vendor '%s' (hash)", d, tmp);
+                 "Device %d VRAM vendor hash of '%s'", d,
+                 display_or_empty(tmp));
         if (add_event(&idx, name_buf, descr_buf, d, 1, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3202,7 +3213,8 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "subsystem_name_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d subsystem name '%s' (hash)", d, tmp);
+                 "Device %d subsystem name hash of '%s'", d,
+                 display_or_empty(tmp));
         if (add_event(&idx, name_buf, descr_buf, d, 2, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3298,11 +3310,14 @@ static int init_event_table(void) {
       if (amdsmi_get_gpu_compute_partition_p(device_handles[d], part,
                                              sizeof(part)) ==
           AMDSMI_STATUS_SUCCESS) {
+        part[sizeof(part) - 1] = '\0';
+        sanitize_description_text(part);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
                  "compute_partition_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d compute partition (hash)", d);
+                 "Device %d compute partition hash of '%s'", d,
+                 display_or_empty(part));
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_compute_partition_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3315,9 +3330,12 @@ static int init_event_table(void) {
           amdsmi_get_gpu_memory_partition_p(device_handles[d], part, len);
       part[sizeof(part) - 1] = '\0';  // belt-and-suspenders NUL
       if (status == AMDSMI_STATUS_SUCCESS && part[0] != '\0') {
+        sanitize_description_text(part);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d memory partition (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d memory partition hash of '%s'", d,
+                 display_or_empty(part));
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_memory_partition_hash) != PAPI_OK)
           return PAPI_ENOMEM;
@@ -3369,16 +3387,21 @@ static int init_event_table(void) {
       amdsmi_driver_info_t dinfo = {0};
       if (amdsmi_get_gpu_driver_info_p(device_handles[d], &dinfo) ==
           AMDSMI_STATUS_SUCCESS) {
+        sanitize_description_text(dinfo.driver_name);
+        sanitize_description_text(dinfo.driver_date);
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "driver_name_hash:device=%d", d);
         snprintf(descr_buf, sizeof(descr_buf),
-                 "Device %d driver name (hash)", d);
+                 "Device %d driver name hash of '%s'", d,
+                 display_or_empty(dinfo.driver_name));
         if (add_event(&idx, name_buf, descr_buf, d, 3, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf), "driver_date_hash:device=%d", d);
-        snprintf(descr_buf, sizeof(descr_buf), "Device %d driver date (hash)", d);
+        snprintf(descr_buf, sizeof(descr_buf),
+                 "Device %d driver date hash of '%s'", d,
+                 display_or_empty(dinfo.driver_date));
         if (add_event(&idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_string_hash) != PAPI_OK)
           return PAPI_ENOMEM;
