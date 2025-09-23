@@ -65,15 +65,27 @@ static int _amd_smi_init_component(int cidx) {
 }
 
 static int evt_get_count(int *count) {
-    uint64_t event_code = 0;
-    if (amds_evt_enum(&event_code, PAPI_ENUM_FIRST) == PAPI_OK) {
-        ++(*count);
-    }
-    while (amds_evt_enum(&event_code, PAPI_ENUM_EVENTS) == PAPI_OK) {
-        ++(*count);
+    *count = 0;
+    uint64_t ev = 0;
+    if (amds_evt_enum(&ev, PAPI_ENUM_FIRST) != PAPI_OK) return PAPI_OK;
+
+    while (1) {
+        int have_umasks = 0;
+        uint64_t u = ev;
+
+        // Count all device variants (if any)
+        if (amds_evt_enum(&u, PAPI_NTV_ENUM_UMASKS) == PAPI_OK) {
+            do { ++(*count); } while (amds_evt_enum(&u, PAPI_NTV_ENUM_UMASKS) == PAPI_OK);
+            have_umasks = 1;
+        }
+        // If no device qualifier exists, count the base event itself
+        if (!have_umasks) ++(*count);
+
+        if (amds_evt_enum(&ev, PAPI_ENUM_EVENTS) != PAPI_OK) break;
     }
     return PAPI_OK;
 }
+
 
 static int _amd_smi_init_private(void) {
     int papi_errno = PAPI_OK;
