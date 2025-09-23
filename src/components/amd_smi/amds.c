@@ -767,6 +767,7 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
   if (!ev->name || !ev->descr)
     return PAPI_ENOMEM;
   ev->device = device;
+  ev->device_map = 0;
   ev->value = 0;
   ev->mode = mode;
   ev->variant = variant;

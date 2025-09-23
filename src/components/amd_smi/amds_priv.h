@@ -17,6 +17,36 @@
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
 
+/* Event code bitfield (64 bits total) */
+#define NAMEID_WIDTH 20
+#define QLMASK_WIDTH 4
+#define DEVICE_WIDTH 8
+#define NAMEID_SHIFT 0
+#define QLMASK_SHIFT (NAMEID_SHIFT + NAMEID_WIDTH)
+#define DEVICE_SHIFT (QLMASK_SHIFT + QLMASK_WIDTH)
+#define NAMEID_MASK ((UINT64_C(1) << NAMEID_WIDTH) - 1)
+#define QLMASK_MASK (((UINT64_C(1) << QLMASK_WIDTH) - 1) << QLMASK_SHIFT)
+#define DEVICE_MASK (((UINT64_C(1) << DEVICE_WIDTH) - 1) << DEVICE_SHIFT)
+#define DEVICE_FLAG (0x2)
+
+typedef struct {
+  int device;
+  int flags;
+  int nameid;
+} event_info_t;
+
+static inline uint64_t encode_event_code(const event_info_t *info) {
+  return (((uint64_t)info->device << DEVICE_SHIFT) & DEVICE_MASK) |
+         (((uint64_t)info->flags << QLMASK_SHIFT) & QLMASK_MASK) |
+         ((uint64_t)info->nameid & NAMEID_MASK);
+}
+
+static inline void decode_event_code(uint64_t code, event_info_t *info) {
+  info->device = (int)((code & DEVICE_MASK) >> DEVICE_SHIFT);
+  info->flags = (int)((code & QLMASK_MASK) >> QLMASK_SHIFT);
+  info->nameid = (int)((code & NAMEID_MASK) >> NAMEID_SHIFT);
+}
+
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,
@@ -31,6 +61,7 @@ typedef struct native_event {
   unsigned int id;
   char *name, *descr;
   int32_t device;
+  uint64_t device_map;
   uint64_t value;
   uint32_t mode, variant, subvariant;
   void *priv;
