@@ -8,6 +8,8 @@
 #ifndef __AMDS_H__
 #define __AMDS_H__
 
+#include "papi.h"
+
 #define AMDS_EVENTS_OPENED  (0x1)
 #define AMDS_EVENTS_RUNNING (0x2)
 

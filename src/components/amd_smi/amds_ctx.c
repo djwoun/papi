@@ -46,7 +46,7 @@ static int acquire_devices(unsigned int *events_id, int num_events, uint64_t *bi
   _papi_hwi_lock(_amd_smi_lock);
   if (device_mask & mask_acq) {
     _papi_hwi_unlock(_amd_smi_lock);
-    return PAPI_EBUSY;
+    return PAPI_ECNFLCT;
   }
   device_mask |= mask_acq;
   _papi_hwi_unlock(_amd_smi_lock);
@@ -93,8 +93,8 @@ static int amds_ctx_event_from_code(unsigned int code, native_event_t **out)
   snprintf(full, sizeof(full), "%s:device=%d", base, device);
 
   native_event_t *ev = NULL;
-  void *htable = amds_get_htable();
-  if (htable && htable_find(htable, full, (void **)&ev) == HTABLE_SUCCESS && ev) {
+  void *htable_ptr = amds_get_htable();
+  if (htable_ptr && htable_find(htable_ptr, full, (void **)&ev) == HTABLE_SUCCESS && ev) {
     *out = ev;
     return PAPI_OK;
   }
