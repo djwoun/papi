@@ -757,26 +757,67 @@ int amds_err_get_last(const char **err_string) {
 }
 
 // Helper to add a new event entry to ntv_table
+static void base_event_name(const char *name, char *base, size_t len) {
+  if (!base || len == 0) {
+    return;
+  }
+  size_t j = 0;
+  for (size_t i = 0; name && name[i] != '\0' && j < len - 1;) {
+    if (strncmp(&name[i], ":device=", 8) == 0) {
+      i += 8;
+      while (name[i] != '\0' && name[i] != ':') {
+        ++i;
+      }
+      continue;
+    }
+    base[j++] = name[i++];
+  }
+  base[j] = '\0';
+}
+
 static int add_event(int *idx_ptr, const char *name, const char *descr, int device,
                      uint32_t variant, uint32_t subvariant, int mode,
                      amds_accessor_t access_func) {
+  char base_name[PAPI_MAX_STR_LEN];
+  base_event_name(name, base_name, sizeof(base_name));
+
+  if (device >= 64) {
+    return PAPI_ENOSUPP;
+  }
+
+  native_event_t *existing = NULL;
+  int hret = htable_find(htable, base_name, (void **)&existing);
+  if (hret == HTABLE_SUCCESS) {
+    if (device >= 0) {
+      existing->device_map |= (UINT64_C(1) << device);
+    }
+    return PAPI_OK;
+  } else if (hret != HTABLE_ENOVAL) {
+    return PAPI_ECMP;
+  }
+
+  CHECK_EVENT_IDX(*idx_ptr);
   native_event_t *ev = &ntv_table.events[*idx_ptr];
-  ev->id = *idx_ptr;
-  ev->name = strdup(name);
+  ev->id = (unsigned int)(*idx_ptr);
+  ev->name = strdup(base_name);
   ev->descr = strdup(descr);
   if (!ev->name || !ev->descr)
     return PAPI_ENOMEM;
-  ev->device = device;
+  ev->device = -1;
   ev->value = 0;
   ev->mode = mode;
   ev->variant = variant;
   ev->subvariant = subvariant;
+  ev->device_map = 0;
   ev->priv = NULL;
   ev->open_func = open_simple;
   ev->close_func = close_simple;
   ev->start_func = start_simple;
   ev->stop_func = stop_simple;
   ev->access_func = access_func;
+  if (device >= 0) {
+    ev->device_map |= (UINT64_C(1) << device);
+  }
   htable_insert(htable, ev->name, ev);
   (*idx_ptr)++;
   return PAPI_OK;
@@ -788,7 +829,14 @@ static int add_counter_event(int *idx_ptr, const char *name, const char *descr,
                              PAPI_MODE_READ, access_amdsmi_gpu_counter);
   if (papi_errno != PAPI_OK)
     return papi_errno;
-  native_event_t *ev = &ntv_table.events[*idx_ptr - 1];
+
+  char base_name[PAPI_MAX_STR_LEN];
+  base_event_name(name, base_name, sizeof(base_name));
+  native_event_t *ev = NULL;
+  int hret = htable_find(htable, base_name, (void **)&ev);
+  if (hret != HTABLE_SUCCESS || !ev)
+    return (hret == HTABLE_ENOVAL) ? PAPI_ENOEVNT : PAPI_ECMP;
+
   ev->open_func = open_counter;
   ev->close_func = close_counter;
   ev->start_func = start_counter;

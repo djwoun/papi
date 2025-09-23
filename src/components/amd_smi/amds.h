@@ -11,6 +11,9 @@
 #define AMDS_EVENTS_OPENED  (0x1)
 #define AMDS_EVENTS_RUNNING (0x2)
 
+#include <stdint.h>
+#include "papi.h"
+
 typedef struct amds_ctx *amds_ctx_t;
 
 /* initialization and shutdown */
@@ -18,16 +21,17 @@ int amds_init(void);
 int amds_shutdown(void);
 
 /* native event queries */
-int amds_evt_enum(unsigned int *EventCode, int modifier);
-int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len);
-int amds_evt_name_to_code(const char *name, unsigned int *EventCode);
-int amds_evt_code_to_name(unsigned int EventCode, char *name, int len);
+int amds_evt_enum(uint64_t *EventCode, int modifier);
+int amds_evt_code_to_descr(uint64_t EventCode, char *descr, int len);
+int amds_evt_name_to_code(const char *name, uint64_t *EventCode);
+int amds_evt_code_to_name(uint64_t EventCode, char *name, int len);
+int amds_evt_code_to_info(uint64_t EventCode, PAPI_event_info_t *info);
 
 /* error handling */
 int amds_err_get_last(const char **err_string);
 
 /* profiling context operations */
-int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx);
+int amds_ctx_open(uint64_t *event_ids, int num_events, amds_ctx_t *ctx);
 int amds_ctx_close(amds_ctx_t ctx);
 int amds_ctx_start(amds_ctx_t ctx);
 int amds_ctx_stop(amds_ctx_t ctx);

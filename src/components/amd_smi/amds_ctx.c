@@ -7,6 +7,7 @@
 
 #include "amds.h"
 #include "amds_priv.h"
+#include "amds_evtid.h"
 #include "papi.h"
 #include "papi_memory.h"
 #include "papi_internal.h"
@@ -17,7 +18,7 @@ unsigned int _amd_smi_lock;
 /* Use a 64-bit global device mask to support up to 64 devices */
 static uint64_t device_mask = 0;
 
-static int acquire_devices(unsigned int *events_id, int num_events, uint64_t *bitmask) {
+static int acquire_devices(uint64_t *events_id, int num_events, uint64_t *bitmask) {
   if (!bitmask) return PAPI_EINVAL;
   if (num_events < 0) return PAPI_EINVAL;
   if (num_events > 0 && !events_id) return PAPI_EINVAL;
@@ -25,14 +26,17 @@ static int acquire_devices(unsigned int *events_id, int num_events, uint64_t *bi
 
   uint64_t mask_acq = 0;
   for (int i = 0; i < num_events; ++i) {
-    unsigned int id = events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) {
-      return PAPI_EINVAL;
+    amds_evtinfo_t info;
+    int papi_errno = amds_evt_id_to_info(events_id[i], &info);
+    if (papi_errno != PAPI_OK) {
+      return papi_errno;
     }
-    int dev_id = ntv_table_p->events[id].device;
-    if (dev_id < 0) continue;                 /* no device associated */
-    if (dev_id >= 64) return PAPI_EINVAL;     /* out of representable range */
-    mask_acq |= (UINT64_C(1) << dev_id);
+    if (info.flags & DEVICE_FLAG) {
+      if (info.device < 0 || info.device >= 64) {
+        return PAPI_EINVAL;
+      }
+      mask_acq |= (UINT64_C(1) << info.device);
+    }
   }
 
   _papi_hwi_lock(_amd_smi_lock);
@@ -67,13 +71,14 @@ static int release_devices(uint64_t *bitmask) {
 /* Context management: open/close, start/stop, read/write, reset */
 struct amds_ctx {
   int state;
-  unsigned int *events_id;
+  uint64_t *events_id;
   int num_events;
   long long *counters;
   uint64_t device_mask;       /* was int32_t: now 64-bit to match global */
+  native_event_t **events;
 };
 
-int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
+int amds_ctx_open(uint64_t *event_ids, int num_events, amds_ctx_t *ctx) {
   if (!ctx) return PAPI_EINVAL;
   if (num_events < 0) return PAPI_EINVAL;
   if (num_events > 0 && !event_ids) return PAPI_EINVAL;
@@ -83,70 +88,103 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
   if (new_ctx == NULL) {
     return PAPI_ENOMEM;
   }
-  new_ctx->events_id = event_ids; // Store pointer (caller must keep stable)
+  new_ctx->events_id = event_ids;
   new_ctx->num_events = num_events;
-  new_ctx->counters = (long long *)papi_calloc((size_t)num_events, sizeof(long long));
-  if (new_ctx->counters == NULL) {
-    papi_free(new_ctx);
-    return PAPI_ENOMEM;
-  }
-
-  /* Validate event ids range before acquiring devices */
-  for (int i = 0; i < num_events; ++i) {
-    if (event_ids[i] >= (unsigned)ntv_table_p->count) {
+  if (num_events > 0) {
+    new_ctx->counters = (long long *)papi_calloc((size_t)num_events, sizeof(long long));
+    if (new_ctx->counters == NULL) {
+      papi_free(new_ctx);
+      return PAPI_ENOMEM;
+    }
+    new_ctx->events = (native_event_t **)papi_calloc((size_t)num_events, sizeof(native_event_t *));
+    if (new_ctx->events == NULL) {
       papi_free(new_ctx->counters);
       papi_free(new_ctx);
-      return PAPI_EINVAL;
+      return PAPI_ENOMEM;
     }
   }
 
-  /* Acquire devices needed by these events to avoid conflicts */
   int papi_errno = acquire_devices(event_ids, num_events, &new_ctx->device_mask);
   if (papi_errno != PAPI_OK) {
+    if (new_ctx->events) papi_free(new_ctx->events);
     papi_free(new_ctx->counters);
     papi_free(new_ctx);
     return papi_errno;
   }
 
+  int prepared = 0;
   for (int i = 0; i < num_events; ++i) {
-    native_event_t *ev = &ntv_table_p->events[event_ids[i]];
-    if (ev->open_func) {
-      papi_errno = ev->open_func(ev);
+    amds_evtinfo_t info;
+    papi_errno = amds_evt_id_to_info(event_ids[i], &info);
+    if (papi_errno != PAPI_OK)
+      goto fn_fail;
+
+    native_event_t *base = &ntv_table_p->events[info.nameid];
+    native_event_t *copy = (native_event_t *)papi_malloc(sizeof(*copy));
+    if (!copy) {
+      papi_errno = PAPI_ENOMEM;
+      goto fn_fail;
+    }
+    *copy = *base;
+    copy->device = (info.flags & DEVICE_FLAG) ? info.device : -1;
+    copy->value = 0;
+    copy->priv = NULL;
+    new_ctx->events[i] = copy;
+
+    if (copy->open_func) {
+      papi_errno = copy->open_func(copy);
       if (papi_errno != PAPI_OK) {
-        for (int j = 0; j < i; ++j) {
-          native_event_t *prev = &ntv_table_p->events[event_ids[j]];
-          if (prev->close_func)
-            prev->close_func(prev);
-        }
-        release_devices(&new_ctx->device_mask);
-        papi_free(new_ctx->counters);
-        papi_free(new_ctx);
-        return papi_errno;
+        papi_free(copy);
+        new_ctx->events[i] = NULL;
+        goto fn_fail;
       }
     }
+    prepared = i + 1;
   }
+
   *ctx = new_ctx;
   return PAPI_OK;
+
+fn_fail:
+  if (new_ctx->events) {
+    for (int j = 0; j < prepared; ++j) {
+      native_event_t *ev = new_ctx->events[j];
+      if (!ev)
+        continue;
+      if (ev->close_func)
+        ev->close_func(ev);
+      papi_free(ev);
+      new_ctx->events[j] = NULL;
+    }
+    papi_free(new_ctx->events);
+    new_ctx->events = NULL;
+  }
+  if (new_ctx->device_mask) {
+    release_devices(&new_ctx->device_mask);
+  }
+  if (new_ctx->counters) {
+    papi_free(new_ctx->counters);
+  }
+  papi_free(new_ctx);
+  return papi_errno;
 }
 
 int amds_ctx_close(amds_ctx_t ctx) {
   if (!ctx)
     return PAPI_OK;
-  if (!ntv_table_p) {
-    /* Best effort: release devices and free even if table is gone */
-    (void)release_devices(&ctx->device_mask);
-    papi_free(ctx->counters);
-    papi_free(ctx);
-    return PAPI_OK;
+  if (ctx->events) {
+    for (int i = 0; i < ctx->num_events; ++i) {
+      native_event_t *ev = ctx->events[i];
+      if (!ev)
+        continue;
+      if (ev->close_func)
+        ev->close_func(ev);
+      papi_free(ev);
+      ctx->events[i] = NULL;
+    }
+    papi_free(ctx->events);
+    ctx->events = NULL;
   }
-  for (int i = 0; i < ctx->num_events; ++i) {
-    unsigned int id = ctx->events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) continue;
-    native_event_t *ev = &ntv_table_p->events[id];
-    if (ev->close_func)
-      ev->close_func(ev);
-  }
-  /* release device usage */
   (void)release_devices(&ctx->device_mask);
   papi_free(ctx->counters);
   papi_free(ctx);
@@ -155,13 +193,11 @@ int amds_ctx_close(amds_ctx_t ctx) {
 
 int amds_ctx_start(amds_ctx_t ctx) {
   if (!ctx) return PAPI_EINVAL;
-  if (!ntv_table_p) return PAPI_ECMP;
-
   int papi_errno = PAPI_OK;
   for (int i = 0; i < ctx->num_events; ++i) {
-    unsigned int id = ctx->events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) return PAPI_EINVAL;
-    native_event_t *ev = &ntv_table_p->events[id];
+    native_event_t *ev = ctx->events ? ctx->events[i] : NULL;
+    if (!ev)
+      continue;
     if (ev->start_func) {
       papi_errno = ev->start_func(ev);
       if (papi_errno != PAPI_OK)
@@ -177,13 +213,11 @@ int amds_ctx_stop(amds_ctx_t ctx) {
   if (!(ctx->state & AMDS_EVENTS_RUNNING)) {
     return PAPI_OK;
   }
-  if (!ntv_table_p) return PAPI_ECMP;
-
   int papi_errno = PAPI_OK;
   for (int i = 0; i < ctx->num_events; ++i) {
-    unsigned int id = ctx->events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) continue;
-    native_event_t *ev = &ntv_table_p->events[id];
+    native_event_t *ev = ctx->events ? ctx->events[i] : NULL;
+    if (!ev)
+      continue;
     if (ev->stop_func) {
       int papi_errno_stop = ev->stop_func(ev);
       if (papi_errno == PAPI_OK)
@@ -196,7 +230,6 @@ int amds_ctx_stop(amds_ctx_t ctx) {
 
 int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   if (!ctx || !counts) return PAPI_EINVAL;
-  if (!ntv_table_p) return PAPI_ECMP;
 
   /* Always produce a fully defined buffer */
   for (int i = 0; i < ctx->num_events; ++i) {
@@ -207,12 +240,11 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   int papi_errno = PAPI_OK;
 
   for (int i = 0; i < ctx->num_events; ++i) {
-    unsigned int id = ctx->events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) {
+    native_event_t *ev = ctx->events ? ctx->events[i] : NULL;
+    if (!ev) {
       if (papi_errno == PAPI_OK) papi_errno = PAPI_EINVAL;
       continue;
     }
-    native_event_t *ev = &ntv_table_p->events[id];
 
     int papi_errno_access = PAPI_OK;
     if (ev->access_func) {
@@ -235,14 +267,11 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
 
 int amds_ctx_write(amds_ctx_t ctx, long long *counts) {
   if (!ctx || !counts) return PAPI_EINVAL;
-  if (!ntv_table_p) return PAPI_ECMP;
 
   int papi_errno = PAPI_OK;
   for (int i = 0; i < ctx->num_events; ++i) {
-    unsigned int id = ctx->events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) return PAPI_EINVAL;
-    native_event_t *ev = &ntv_table_p->events[id];
-    if (!ev->access_func) return PAPI_ECMP;
+    native_event_t *ev = ctx->events ? ctx->events[i] : NULL;
+    if (!ev || !ev->access_func) return PAPI_ECMP;
     ev->value = counts[i];
     papi_errno = ev->access_func(PAPI_MODE_WRITE, ev);
     if (papi_errno != PAPI_OK) {
@@ -254,12 +283,10 @@ int amds_ctx_write(amds_ctx_t ctx, long long *counts) {
 
 int amds_ctx_reset(amds_ctx_t ctx) {
   if (!ctx) return PAPI_EINVAL;
-  if (!ntv_table_p) return PAPI_ECMP;
 
   for (int i = 0; i < ctx->num_events; ++i) {
-    unsigned int id = ctx->events_id[i];
-    if (id >= (unsigned)ntv_table_p->count) return PAPI_EINVAL;
-    native_event_t *ev = &ntv_table_p->events[id];
+    native_event_t *ev = ctx->events ? ctx->events[i] : NULL;
+    if (!ev) return PAPI_EINVAL;
     ev->value = 0;
     if (ctx->counters) ctx->counters[i] = 0;
   }

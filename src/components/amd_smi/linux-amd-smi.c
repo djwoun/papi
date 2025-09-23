@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
 
 #include "papi.h"
 #include "papi_internal.h"
@@ -26,7 +27,7 @@ typedef struct {
 } amdsmi_context_t;
 
 typedef struct {
-    unsigned int *events_id;
+    uint64_t *events_id;
     int num_events;
     int component_id;
     amds_ctx_t amds_ctx;
@@ -64,7 +65,7 @@ static int _amd_smi_init_component(int cidx) {
 }
 
 static int evt_get_count(int *count) {
-    unsigned int event_code = 0;
+    uint64_t event_code = 0;
     if (amds_evt_enum(&event_code, PAPI_ENUM_FIRST) == PAPI_OK) {
         ++(*count);
     }
@@ -127,14 +128,14 @@ static int update_native_events(amdsmi_control_t *ctl, NativeInfo_t *ntvInfo, in
     if (!ntvInfo) return PAPI_EINVAL;
 
     // Allocate a new array; leave ctl unchanged until success.
-    unsigned int *events = papi_calloc((size_t)ntvCount, sizeof(*events));
+    uint64_t *events = papi_calloc((size_t)ntvCount, sizeof(*events));
     if (!events) {
         // Old ctl->events_id/num_events remain intact on allocation failure.
         return PAPI_ENOMEM;
     }
 
     for (int i = 0; i < ntvCount; ++i) {
-        events[i] = ntvInfo[i].ni_event;
+        events[i] = (uint64_t)ntvInfo[i].ni_event;
         ntvInfo[i].ni_position = i;
     }
 
@@ -285,7 +286,10 @@ static int _amd_smi_ntv_enum_events(unsigned int *EventCode, int modifier) {
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
-    return amds_evt_enum(EventCode, modifier);
+    uint64_t code = (uint64_t)(*EventCode);
+    papi_errno = amds_evt_enum(&code, modifier);
+    *EventCode = (unsigned int)code;
+    return papi_errno;
 }
 
 static int _amd_smi_ntv_code_to_name(unsigned int EventCode, char *name, int len) {
@@ -293,7 +297,7 @@ static int _amd_smi_ntv_code_to_name(unsigned int EventCode, char *name, int len
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
-    return amds_evt_code_to_name(EventCode, name, len);
+    return amds_evt_code_to_name((uint64_t)EventCode, name, len);
 }
 
 static int _amd_smi_ntv_name_to_code(const char *name, unsigned int *EventCode) {
@@ -301,7 +305,10 @@ static int _amd_smi_ntv_name_to_code(const char *name, unsigned int *EventCode) 
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
-    return amds_evt_name_to_code(name, EventCode);
+    uint64_t code = 0;
+    papi_errno = amds_evt_name_to_code(name, &code);
+    *EventCode = (unsigned int)code;
+    return papi_errno;
 }
 
 static int _amd_smi_ntv_code_to_descr(unsigned int EventCode, char *desc, int len) {
@@ -309,7 +316,15 @@ static int _amd_smi_ntv_code_to_descr(unsigned int EventCode, char *desc, int le
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
-    return amds_evt_code_to_descr(EventCode, desc, len);
+    return amds_evt_code_to_descr((uint64_t)EventCode, desc, len);
+}
+
+static int _amd_smi_ntv_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
+    int papi_errno = _amd_smi_check_n_initialize();
+    if (papi_errno != PAPI_OK) {
+        return papi_errno;
+    }
+    return amds_evt_code_to_info((uint64_t)EventCode, info);
 }
 
 /* Export the component interface */
@@ -353,4 +368,5 @@ papi_vector_t _amd_smi_vector = {
     .ntv_code_to_name = _amd_smi_ntv_code_to_name,
     .ntv_name_to_code = _amd_smi_ntv_name_to_code,
     .ntv_code_to_descr = _amd_smi_ntv_code_to_descr,
+    .ntv_code_to_info = _amd_smi_ntv_code_to_info,
 };

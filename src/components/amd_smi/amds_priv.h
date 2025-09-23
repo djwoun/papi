@@ -33,6 +33,7 @@ typedef struct native_event {
   int32_t device;
   uint64_t value;
   uint32_t mode, variant, subvariant;
+  uint64_t device_map;
   void *priv;
   int (*open_func)(struct native_event *);
   int (*close_func)(struct native_event *);
