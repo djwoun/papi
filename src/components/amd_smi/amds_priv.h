@@ -17,6 +17,38 @@
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
 
+/* ========= amd_smi event encoding (qualifiers) =========
+ * 64-bit event id layout (amd_smi):
+ * +-------------------------------+--------+------+--------------+
+ * |            unused             | device | qmsk |   nameid     |
+ * +-------------------------------+--------+------+--------------+
+ * device : 6 bits  (0-63)
+ * qmsk   : 1 bit   (bit set => device qualifier present/required)
+ * nameid : 12 bits (0-4095) index within native events table
+ *
+ * We intentionally keep `nameid` as the index into ntv_table->events so that
+ * existing amd_smi code (open/start/stop/access) can keep using the table
+ * entry that already carries per-device handlers and metadata.
+ */
+#ifndef AMDSMI_EVENT_ENCODING
+#define EVENTS_WIDTH (sizeof(uint64_t) * 8)
+#define DEVICE_WIDTH (6)
+#define INSTAN_WIDTH (0)
+#define QLMASK_WIDTH (1)
+#define NAMEID_WIDTH (12)
+#define UNUSED_WIDTH (EVENTS_WIDTH - DEVICE_WIDTH - INSTAN_WIDTH - QLMASK_WIDTH - NAMEID_WIDTH)
+#define DEVICE_SHIFT (EVENTS_WIDTH - DEVICE_WIDTH)
+#define INSTAN_SHIFT (DEVICE_SHIFT - INSTAN_WIDTH)
+#define QLMASK_SHIFT (INSTAN_SHIFT - QLMASK_WIDTH)
+#define NAMEID_SHIFT (QLMASK_SHIFT - NAMEID_WIDTH)
+#define _AMDS_MASK(width, shift) ((UINT64_C(0xFFFFFFFFFFFFFFFF) >> (EVENTS_WIDTH - (width))) << (shift))
+#define DEVICE_MASK _AMDS_MASK(DEVICE_WIDTH, DEVICE_SHIFT)
+#define INSTAN_MASK ((INSTAN_WIDTH==0)?UINT64_C(0):_AMDS_MASK(INSTAN_WIDTH, INSTAN_SHIFT))
+#define QLMASK_MASK _AMDS_MASK(QLMASK_WIDTH, QLMASK_SHIFT)
+#define NAMEID_MASK _AMDS_MASK(NAMEID_WIDTH, NAMEID_SHIFT)
+#define DEVICE_FLAG (0x1)
+#endif /* AMDSMI_EVENT_ENCODING */
+
 /* Mode enumeration used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,
