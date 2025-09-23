@@ -3509,7 +3509,7 @@ static int init_event_table(void) {
       if (amdsmi_topo_get_link_weight_p) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "link_weight:device=%d:peer=%d", d, p);
+                 "link_weight:peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Link weight between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
@@ -3519,7 +3519,7 @@ static int init_event_table(void) {
       if (amdsmi_topo_get_link_type_p) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "link_hops:device=%d:peer=%d", d, p);
+                 "link_hops:peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Hops between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
@@ -3527,7 +3527,7 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "link_type:device=%d:peer=%d", d, p);
+                 "link_type:peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "IO link type between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 1, p, PAPI_MODE_READ,
@@ -3545,8 +3545,8 @@ static int init_event_table(void) {
             "P2P DMA support",      "P2P bidirectional support"};
         for (int v = 0; v < 6; ++v) {
           CHECK_EVENT_IDX(idx);
-          snprintf(name_buf, sizeof(name_buf), "%s:device=%d:peer=%d",
-                   p2p_names[v], d, p);
+          snprintf(name_buf, sizeof(name_buf), "%s:peer=%d:device=%d",
+                   p2p_names[v], p, d);
           snprintf(descr_buf, sizeof(descr_buf), "Device %d vs %d %s", d, p,
                    p2p_desc[v]);
           if (add_event(&idx, name_buf, descr_buf, d, v, p, PAPI_MODE_READ,
@@ -3557,7 +3557,7 @@ static int init_event_table(void) {
       if (amdsmi_is_P2P_accessible_p) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "p2p_accessible:device=%d:peer=%d", d, p);
+                 "p2p_accessible:peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "P2P accessibility between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
