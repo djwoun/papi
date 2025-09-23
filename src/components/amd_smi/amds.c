@@ -1401,7 +1401,7 @@ static int init_event_table(void) {
               CHECK_EVENT_IDX(idx + 4);
 
               snprintf(name_buf, sizeof(name_buf),
-                      "volt_curve_freq_min:region=%u:device=%d", d, r);
+                      "volt_curve_freq_min:region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u frequency lower bound",
                        d, r);
@@ -1412,7 +1412,7 @@ static int init_event_table(void) {
               }
 
               snprintf(name_buf, sizeof(name_buf),
-                      "volt_curve_freq_max:region=%u:device=%d", d, r);
+                      "volt_curve_freq_max:region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u frequency upper bound",
                        d, r);
@@ -1423,7 +1423,7 @@ static int init_event_table(void) {
               }
 
               snprintf(name_buf, sizeof(name_buf),
-                      "volt_curve_volt_min:region=%u:device=%d", d, r);
+                      "volt_curve_volt_min:region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u voltage lower bound",
                        d, r);
@@ -1434,7 +1434,7 @@ static int init_event_table(void) {
               }
 
               snprintf(name_buf, sizeof(name_buf),
-                      "volt_curve_volt_max:region=%u:device=%d", d, r);
+                      "volt_curve_volt_max:region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u voltage upper bound",
                        d, r);
@@ -1515,7 +1515,7 @@ static int init_event_table(void) {
         for (uint32_t p = 0; p < AMDSMI_NUM_VOLTAGE_CURVE_POINTS; ++p) {
           CHECK_EVENT_IDX(idx + 2);
           snprintf(name_buf, sizeof(name_buf),
-                  "volt_curve_point_freq:point=%u:device=%d", d, p);
+                  "volt_curve_point_freq:point=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d voltage curve point %u frequency", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 8, p, PAPI_MODE_READ,
@@ -1523,7 +1523,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
 
           snprintf(name_buf, sizeof(name_buf),
-                  "volt_curve_point_volt:point=%u:device=%d", d, p);
+                  "volt_curve_point_volt:point=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d voltage curve point %u voltage", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 9, p, PAPI_MODE_READ,
@@ -1654,7 +1654,7 @@ static int init_event_table(void) {
           continue; /* skip this specific metric if not supported */
     
       snprintf(name_buf, sizeof(name_buf), "%s:sensor=%d:device=%d",
-                 temp_metric_names[mi], d, (int)temp_sensors[si]);
+                 temp_metric_names[mi], (int)temp_sensors[si], d);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d %s for sensor %d", d,
                  temp_metric_names[mi], (int)temp_sensors[si]);
         if (add_event(&idx, name_buf, descr_buf, d, temp_metrics[mi],
@@ -2207,7 +2207,7 @@ static int init_event_table(void) {
           for (uint32_t v = 0; v < 8; ++v) {
             CHECK_EVENT_IDX(idx);
             snprintf(name_buf, sizeof(name_buf),
-                    "process_%s:proc=%u:device=%d", pmetric_names[v], d, p);
+                    "process_%s:proc=%u:device=%d", pmetric_names[v], p, d);
             snprintf(descr_buf, sizeof(descr_buf),
                      "Device %d process %u %s", d, p, pmetric_descr[v]);
             if (add_event(&idx, name_buf, descr_buf, d, v, p, PAPI_MODE_READ,
@@ -2303,7 +2303,7 @@ static int init_event_table(void) {
                  ++m) {
               CHECK_EVENT_IDX(idx);
               snprintf(name_buf, sizeof(name_buf),
-                      "xgmi_%s:link=%d:device=%d", xgmi_desc[m].suffix, d, link);
+                      "xgmi_%s:link=%d:device=%d", xgmi_desc[m].suffix, link, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d XGMI %s on link %d", d, xgmi_desc[m].suffix,
                        link);
@@ -2402,7 +2402,7 @@ static int init_event_table(void) {
         for (uint32_t p = 0; p < nump; ++p) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                  "bad_page_address:page=%u:device=%d", d, p);
+                  "bad_page_address:page=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d retired page %u address", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
@@ -2410,7 +2410,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                  "bad_page_size:page=%u:device=%d", d, p);
+                  "bad_page_size:page=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d retired page %u size", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 1, p, PAPI_MODE_READ,
@@ -2418,7 +2418,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                  "bad_page_status:page=%u:device=%d", d, p);
+                  "bad_page_status:page=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d retired page %u status", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 2, p, PAPI_MODE_READ,
@@ -2453,7 +2453,7 @@ static int init_event_table(void) {
         /* Register current socket power in Watts */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                "power_sensor_current_watts:sensor=%u:device=%d", d, s);
+                "power_sensor_current_watts:sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u current socket power (W)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 0, s, PAPI_MODE_READ,
@@ -2463,7 +2463,7 @@ static int init_event_table(void) {
         /* Register average socket power in Watts */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                "power_sensor_average_watts:sensor=%u:device=%d", d, s);
+                "power_sensor_average_watts:sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u average socket power (W)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 1, s, PAPI_MODE_READ,
@@ -2475,7 +2475,7 @@ static int init_event_table(void) {
         if (amdsmi_lib_major >= 25) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                  "power_sensor_socket_microwatts:sensor=%u:device=%d", d, s);
+                  "power_sensor_socket_microwatts:sensor=%u:device=%d", s, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d power sensor %u socket power (uW)", d, s);
           if (add_event(&idx, name_buf, descr_buf, d, 2, s, PAPI_MODE_READ,
@@ -2487,7 +2487,7 @@ static int init_event_table(void) {
         /* Register GFX voltage */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                "power_sensor_gfx_voltage_mv:sensor=%u:device=%d", d, s);
+                "power_sensor_gfx_voltage_mv:sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u GFX voltage (mV)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 3, s, PAPI_MODE_READ,
@@ -2497,7 +2497,7 @@ static int init_event_table(void) {
         /* Register SOC voltage */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                "power_sensor_soc_voltage_mv:sensor=%u:device=%d", d, s);
+                "power_sensor_soc_voltage_mv:sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u SOC voltage (mV)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 4, s, PAPI_MODE_READ,
@@ -2507,7 +2507,7 @@ static int init_event_table(void) {
         /* Register MEM voltage */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                "power_sensor_mem_voltage_mv:sensor=%u:device=%d", d, s);
+                "power_sensor_mem_voltage_mv:sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u MEM voltage (mV)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 5, s, PAPI_MODE_READ,
@@ -2517,7 +2517,7 @@ static int init_event_table(void) {
         /* Register power limit */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                "power_sensor_limit_watts:sensor=%u:device=%d", d, s);
+                "power_sensor_limit_watts:sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u power limit (W)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 6, s, PAPI_MODE_READ,
@@ -3460,7 +3460,7 @@ static int init_event_table(void) {
         for (uint32_t li = 0; li < n; ++li) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                  "xgmi_link_status:link=%u:device=%d", d, li);
+                  "xgmi_link_status:link=%u:device=%d", li, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d XGMI link %u status", d, li);
           if (add_event(&idx, name_buf, descr_buf, d, 0, li, PAPI_MODE_READ,
