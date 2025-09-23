@@ -820,6 +820,8 @@ static int init_event_table(void) {
   if (ntv_table.count > 0 && ntv_table.events != NULL)
     return PAPI_OK; // Already initialized, skip expensive rebuild
   ntv_table.count = 0;
+  memset(_amds_seq_per_dev, 0, sizeof(_amds_seq_per_dev));
+  _amds_seq_global = 0;
   int idx = 0;
   // Safety check - if no devices, return early
   if (device_count <= 0) {
