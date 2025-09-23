@@ -19,31 +19,33 @@
  * |            unused           | device | qlmask | nameid
  * +-----------------------------+--------+--------+
  * device : 6 bits ([0 - 63] devices)
- * qlmask : 1 bit  (qualifier mask; only device supported)
+ * qlmask : 1 bit  (qualifier mask; only 'device' supported)
  * nameid : remaining lower bits (index into native event table)
  * ---------------------------------------------------------------------*/
+#ifndef AMDS_EVENTS_WIDTH
 #define AMDS_EVENTS_WIDTH (sizeof(unsigned int) * 8)
+#endif
 #define AMDS_DEVICE_WIDTH (6)
 #define AMDS_QLMASK_WIDTH (1)
 #define AMDS_NAMEID_WIDTH (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QLMASK_WIDTH)
 #define AMDS_UNUSED_WIDTH (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QLMASK_WIDTH - AMDS_NAMEID_WIDTH)
 
 #define AMDS_DEVICE_SHIFT (AMDS_EVENTS_WIDTH - AMDS_UNUSED_WIDTH - AMDS_DEVICE_WIDTH)
-#define AMDS_QLMASK_SHIFT (AMDS_DEVICE_SHIFT - AMDS_QLMASK_WIDTH)
-#define AMDS_NAMEID_SHIFT (AMDS_QLMASK_SHIFT - AMDS_NAMEID_WIDTH)
+#define AMDS_QLMASK_SHIFT (AMDS_DEVICE_SHIFT   - AMDS_QLMASK_WIDTH)
+#define AMDS_NAMEID_SHIFT (AMDS_QLMASK_SHIFT   - AMDS_NAMEID_WIDTH)
 
-#define AMDS_DEVICE_MASK  ((0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH)) << AMDS_DEVICE_SHIFT)
-#define AMDS_QLMASK_MASK  ((0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_QLMASK_WIDTH)) << AMDS_QLMASK_SHIFT)
-#define AMDS_NAMEID_MASK  ((0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_NAMEID_WIDTH)) << AMDS_NAMEID_SHIFT)
+#define AMDS_DEVICE_MASK  (((unsigned int)0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH)) << AMDS_DEVICE_SHIFT)
+#define AMDS_QLMASK_MASK  (((unsigned int)0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_QLMASK_WIDTH)) << AMDS_QLMASK_SHIFT)
+#define AMDS_NAMEID_MASK  (((unsigned int)0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_NAMEID_WIDTH)) << AMDS_NAMEID_SHIFT)
 
-/* Qualifier flags */
+/* Qualifier flags (qlmask bitfield) */
 #define AMDS_DEVICE_FLAG  (0x1u)
 
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
 
-/* Mode enumeration used by accessors */
+/* Access mode used by accessors */
 typedef enum {
   PAPI_MODE_READ = 1,
   PAPI_MODE_WRITE,
@@ -67,21 +69,21 @@ typedef struct native_event {
   amds_accessor_t access_func;
 } native_event_t;
 
-typedef struct {
+typedef struct native_event_table {
   native_event_t *events;
   int count;
 } native_event_table_t;
 
-/* Global state accessors */
-int32_t amds_get_device_count(void);
-amdsmi_processor_handle *amds_get_device_handles(void);
-int32_t amds_get_gpu_count(void);
-int32_t amds_get_cpu_count(void);
-amdsmi_processor_handle **amds_get_cpu_core_handles(void);
-uint32_t *amds_get_cores_per_socket(void);
-void *amds_get_htable(void);
+/* Forward accessors defined in amds.c */
 native_event_table_t *amds_get_ntv_table(void);
-uint32_t amds_get_lib_major(void);
+int32_t              amds_get_device_count(void);
+void                *amds_get_htable(void);
+uint32_t             amds_get_lib_major(void);
+amdsmi_processor_handle *amds_get_device_handles(void);
+int32_t                 amds_get_gpu_count(void);
+int32_t                 amds_get_cpu_count(void);
+amdsmi_processor_handle **amds_get_cpu_core_handles(void);
+uint32_t                *amds_get_cores_per_socket(void);
 
 #ifndef AMDS_PRIV_IMPL
 #define device_handles (amds_get_device_handles())

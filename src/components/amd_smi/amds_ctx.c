@@ -18,57 +18,48 @@ extern int amds_strip_device_qualifier_(const char *name, char *base, int len);
 
 unsigned int _amd_smi_lock;
 
-/* Use a 64-bit global device mask to support up to 64 devices */
-static uint64_t device_mask = 0;
+/* Global device reservation mask (up to 64 devices) */
+static uint64_t g_device_mask = 0;
 
 static int amds_ctx_event_from_code(unsigned int code, native_event_t **out);
 
-static int acquire_devices(unsigned int *events_id, int num_events, uint64_t *bitmask) {
-  if (!bitmask) return PAPI_EINVAL;
+static int acquire_devices(unsigned int *event_ids, int num_events, uint64_t *bitmask_out)
+{
+  if (!bitmask_out) return PAPI_EINVAL;
   if (num_events < 0) return PAPI_EINVAL;
-  if (num_events > 0 && !events_id) return PAPI_EINVAL;
-  if (!ntv_table_p) return PAPI_ECMP;
+  if (num_events > 0 && !event_ids) return PAPI_EINVAL;
 
-  uint64_t mask_acq = 0;
+  uint64_t need = 0;
   for (int i = 0; i < num_events; ++i) {
     native_event_t *ev = NULL;
-    if (amds_ctx_event_from_code(events_id[i], &ev) != PAPI_OK) {
-      return PAPI_EINVAL;
-    }
+    int ret = amds_ctx_event_from_code(event_ids[i], &ev);
+    if (ret != PAPI_OK) return ret;
     int dev_id = ev->device;
-    if (dev_id < 0) continue;                 /* no device associated */
+    if (dev_id < 0) continue;
     if (dev_id >= 64) return PAPI_EINVAL;
-
-    uint64_t bit = 1ULL << dev_id;
-    mask_acq |= bit;
+    need |= (1ULL << dev_id);
   }
 
   _papi_hwi_lock(_amd_smi_lock);
-  if (device_mask & mask_acq) {
+  if (g_device_mask & need) {
     _papi_hwi_unlock(_amd_smi_lock);
     return PAPI_ECNFLCT;
   }
-  device_mask |= mask_acq;
+  g_device_mask |= need;
   _papi_hwi_unlock(_amd_smi_lock);
 
-  *bitmask = mask_acq;
+  *bitmask_out = need;
   return PAPI_OK;
 }
 
-static int release_devices(uint64_t *bitmask) {
-  if (!bitmask) return PAPI_EINVAL;
-  uint64_t mask_rel = *bitmask;
-
+static int release_devices(uint64_t *bitmask_inout)
+{
+  if (!bitmask_inout) return PAPI_EINVAL;
+  uint64_t mask = *bitmask_inout;
   _papi_hwi_lock(_amd_smi_lock);
-  if ((mask_rel & device_mask) != mask_rel) {
-    _papi_hwi_unlock(_amd_smi_lock);
-    return PAPI_EMISC;
-  }
-  /* Clear with &= ~mask for clarity and robustness */
-  device_mask &= ~mask_rel;
+  g_device_mask &= ~mask;
   _papi_hwi_unlock(_amd_smi_lock);
-
-  *bitmask = 0;
+  *bitmask_inout = 0;
   return PAPI_OK;
 }
 

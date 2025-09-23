@@ -285,6 +285,7 @@ static int _amd_smi_ntv_enum_events(unsigned int *EventCode, int modifier) {
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
+    /* Qualifier-aware enumeration (base events + one :device umask) */
     return amds_evt_enum(EventCode, modifier);
 }
 
@@ -293,6 +294,7 @@ static int _amd_smi_ntv_code_to_name(unsigned int EventCode, char *name, int len
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
+    /* Decode packed id to printable symbol (base or base:device=N) */
     return amds_evt_code_to_name(EventCode, name, len);
 }
 
@@ -301,6 +303,7 @@ static int _amd_smi_ntv_name_to_code(const char *name, unsigned int *EventCode) 
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
+    /* Enforce mandatory :device=N qualifier for amd_smi */
     return amds_evt_name_to_code(name, EventCode);
 }
 
@@ -309,6 +312,7 @@ static int _amd_smi_ntv_code_to_descr(unsigned int EventCode, char *desc, int le
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
+    /* Long description (no qualifiers added here) */
     return amds_evt_code_to_descr(EventCode, desc, len);
 }
 
@@ -317,6 +321,7 @@ static int _amd_smi_ntv_code_to_info(unsigned int EventCode, PAPI_event_info_t *
     if (papi_errno != PAPI_OK) {
         return papi_errno;
     }
+    /* Adds "Mandatory device qualifier [ids]" to long description for mask-codes */
     return amds_evt_code_to_info(EventCode, info);
 }
 
