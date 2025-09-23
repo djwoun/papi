@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include <ctype.h>
 #define MAX_EVENTS_PER_DEVICE 1024
-#define AMDS_MAX_DEVICES 64
 
 // Pointers to AMD SMI library functions (dynamically loaded)
 #include "amds_funcs.h"
@@ -191,153 +190,6 @@ static int access_amdsmi_gpu_counter(int mode, void *arg) {
 }
 
 
-/* Build a "base key" for an event name with the :device=<id> qualifier removed,
- * keeping all other qualifiers (e.g., :sensor=, :peer=) intact so we can find
- * the set of device IDs that support this metric.
- * Examples:
- *   "temp_current:device=0:sensor=3"   -> "temp_current:sensor=3"
- *   "link_weight:device=0,peer=1"      -> "link_weight:peer=1"
- *   "vram_size_bytes:device=1"         -> "vram_size_bytes"
- */
-static void amds_basekey_wo_device(const char *name, char *out, size_t outlen)
-{
-  if (!name || !out || outlen == 0) {
-    return;
-  }
-  out[0] = '\0';
-  const char *first_colon = strchr(name, ':');
-  if (!first_colon) {
-    // No qualifiers at all
-    snprintf(out, outlen, "%s", name);
-    return;
-  }
-  // Split metric (before first ':') and qualifiers (after it)
-  size_t metric_len = (size_t)(first_colon - name);
-  if (metric_len >= outlen) {
-    metric_len = outlen - 1;
-  }
-  memcpy(out, name, metric_len);
-  out[metric_len] = '\0';
-  const char *q = first_colon + 1;
-  if (!*q) {
-    return; // nothing after ':'
-  }
-  // Normalize by replacing commas with colons so we can split uniformly
-  char qbuf[512];
-  size_t qlen = strlen(q);
-  if (qlen >= sizeof(qbuf)) qlen = sizeof(qbuf) - 1;
-  for (size_t i = 0; i < qlen; ++i) {
-    qbuf[i] = (q[i] == ',') ? ':' : q[i];
-  }
-  qbuf[qlen] = '\0';
-  // Iterate tokens split by ':' and rebuild without 'device=' tokens
-  char rebuilt[512]; rebuilt[0] = '\0';
-  const char *sep = "";
-  char *saveptr = NULL;
-  for (char *tok = strtok_r(qbuf, ":", &saveptr); tok; tok = strtok_r(NULL, ":", &saveptr)) {
-    if (!*tok) continue;
-    if (strncmp(tok, "device=", 7) == 0) {
-      continue; // drop 'device' qualifier
-    }
-    // keep other qualifiers
-    size_t need_len = strlen(rebuilt) + strlen(sep) + strlen(tok) + 1;
-    if (need_len < sizeof(rebuilt)) {
-      strcat(rebuilt, sep);
-      strcat(rebuilt, tok);
-      sep = ":";
-    }
-  }
-  if (rebuilt[0]) {
-    // append ':' then rebuilt qualifiers
-    size_t cur = strlen(out);
-    if (cur + 1 < outlen) {
-      out[cur] = ':';
-      out[cur+1] = '\0';
-      strncat(out, rebuilt, outlen - (cur + 1) - 1);
-    }
-  }
-}
-
-/* After all events are enumerated, augment long descriptions to include
- * a device qualifier section similar to the ROCm component:
- *
- *     :device=<id>
- *     Mandatory device qualifier [id0,id1,...]
- *
- * We compute the allowed device IDs by grouping events with the same
- * metric+non-device qualifiers (base key).
- */
-static void amds_annotate_device_qualifiers(void)
-{
-  // First, build the allowed-device set for each base key.
-  // We will do a simple O(n^2) pass since the table is not huge.
-  for (int i = 0; i < ntv_table.count; ++i) {
-    native_event_t *ev = &ntv_table.events[i];
-    if (ev->device < 0) {
-      continue; // global/non-device events
-    }
-    if (!ev->name) continue;
-    // Prepare base key without :device=
-    char basekey[1024];
-    amds_basekey_wo_device(ev->name, basekey, sizeof(basekey));
-    if (!basekey[0]) continue;
-    // Build a bitmap of allowed devices for this base key
-    unsigned char seen[AMDS_MAX_DEVICES];
-    memset(seen, 0, sizeof(seen));
-    for (int j = 0; j < ntv_table.count; ++j) {
-      native_event_t *other = &ntv_table.events[j];
-      if (other->device < 0 || !other->name) continue;
-      char obase[1024];
-      amds_basekey_wo_device(other->name, obase, sizeof(obase));
-      if (strcmp(obase, basekey) == 0) {
-        if (other->device >= 0 && other->device < AMDS_MAX_DEVICES) {
-          seen[other->device] = 1;
-        }
-      }
-    }
-    // Construct the "[a,b,c]" list from 'seen'
-    char ids_buf[4 * AMDS_MAX_DEVICES];
-    size_t ids_len = 0;
-    int first = 1;
-    for (int d = 0; d < AMDS_MAX_DEVICES; ++d) {
-      if (seen[d]) {
-        int n = snprintf(ids_buf + ids_len,
-                         sizeof(ids_buf) - ids_len,
-                         first ? "%d" : ",%d", d);
-        if (n < 0) break;
-        if ((size_t)n >= sizeof(ids_buf) - ids_len) { ids_len = sizeof(ids_buf)-1; break; }
-        ids_len += (size_t)n;
-        first = 0;
-      }
-    }
-    ids_buf[ids_len] = '\0';
-    // Append the two annotation lines to the description string if not already appended
-    if (ids_buf[0]) {
-      const char *prefix1 = "\n     :device=%d";
-      const char *prefix2 = "\n            Mandatory device qualifier [%s]";
-      // Avoid appending twice (in case init_event_table runs again)
-      if (ev->descr && strstr(ev->descr, "Mandatory device qualifier [")) {
-        continue;
-      }
-      size_t old_len = ev->descr ? strlen(ev->descr) : 0;
-      // Extra chars: format expansions plus newlines
-      size_t extra_len = 64 + strlen(ids_buf);
-      char *new_descr = (char *)papi_calloc(old_len + extra_len + 1, 1);
-      if (!new_descr) {
-        continue; // best-effort; skip on OOM
-      }
-      if (ev->descr) {
-        memcpy(new_descr, ev->descr, old_len);
-      }
-      size_t cur = strlen(new_descr);
-      cur += (size_t)snprintf(new_descr + cur, old_len + extra_len + 1 - cur, prefix1, ev->device);
-      (void)snprintf(new_descr + cur, old_len + extra_len + 1 - cur, prefix2, ids_buf);
-      // Swap strings
-      if (ev->descr) papi_free(ev->descr);
-      ev->descr = new_descr;
-    }
-  }
-}
 // Replace any non-alphanumeric characters with '_' to build safe event names
 static void sanitize_name(const char *src, char *dst, size_t len) {
   if (len == 0) return;
@@ -3734,7 +3586,6 @@ static int init_event_table(void) {
     }
   }
   ntv_table.count = idx;
-  amds_annotate_device_qualifiers();
   return PAPI_OK;
 }
 
