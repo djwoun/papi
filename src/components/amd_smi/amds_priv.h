@@ -13,6 +13,32 @@
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
+/* -----------------------------------------------------------------------
+ * Event identifier encoding format (amd_smi):
+ * +-----------------------------+--------+--------+
+ * |            unused           | device | qlmask | nameid
+ * +-----------------------------+--------+--------+
+ * device : 6 bits ([0 - 63] devices)
+ * qlmask : 1 bit  (qualifier mask; only device supported)
+ * nameid : remaining lower bits (index into native event table)
+ * ---------------------------------------------------------------------*/
+#define AMDS_EVENTS_WIDTH (sizeof(unsigned int) * 8)
+#define AMDS_DEVICE_WIDTH (6)
+#define AMDS_QLMASK_WIDTH (1)
+#define AMDS_NAMEID_WIDTH (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QLMASK_WIDTH)
+#define AMDS_UNUSED_WIDTH (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QLMASK_WIDTH - AMDS_NAMEID_WIDTH)
+
+#define AMDS_DEVICE_SHIFT (AMDS_EVENTS_WIDTH - AMDS_UNUSED_WIDTH - AMDS_DEVICE_WIDTH)
+#define AMDS_QLMASK_SHIFT (AMDS_DEVICE_SHIFT - AMDS_QLMASK_WIDTH)
+#define AMDS_NAMEID_SHIFT (AMDS_QLMASK_SHIFT - AMDS_NAMEID_WIDTH)
+
+#define AMDS_DEVICE_MASK  ((0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_DEVICE_WIDTH)) << AMDS_DEVICE_SHIFT)
+#define AMDS_QLMASK_MASK  ((0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_QLMASK_WIDTH)) << AMDS_QLMASK_SHIFT)
+#define AMDS_NAMEID_MASK  ((0xFFFFFFFFu >> (AMDS_EVENTS_WIDTH - AMDS_NAMEID_WIDTH)) << AMDS_NAMEID_SHIFT)
+
+/* Qualifier flags */
+#define AMDS_DEVICE_FLAG  (0x1u)
+
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif

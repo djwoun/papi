@@ -19,9 +19,10 @@ int amds_shutdown(void);
 
 /* native event queries */
 int amds_evt_enum(unsigned int *EventCode, int modifier);
-int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len);
-int amds_evt_name_to_code(const char *name, unsigned int *EventCode);
 int amds_evt_code_to_name(unsigned int EventCode, char *name, int len);
+int amds_evt_name_to_code(const char *name, unsigned int *EventCode);
+int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len);
+int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info);
 
 /* error handling */
 int amds_err_get_last(const char **err_string);

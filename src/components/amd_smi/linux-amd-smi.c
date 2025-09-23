@@ -312,6 +312,14 @@ static int _amd_smi_ntv_code_to_descr(unsigned int EventCode, char *desc, int le
     return amds_evt_code_to_descr(EventCode, desc, len);
 }
 
+static int _amd_smi_ntv_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
+    int papi_errno = _amd_smi_check_n_initialize();
+    if (papi_errno != PAPI_OK) {
+        return papi_errno;
+    }
+    return amds_evt_code_to_info(EventCode, info);
+}
+
 /* Export the component interface */
 papi_vector_t _amd_smi_vector = {
     .cmp_info = {
@@ -353,4 +361,5 @@ papi_vector_t _amd_smi_vector = {
     .ntv_code_to_name = _amd_smi_ntv_code_to_name,
     .ntv_name_to_code = _amd_smi_ntv_name_to_code,
     .ntv_code_to_descr = _amd_smi_ntv_code_to_descr,
+    .ntv_code_to_info  = _amd_smi_ntv_code_to_info,
 };
