@@ -13,46 +13,42 @@
 #include <stdio.h>
 
 /* Event enumeration: iterate over native events */
-int amds_evt_enum(unsigned int *EventCode, int modifier) {
-  if (!EventCode) {
-    return PAPI_EINVAL;
-  }
-  if (!ntv_table_p) {
-    return PAPI_ECMP;
-  }
+int amds_evt_enum(unsigned int *EventCode, int modifier)
+{
+  if (!EventCode) return PAPI_EINVAL;
+  if (!ntv_table_p) return PAPI_ECMP;
 
   if (modifier == PAPI_ENUM_FIRST) {
-    if (ntv_table_p->count == 0) {
-      return PAPI_ENOEVNT;
-    }
-    *EventCode = 0;
+    if (ntv_table_p->count == 0) return PAPI_ENOEVNT;
+    *EventCode = ntv_table_p->events[0].id; /* encoded EventCode */
     return PAPI_OK;
   } else if (modifier == PAPI_ENUM_EVENTS) {
-    if (*EventCode >= (unsigned int)ntv_table_p->count) {
-      return PAPI_ENOEVNT;
+    /* Find current index by matching encoded EventCode to ev->id, then advance */
+    int cur = -1;
+    for (int i = 0; i < ntv_table_p->count; ++i) {
+      if (ntv_table_p->events[i].id == *EventCode) { cur = i; break; }
     }
-    if (*EventCode + 1 < (unsigned int)ntv_table_p->count) {
-      *EventCode = *EventCode + 1;
+    if (cur < 0) return PAPI_ENOEVNT;
+    if (cur + 1 < ntv_table_p->count) {
+      *EventCode = ntv_table_p->events[cur + 1].id;
       return PAPI_OK;
-    } else {
-      return PAPI_ENOEVNT;
     }
+    return PAPI_ENOEVNT;
   }
   return PAPI_EINVAL;
 }
 
 int amds_evt_code_to_name(unsigned int EventCode, char *name, int len) {
-  if (!name || len <= 0) {
-    return PAPI_EINVAL;
+  if (!name || len <= 0) return PAPI_EINVAL;
+  if (!ntv_table_p) return PAPI_ECMP;
+  /* Resolve encoded EventCode by scanning ev->id */
+  for (int i = 0; i < ntv_table_p->count; ++i) {
+    if (ntv_table_p->events[i].id == EventCode) {
+      snprintf(name, (size_t)len, "%s", ntv_table_p->events[i].name);
+      return PAPI_OK;
+    }
   }
-  if (!ntv_table_p) {
-    return PAPI_ECMP;
-  }
-  if (EventCode >= (unsigned int)ntv_table_p->count) {
-    return PAPI_EINVAL;
-  }
-  snprintf(name, (size_t)len, "%s", ntv_table_p->events[EventCode].name);
-  return PAPI_OK;
+  return PAPI_EINVAL;
 }
 
 int amds_evt_name_to_code(const char *name, unsigned int *EventCode) {
@@ -72,15 +68,13 @@ int amds_evt_name_to_code(const char *name, unsigned int *EventCode) {
 }
 
 int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
-  if (!descr || len <= 0) {
-    return PAPI_EINVAL;
+  if (!descr || len <= 0) return PAPI_EINVAL;
+  if (!ntv_table_p) return PAPI_ECMP;
+  for (int i = 0; i < ntv_table_p->count; ++i) {
+    if (ntv_table_p->events[i].id == EventCode) {
+      snprintf(descr, (size_t)len, "%s", ntv_table_p->events[i].descr);
+      return PAPI_OK;
+    }
   }
-  if (!ntv_table_p) {
-    return PAPI_ECMP;
-  }
-  if (EventCode >= (unsigned int)ntv_table_p->count) {
-    return PAPI_EINVAL;
-  }
-  snprintf(descr, (size_t)len, "%s", ntv_table_p->events[EventCode].descr);
-  return PAPI_OK;
+  return PAPI_EINVAL;
 }

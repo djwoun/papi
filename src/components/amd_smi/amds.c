@@ -50,6 +50,10 @@ static int init_event_table(void);
 static int shutdown_event_table(void);
 static native_event_table_t ntv_table;
 static native_event_table_t *ntv_table_p = NULL;
+/* Per-device sequence for local event indices (used in AMDS_ENCODE_EVENT) */
+static unsigned int _amds_seq_per_dev[AMDS_MAX_DEVICES] = {0};
+/* Sequence for global (no-device) events if any */
+static unsigned int _amds_seq_global = 0;
 
 /* Internal state accessors */
 int32_t amds_get_device_count(void) { return device_count; }
@@ -761,7 +765,20 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
                      uint32_t variant, uint32_t subvariant, int mode,
                      amds_accessor_t access_func) {
   native_event_t *ev = &ntv_table.events[*idx_ptr];
-  ev->id = *idx_ptr;
+  /* Encode EventCode with 6-bit device id and per-device local index */
+  if (device >= 0 && device < (int)AMDS_MAX_DEVICES) {
+    /* Device-qualified event */
+    ev->id = AMDS_ENCODE_EVENT((unsigned int)device,
+                               _amds_seq_per_dev[device]++);
+  } else {
+    /* Global/no-device event (rare in amd_smi).
+     * Keep a separate sequence and set device bits to gpu_count (bounded < 64).
+     * These events do not require a device qualifier in their names. */
+    unsigned int devbits = (unsigned int)((gpu_count < AMDS_MAX_DEVICES)
+                                          ? gpu_count
+                                          : (AMDS_MAX_DEVICES - 1));
+    ev->id = AMDS_ENCODE_EVENT(devbits, _amds_seq_global++);
+  }
   ev->name = strdup(name);
   ev->descr = strdup(descr);
   if (!ev->name || !ev->descr)

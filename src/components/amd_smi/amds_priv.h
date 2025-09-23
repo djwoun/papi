@@ -18,6 +18,26 @@
 #endif
 
 /* Mode enumeration used by accessors */
+/* ---------------------------------------------------------------------
+ * Device qualifier encoding (6-bit device id: 0..63)
+ * EventCode layout (unsigned int):
+ *   [ device (6 bits) | event-local index (remaining bits) ]
+ * ------------------------------------------------------------------- */
+#ifndef AMDS_MAX_DEVICES
+#define AMDS_MAX_DEVICES 64
+#endif
+#define AMDS_DEVICE_BITS 6
+#define AMDS_EVENT_BITS  ((unsigned int)(sizeof(unsigned int) * 8) - AMDS_DEVICE_BITS)
+#define AMDS_DEVICE_MASK ((1U << AMDS_DEVICE_BITS) - 1U)
+#define AMDS_EVENT_MASK  ((1U << AMDS_EVENT_BITS) - 1U)
+/* Build/parse EventCode */
+#define AMDS_ENCODE_EVENT(device, ev_idx) \
+  ((((unsigned int)(device) & AMDS_DEVICE_MASK) << AMDS_EVENT_BITS) | \
+   ((unsigned int)(ev_idx) & AMDS_EVENT_MASK))
+#define AMDS_DECODE_DEVICE(code)    (((unsigned int)(code) >> AMDS_EVENT_BITS) & AMDS_DEVICE_MASK)
+#define AMDS_DECODE_EVENT_IDX(code) ((unsigned int)(code) & AMDS_EVENT_MASK)
+
+
 typedef enum {
   PAPI_MODE_READ = 1,
   PAPI_MODE_WRITE,
