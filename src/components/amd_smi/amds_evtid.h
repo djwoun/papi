@@ -3,6 +3,14 @@
 
 #include <stdint.h>
 
+/* Event identifier encoding format (64-bit):
+ * |        unused       | dev  | ql |   nameid   |
+ * |---------------------|------|----|------------|
+ * unused    : (64 - DEVICE_WIDTH - QLMASK_WIDTH - NAMEID_WIDTH) bits
+ * device    : DEVICE_WIDTH bits  (device index qualifier)
+ * qlmask    : QLMASK_WIDTH bits  (qualifier flags)
+ * nameid    : NAMEID_WIDTH bits  (base event index)
+ */
 #define EVENTS_WIDTH (sizeof(uint64_t) * 8)
 #define DEVICE_WIDTH (7)
 #define NAMEID_WIDTH (12)

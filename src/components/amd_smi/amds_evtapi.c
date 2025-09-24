@@ -105,68 +105,48 @@ int amds_evt_enum(uint64_t *EventCode, int modifier)
   if (!EventCode) return PAPI_EINVAL;
   if (!ntv_table_p) return PAPI_ECMP;
 
-  amds_evtinfo_t info;
-
   switch (modifier) {
-  case PAPI_ENUM_FIRST: {
-    if (ntv_table_p->count == 0)
-      return PAPI_ENOEVNT;
+  case PAPI_ENUM_FIRST:
+    if (ntv_table_p->count == 0) return PAPI_ENOEVNT;
+    *EventCode = 0;  /* first base event code (nameid = 0) */
+    return PAPI_OK;
 
-    info.nameid = 0;
-    uint64_t map0 = ntv_table_p->events[0].device_map;
-    if (map0) {
-      info.flags  = DEVICE_FLAG;                         // expand as event
-      info.device = first_set_bit_u64(map0);
-    } else {
-      info.flags  = 0;                                   // plain event
-      info.device = 0;
-    }
+  case PAPI_ENUM_EVENTS: {
+    int count = ntv_table_p->count;
+    if (count <= 0) return PAPI_ENOEVNT;
+    amds_evtinfo_t info;
+    int rc = amds_evt_id_to_info(*EventCode, &info);
+    if (rc != PAPI_OK) return rc;
+    if (info.nameid >= count - 1) return PAPI_ENOEVNT;
+    info.nameid += 1;
+    info.flags = 0;
+    info.device = 0;
     return amds_evt_id_create(&info, EventCode);
   }
 
-  case PAPI_ENUM_EVENTS: {
+  case PAPI_NTV_ENUM_UMASKS: {
+    amds_evtinfo_t info;
     int rc = amds_evt_id_to_info(*EventCode, &info);
     if (rc != PAPI_OK) return rc;
-
-    uint64_t map = ntv_table_p->events[info.nameid].device_map;
-
-    /* If current is device-qualified, try the next device on the same nameid. */
+    native_event_t *event = &ntv_table_p->events[info.nameid];
+    uint64_t map = event->device_map;
+    if ((info.flags & DEVICE_FLAG) == 0) {
+      /* Base event: enumerate first device qualifier if available */
+      if (map == 0) return PAPI_ENOEVNT;
+      info.flags = DEVICE_FLAG;
+      info.device = first_set_bit_u64(map);
+      return amds_evt_id_create(&info, EventCode);
+    }
     if (info.flags & DEVICE_FLAG) {
+      /* Device-qualified event: enumerate next device (if any) */
       int dn = next_set_bit_u64(map, info.device);
       if (dn >= 0) {
         info.device = dn;
         return amds_evt_id_create(&info, EventCode);
       }
-      /* No more devices on this nameid -> advance to next base event. */
-      ++info.nameid;
-    } else {
-      /* Current is a plain event. If this base has a device map, jump into devices. */
-      if (map) {
-        info.flags  = DEVICE_FLAG;
-        info.device = first_set_bit_u64(map);
-        return amds_evt_id_create(&info, EventCode);
-      }
-      ++info.nameid;
-    }
-
-    /* Walk forward to the next base event, returning either its first device or itself. */
-    for (; info.nameid < ntv_table_p->count; ++info.nameid) {
-      map = ntv_table_p->events[info.nameid].device_map;
-      if (map) {
-        info.flags  = DEVICE_FLAG;
-        info.device = first_set_bit_u64(map);
-      } else {
-        info.flags  = 0;
-        info.device = 0;
-      }
-      return amds_evt_id_create(&info, EventCode);
     }
     return PAPI_ENOEVNT;
   }
-
-  case PAPI_NTV_ENUM_UMASKS:
-    /* No umasks in this component. Device is expanded into the event code. */
-    return PAPI_ENOEVNT;
 
   default:
     return PAPI_EINVAL;
@@ -276,7 +256,9 @@ int amds_evt_code_to_info(uint64_t EventCode, PAPI_event_info_t *info) {
     char devices[PAPI_MAX_STR_LEN] = {0};
     evt_build_device_list(event->device_map, devices, sizeof(devices));
     snprintf(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name, inf.device);
-    snprintf(info->long_descr, sizeof(info->long_descr), "%s, masks:Mandatory device qualifier [%s]", event->descr, devices);
+    snprintf(info->long_descr, sizeof(info->long_descr),
+             "%s\nmasks:Mandatory device qualifier [%s]",
+             event->descr, devices);
   } else {
     snprintf(info->symbol, sizeof(info->symbol), "%s", event->name);
     snprintf(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
@@ -342,39 +324,16 @@ static int evt_name_to_device(const char *name, int *device, int *has_device) {
 }
 
 static void evt_build_device_list(uint64_t device_map, char *buffer, size_t len) {
-  if (!buffer || len == 0) {
-    return;
-  }
-  size_t used = 0;
+  if (!buffer || len == 0) return;
   buffer[0] = '\0';
-  for (int i = 0; i < device_count && i < 64; ++i) {
-    if ((device_map & (UINT64_C(1) << i)) == 0) {
-      continue;
-    }
-    if (used + 1 >= len) {
-      break;
-    }
-    if (used > 0) {
-      buffer[used++] = ',';
-      if (used >= len) {
-        buffer[len - 1] = '\0';
-        return;
-      }
-    }
-    int written = snprintf(buffer + used, len - used, "%d", i);
-    if (written < 0) {
-      buffer[0] = '\0';
-      return;
-    }
-    if ((size_t)written >= len - used) {
+  size_t used = 0;
+  for (int d = 0; d < device_count && d < 64; ++d) {
+    if (!(device_map & (UINT64_C(1) << d))) continue;
+    int n = snprintf(buffer + used, (len - used), (used ? ",%d" : "%d"), d);
+    if (n < 0 || n >= (int)(len - used)) {
       buffer[len - 1] = '\0';
       return;
     }
-    used += (size_t)written;
-  }
-  if (used < len) {
-    buffer[used] = '\0';
-  } else {
-    buffer[len - 1] = '\0';
+    used += (size_t) n;
   }
 }
