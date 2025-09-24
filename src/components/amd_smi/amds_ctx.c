@@ -7,7 +7,6 @@
 
 #include "amds.h"
 #include "amds_priv.h"
-#include "amds_evtid.h"
 #include "papi.h"
 #include "papi_memory.h"
 #include "papi_internal.h"
@@ -26,16 +25,17 @@ static int acquire_devices(uint64_t *events_id, int num_events, uint64_t *bitmas
 
   uint64_t mask_acq = 0;
   for (int i = 0; i < num_events; ++i) {
-    amds_evtinfo_t info;
-    int papi_errno = amds_evt_id_to_info(events_id[i], &info);
+    int device = -1;
+    int has_device = 0;
+    int papi_errno = amds_evt_decode(events_id[i], NULL, &device, &has_device);
     if (papi_errno != PAPI_OK) {
       return papi_errno;
     }
-    if (info.flags & DEVICE_FLAG) {
-      if (info.device < 0 || info.device >= 64) {
+    if (has_device) {
+      if (device < 0 || device >= 64) {
         return PAPI_EINVAL;
       }
-      mask_acq |= (UINT64_C(1) << info.device);
+      mask_acq |= (UINT64_C(1) << device);
     }
   }
 
@@ -114,19 +114,21 @@ int amds_ctx_open(uint64_t *event_ids, int num_events, amds_ctx_t *ctx) {
 
   int prepared = 0;
   for (int i = 0; i < num_events; ++i) {
-    amds_evtinfo_t info;
-    papi_errno = amds_evt_id_to_info(event_ids[i], &info);
+    int nameid = -1;
+    int device = -1;
+    int has_device = 0;
+    papi_errno = amds_evt_decode(event_ids[i], &nameid, &device, &has_device);
     if (papi_errno != PAPI_OK)
       goto fn_fail;
 
-    native_event_t *base = &ntv_table_p->events[info.nameid];
+    native_event_t *base = &ntv_table_p->events[nameid];
     native_event_t *copy = (native_event_t *)papi_malloc(sizeof(*copy));
     if (!copy) {
       papi_errno = PAPI_ENOMEM;
       goto fn_fail;
     }
     *copy = *base;
-    copy->device = (info.flags & DEVICE_FLAG) ? info.device : -1;
+    copy->device = has_device ? device : -1;
     copy->value = 0;
     copy->priv = NULL;
     new_ctx->events[i] = copy;

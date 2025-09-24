@@ -57,6 +57,7 @@ uint32_t *amds_get_cores_per_socket(void);
 void *amds_get_htable(void);
 native_event_table_t *amds_get_ntv_table(void);
 uint32_t amds_get_lib_major(void);
+int amds_evt_decode(uint64_t event_id, int *nameid, int *device, int *has_device);
 
 #ifndef AMDS_PRIV_IMPL
 #define device_handles (amds_get_device_handles())

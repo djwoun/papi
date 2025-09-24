@@ -18,7 +18,6 @@
 #include "extras.h"
 #include "amds.h"
 #include "amds_priv.h"
-#include "amds_evtid.h"
 extern unsigned int _amd_smi_lock;
 
 typedef struct {
@@ -65,32 +64,31 @@ static int _amd_smi_init_component(int cidx) {
     return PAPI_EDELAY_INIT;
 }
 
-/* Count total concrete events = sum over base events of (#devices >0 ? popcount(device_map) : 1).
- * This preserves the original total (e.g., 601) while printing only one row per base event.
- */
-static int evt_get_count(int *count) {
-    if (!count) return PAPI_EINVAL;
-    *count = 0;
-    native_event_table_t *ntv = amds_get_ntv_table();
-    if (ntv && ntv->events && ntv->count > 0) {
-        long long total = 0;
-        for (int i = 0; i < ntv->count; ++i) {
-            uint64_t map = ntv->events[i].device_map;
-            if (map) {
-                total += (long long)__builtin_popcountll(map);
-            } else {
-                total += 1;
-            }
-        }
-        *count = (int)total;
-        return PAPI_OK;
-    }
-    /* Fallback: base enumeration if table not ready (shouldn't happen post-amds_init). */
+/* Count only base (unqualified) events.
+ * This uses the component's enumerator exactly the way PAPI walks it
+ * for PAPI_ENUM_EVENTS, so the folded total matches papi_native_avail. */
+static int evt_get_base_count(int *out)
+{
+    if (!out) return PAPI_EINVAL;
+
+    int retval;
+    int n = 0;
     uint64_t code = 0;
-    int c = 0;
-    if (amds_evt_enum(&code, PAPI_ENUM_FIRST) == PAPI_OK) ++c;
-    while (amds_evt_enum(&code, PAPI_ENUM_EVENTS) == PAPI_OK) ++c;
-    *count = c;
+
+    retval = amds_evt_enum(&code, PAPI_ENUM_FIRST);
+    if (retval != PAPI_OK) {
+        *out = 0;
+        return retval;
+    }
+
+    for (;;) {
+        ++n;
+        retval = amds_evt_enum(&code, PAPI_ENUM_EVENTS);
+        if (retval != PAPI_OK)
+            break;
+    }
+
+    *out = n;
     return PAPI_OK;
 }
 
@@ -112,12 +110,16 @@ static int _amd_smi_init_private(void) {
         goto fn_fail;
     }
 
-    /* After init, compute total *expanded* native count (accounts for device qualifiers). */
-    int total = 0;
-    (void)evt_get_count(&total);
-    _amd_smi_vector.cmp_info.num_native_events = total;
-    _amd_smi_vector.cmp_info.num_cntrs = total;
-    _amd_smi_vector.cmp_info.num_mpx_cntrs = total;
+    /* Report the folded total so papi_component_avail prints the same
+     * base-event count as papi_native_avail (e.g., 305). */
+    int base_count = 0;
+    if (evt_get_base_count(&base_count) == PAPI_OK) {
+        _amd_smi_vector.cmp_info.num_native_events = base_count;
+        /* These are software counters. Leave hardware counter fields as 0
+         * so tools show "NA" instead of mirroring the event total. */
+        _amd_smi_vector.cmp_info.num_cntrs     = 0;
+        _amd_smi_vector.cmp_info.num_mpx_cntrs = 0;
+    }
 
 fn_exit:
     _amd_smi_vector.cmp_info.initialized = 1;

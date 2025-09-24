@@ -4,13 +4,32 @@
 
 #include "amds.h"
 #include "amds_priv.h"
-#include "amds_evtid.h"
 #include "htable.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Event ID bit layout */
+#define EVENTS_WIDTH (sizeof(uint64_t) * 8)
+#define DEVICE_WIDTH (7)
+#define NAMEID_WIDTH (12)
+#define QLMASK_WIDTH (2)
+#define UNUSED_WIDTH (EVENTS_WIDTH - DEVICE_WIDTH - NAMEID_WIDTH - QLMASK_WIDTH)
+#define DEVICE_SHIFT (EVENTS_WIDTH - UNUSED_WIDTH - DEVICE_WIDTH)
+#define QLMASK_SHIFT (DEVICE_SHIFT - QLMASK_WIDTH)
+#define NAMEID_SHIFT (QLMASK_SHIFT - NAMEID_WIDTH)
+#define DEVICE_MASK  ((UINT64_MAX >> (EVENTS_WIDTH - DEVICE_WIDTH)) << DEVICE_SHIFT)
+#define QLMASK_MASK  ((UINT64_MAX >> (EVENTS_WIDTH - QLMASK_WIDTH)) << QLMASK_SHIFT)
+#define NAMEID_MASK  ((UINT64_MAX >> (EVENTS_WIDTH - NAMEID_WIDTH)) << NAMEID_SHIFT)
+#define DEVICE_FLAG  (0x2)
+
+typedef struct {
+  int device;
+  int flags;
+  int nameid;
+} amds_evtinfo_t;
 
 /* helpers for umask walking (device qualifiers) */
 static inline int first_set_bit_u64(uint64_t map) {
@@ -25,8 +44,10 @@ static inline int first_set_bit_u64(uint64_t map) {
 static int evt_name_to_basename(const char *name, char *base, int len);
 static int evt_name_to_device(const char *name, int *device, int *has_device);
 static void evt_build_device_list(uint64_t device_map, char *buffer, size_t len);
+static int amds_evt_id_create(const amds_evtinfo_t *info, uint64_t *event_id);
+static int amds_evt_id_to_info(uint64_t event_id, amds_evtinfo_t *info);
 
-int amds_evt_id_create(const amds_evtinfo_t *info, uint64_t *event_id) {
+static int amds_evt_id_create(const amds_evtinfo_t *info, uint64_t *event_id) {
   if (!info || !event_id) {
     return PAPI_EINVAL;
   }
@@ -49,7 +70,7 @@ int amds_evt_id_create(const amds_evtinfo_t *info, uint64_t *event_id) {
   return PAPI_OK;
 }
 
-int amds_evt_id_to_info(uint64_t event_id, amds_evtinfo_t *info) {
+static int amds_evt_id_to_info(uint64_t event_id, amds_evtinfo_t *info) {
   if (!info) {
     return PAPI_EINVAL;
   }
@@ -88,6 +109,24 @@ int amds_evt_id_to_info(uint64_t event_id, amds_evtinfo_t *info) {
     info->device = -1;
   }
 
+  return PAPI_OK;
+}
+
+int amds_evt_decode(uint64_t event_id, int *nameid, int *device, int *has_device) {
+  amds_evtinfo_t info;
+  int rc = amds_evt_id_to_info(event_id, &info);
+  if (rc != PAPI_OK) {
+    return rc;
+  }
+  if (nameid) {
+    *nameid = info.nameid;
+  }
+  if (device) {
+    *device = (info.flags & DEVICE_FLAG) ? info.device : -1;
+  }
+  if (has_device) {
+    *has_device = (info.flags & DEVICE_FLAG) ? 1 : 0;
+  }
   return PAPI_OK;
 }
 
