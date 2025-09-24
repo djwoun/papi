@@ -51,6 +51,23 @@ static int shutdown_event_table(void);
 static native_event_table_t ntv_table;
 static native_event_table_t *ntv_table_p = NULL;
 
+int amds_dev_set(uint64_t *bitmap, int device) {
+  if (!bitmap)
+    return PAPI_EINVAL;
+  if (device < 0)
+    return PAPI_OK;
+  if (device >= 64)
+    return PAPI_EINVAL;
+  *bitmap |= (UINT64_C(1) << device);
+  return PAPI_OK;
+}
+
+int amds_dev_check(uint64_t bitmap, int device) {
+  if (device < 0 || device >= 64)
+    return 0;
+  return (bitmap & (UINT64_C(1) << device)) ? 1 : 0;
+}
+
 /* Internal state accessors */
 int32_t amds_get_device_count(void) { return device_count; }
 amdsmi_processor_handle *amds_get_device_handles(void) { return device_handles; }
@@ -198,6 +215,25 @@ static void sanitize_name(const char *src, char *dst, size_t len) {
       dst[j++] = '_';
   }
   dst[j] = '\0';
+}
+
+static int strip_device_qualifier(const char *name, char *base, size_t len) {
+  if (!name || !base || len == 0)
+    return PAPI_EINVAL;
+  size_t nlen = strlen(name);
+  if (nlen >= len)
+    return PAPI_EBUF;
+  strncpy(base, name, len);
+  base[len - 1] = '\0';
+  char *qual = strstr(base, ":device=");
+  if (qual) {
+    char *next = strchr(qual + strlen(":device="), ':');
+    if (next)
+      memmove(qual, next, strlen(next) + 1);
+    else
+      *qual = '\0';
+  }
+  return PAPI_OK;
 }
 
 static void sanitize_description_text(char *str) {
@@ -760,13 +796,36 @@ int amds_err_get_last(const char **err_string) {
 static int add_event(int *idx_ptr, const char *name, const char *descr, int device,
                      uint32_t variant, uint32_t subvariant, int mode,
                      amds_accessor_t access_func) {
+  if (!idx_ptr || !name || !descr)
+    return PAPI_EINVAL;
+
+  char base_name[PAPI_MAX_STR_LEN];
+  int papi_errno = strip_device_qualifier(name, base_name, sizeof(base_name));
+  if (papi_errno != PAPI_OK)
+    return papi_errno;
+
+  native_event_t *existing = NULL;
+  int hret = htable_find(htable, base_name, (void **)&existing);
+  if (hret == HTABLE_SUCCESS) {
+    papi_errno = amds_dev_set(&existing->device_map, device);
+    if (papi_errno != PAPI_OK)
+      return papi_errno;
+    return PAPI_OK;
+  } else if (hret != HTABLE_ENOVAL) {
+    return PAPI_ECMP;
+  }
+
   native_event_t *ev = &ntv_table.events[*idx_ptr];
   ev->id = *idx_ptr;
-  ev->name = strdup(name);
+  ev->name = strdup(base_name);
   ev->descr = strdup(descr);
   if (!ev->name || !ev->descr)
     return PAPI_ENOMEM;
-  ev->device = device;
+  ev->device = (device < 0) ? device : -1;
+  ev->device_map = 0;
+  papi_errno = amds_dev_set(&ev->device_map, device);
+  if (papi_errno != PAPI_OK)
+    return papi_errno;
   ev->value = 0;
   ev->mode = mode;
   ev->variant = variant;
@@ -788,7 +847,14 @@ static int add_counter_event(int *idx_ptr, const char *name, const char *descr,
                              PAPI_MODE_READ, access_amdsmi_gpu_counter);
   if (papi_errno != PAPI_OK)
     return papi_errno;
-  native_event_t *ev = &ntv_table.events[*idx_ptr - 1];
+  char base_name[PAPI_MAX_STR_LEN];
+  papi_errno = strip_device_qualifier(name, base_name, sizeof(base_name));
+  if (papi_errno != PAPI_OK)
+    return papi_errno;
+  native_event_t *ev = NULL;
+  int hret = htable_find(htable, base_name, (void **)&ev);
+  if (hret != HTABLE_SUCCESS || !ev)
+    return PAPI_ECMP;
   ev->open_func = open_counter;
   ev->close_func = close_counter;
   ev->start_func = start_counter;

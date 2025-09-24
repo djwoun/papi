@@ -31,6 +31,7 @@ typedef struct native_event {
   unsigned int id;
   char *name, *descr;
   int32_t device;
+  uint64_t device_map;
   uint64_t value;
   uint32_t mode, variant, subvariant;
   void *priv;
@@ -45,6 +46,33 @@ typedef struct {
   native_event_t *events;
   int count;
 } native_event_table_t;
+
+#define AMDS_EVENTCODE_WIDTH   (sizeof(unsigned int) * 8)
+#define AMDS_DEVICE_WIDTH      7
+#define AMDS_QMASK_WIDTH       1
+#define AMDS_NAMEID_WIDTH                                                  \
+  (AMDS_EVENTCODE_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QMASK_WIDTH)
+#define AMDS_DEVICE_SHIFT      (AMDS_EVENTCODE_WIDTH - AMDS_DEVICE_WIDTH)
+#define AMDS_QMASK_SHIFT       (AMDS_DEVICE_SHIFT - AMDS_QMASK_WIDTH)
+#define AMDS_NAMEID_SHIFT      (AMDS_QMASK_SHIFT - AMDS_NAMEID_WIDTH)
+#define AMDS_DEVICE_MASK       (((1u << AMDS_DEVICE_WIDTH) - 1)               \
+                                << AMDS_DEVICE_SHIFT)
+#define AMDS_QMASK_MASK        (((1u << AMDS_QMASK_WIDTH) - 1)               \
+                                << AMDS_QMASK_SHIFT)
+#define AMDS_NAMEID_MASK       (((1u << AMDS_NAMEID_WIDTH) - 1)              \
+                                << AMDS_NAMEID_SHIFT)
+#define AMDS_DEVICE_FLAG       0x1
+
+typedef struct {
+  int device;
+  unsigned int flags;
+  int nameid;
+} amds_event_info_t;
+
+int amds_dev_set(uint64_t *bitmap, int device);
+int amds_dev_check(uint64_t bitmap, int device);
+int amds_evt_id_create(amds_event_info_t *info, unsigned int *event_code);
+int amds_evt_id_to_info(unsigned int event_code, amds_event_info_t *info);
 
 /* Global state accessors */
 int32_t amds_get_device_count(void);
