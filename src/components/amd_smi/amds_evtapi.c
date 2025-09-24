@@ -100,87 +100,77 @@ int amds_evt_id_to_info(uint64_t event_id, amds_evtinfo_t *info) {
   return PAPI_OK;
 }
 
-int amds_evt_enum(uint64_t *EventCode, int modifier) {
-  if (!EventCode) {
-    return PAPI_EINVAL;
-  }
-  if (!ntv_table_p) {
-    return PAPI_ECMP;
-  }
+int amds_evt_enum(uint64_t *EventCode, int modifier)
+{
+  if (!EventCode) return PAPI_EINVAL;
+  if (!ntv_table_p) return PAPI_ECMP;
 
   amds_evtinfo_t info;
-  int papi_errno = PAPI_OK;
 
   switch (modifier) {
-  case PAPI_ENUM_FIRST:
-    if (ntv_table_p->count == 0) {
-      papi_errno = PAPI_ENOEVNT;
-      break;
-    }
-    info.device = 0;
-    info.flags = 0;
+  case PAPI_ENUM_FIRST: {
+    if (ntv_table_p->count == 0)
+      return PAPI_ENOEVNT;
+
     info.nameid = 0;
-    papi_errno = amds_evt_id_create(&info, EventCode);
-    break;
-  case PAPI_ENUM_EVENTS:
-    papi_errno = amds_evt_id_to_info(*EventCode, &info);
-    if (papi_errno != PAPI_OK) {
-      break;
-    }
-    /* Only base events (no qualifiers) advance with PAPI_ENUM_EVENTS. */
-    if (info.flags != 0) {
-      papi_errno = PAPI_ENOEVNT;
-      break;
-    }
-    if (info.nameid + 1 < ntv_table_p->count) {
-      info.nameid++;
-      info.flags = 0;
-      info.device = 0;
-      papi_errno = amds_evt_id_create(&info, EventCode);
+    uint64_t map0 = ntv_table_p->events[0].device_map;
+    if (map0) {
+      info.flags  = DEVICE_FLAG;                         // expand as event
+      info.device = first_set_bit_u64(map0);
     } else {
-      papi_errno = PAPI_ENOEVNT;
+      info.flags  = 0;                                   // plain event
+      info.device = 0;
     }
-    break;
-  case PAPI_NTV_ENUM_UMASKS:
-    /* Iterate :device= qualifiers across all set bits in device_map. */
-    papi_errno = amds_evt_id_to_info(*EventCode, &info);
-    if (papi_errno != PAPI_OK) {
-      break;
-    }
-    {
-      native_event_t *ev = &ntv_table_p->events[info.nameid];
-      uint64_t map = ev->device_map;
-      if (map == 0) {
-        papi_errno = PAPI_ENOEVNT;
-        break;
-      }
-      if (info.flags == 0) {
-        int d0 = first_set_bit_u64(map);
-        if (d0 < 0) {
-          papi_errno = PAPI_ENOEVNT;
-          break;
-        }
-        info.flags = DEVICE_FLAG;
-        info.device = d0;
-        papi_errno = amds_evt_id_create(&info, EventCode);
-      } else if (info.flags & DEVICE_FLAG) {
-        int dn = next_set_bit_u64(map, info.device);
-        if (dn < 0) {
-          papi_errno = PAPI_ENOEVNT;
-          break;
-        }
-        info.device = dn;
-        papi_errno = amds_evt_id_create(&info, EventCode);
-      } else {
-        papi_errno = PAPI_EINVAL;
-      }
-    }
-    break;
-  default:
-    papi_errno = PAPI_EINVAL;
+    return amds_evt_id_create(&info, EventCode);
   }
 
-  return papi_errno;
+  case PAPI_ENUM_EVENTS: {
+    int rc = amds_evt_id_to_info(*EventCode, &info);
+    if (rc != PAPI_OK) return rc;
+
+    uint64_t map = ntv_table_p->events[info.nameid].device_map;
+
+    /* If current is device-qualified, try the next device on the same nameid. */
+    if (info.flags & DEVICE_FLAG) {
+      int dn = next_set_bit_u64(map, info.device);
+      if (dn >= 0) {
+        info.device = dn;
+        return amds_evt_id_create(&info, EventCode);
+      }
+      /* No more devices on this nameid -> advance to next base event. */
+      ++info.nameid;
+    } else {
+      /* Current is a plain event. If this base has a device map, jump into devices. */
+      if (map) {
+        info.flags  = DEVICE_FLAG;
+        info.device = first_set_bit_u64(map);
+        return amds_evt_id_create(&info, EventCode);
+      }
+      ++info.nameid;
+    }
+
+    /* Walk forward to the next base event, returning either its first device or itself. */
+    for (; info.nameid < ntv_table_p->count; ++info.nameid) {
+      map = ntv_table_p->events[info.nameid].device_map;
+      if (map) {
+        info.flags  = DEVICE_FLAG;
+        info.device = first_set_bit_u64(map);
+      } else {
+        info.flags  = 0;
+        info.device = 0;
+      }
+      return amds_evt_id_create(&info, EventCode);
+    }
+    return PAPI_ENOEVNT;
+  }
+
+  case PAPI_NTV_ENUM_UMASKS:
+    /* No umasks in this component. Device is expanded into the event code. */
+    return PAPI_ENOEVNT;
+
+  default:
+    return PAPI_EINVAL;
+  }
 }
 
 int amds_evt_code_to_name(uint64_t EventCode, char *name, int len) {
