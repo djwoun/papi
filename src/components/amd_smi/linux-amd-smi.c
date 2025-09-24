@@ -18,6 +18,7 @@
 #include "extras.h"
 #include "amds.h"
 #include "amds_priv.h"
+#include "amds_evtid.h"
 extern unsigned int _amd_smi_lock;
 
 typedef struct {
@@ -64,14 +65,32 @@ static int _amd_smi_init_component(int cidx) {
     return PAPI_EDELAY_INIT;
 }
 
+/* Count total concrete events = sum over base events of (#devices >0 ? popcount(device_map) : 1).
+ * This preserves the original total (e.g., 601) while printing only one row per base event.
+ */
 static int evt_get_count(int *count) {
-    uint64_t event_code = 0;
-    if (amds_evt_enum(&event_code, PAPI_ENUM_FIRST) == PAPI_OK) {
-        ++(*count);
+    if (!count) return PAPI_EINVAL;
+    *count = 0;
+    native_event_table_t *ntv = amds_get_ntv_table();
+    if (ntv && ntv->events && ntv->count > 0) {
+        long long total = 0;
+        for (int i = 0; i < ntv->count; ++i) {
+            uint64_t map = ntv->events[i].device_map;
+            if (map) {
+                total += (long long)__builtin_popcountll(map);
+            } else {
+                total += 1;
+            }
+        }
+        *count = (int)total;
+        return PAPI_OK;
     }
-    while (amds_evt_enum(&event_code, PAPI_ENUM_EVENTS) == PAPI_OK) {
-        ++(*count);
-    }
+    /* Fallback: base enumeration if table not ready (shouldn't happen post-amds_init). */
+    uint64_t code = 0;
+    int c = 0;
+    if (amds_evt_enum(&code, PAPI_ENUM_FIRST) == PAPI_OK) ++c;
+    while (amds_evt_enum(&code, PAPI_ENUM_EVENTS) == PAPI_OK) ++c;
+    *count = c;
     return PAPI_OK;
 }
 
@@ -93,11 +112,12 @@ static int _amd_smi_init_private(void) {
         goto fn_fail;
     }
 
-    int count = 0;
-    papi_errno = evt_get_count(&count);
-    _amd_smi_vector.cmp_info.num_native_events = count;
-    _amd_smi_vector.cmp_info.num_cntrs = count;
-    _amd_smi_vector.cmp_info.num_mpx_cntrs = count;
+    /* After init, compute total *expanded* native count (accounts for device qualifiers). */
+    int total = 0;
+    (void)evt_get_count(&total);
+    _amd_smi_vector.cmp_info.num_native_events = total;
+    _amd_smi_vector.cmp_info.num_cntrs = total;
+    _amd_smi_vector.cmp_info.num_mpx_cntrs = total;
 
 fn_exit:
     _amd_smi_vector.cmp_info.initialized = 1;

@@ -12,6 +12,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* helpers for umask walking (device qualifiers) */
+static inline int first_set_bit_u64(uint64_t map) {
+  for (int d = 0; d < device_count && d < 64; ++d) {
+    if (map & (UINT64_C(1) << d)) {
+      return d;
+    }
+  }
+  return -1;
+}
+
+static inline int next_set_bit_u64(uint64_t map, int after) {
+  for (int d = after + 1; d < device_count && d < 64; ++d) {
+    if (map & (UINT64_C(1) << d)) {
+      return d;
+    }
+  }
+  return -1;
+}
+
 static int evt_name_to_basename(const char *name, char *base, int len);
 static int evt_name_to_device(const char *name, int *device, int *has_device);
 static void evt_build_device_list(uint64_t device_map, char *buffer, size_t len);
@@ -108,6 +127,7 @@ int amds_evt_enum(uint64_t *EventCode, int modifier) {
     if (papi_errno != PAPI_OK) {
       break;
     }
+    /* Only base events (no qualifiers) advance with PAPI_ENUM_EVENTS. */
     if (info.flags != 0) {
       papi_errno = PAPI_ENOEVNT;
       break;
@@ -122,27 +142,39 @@ int amds_evt_enum(uint64_t *EventCode, int modifier) {
     }
     break;
   case PAPI_NTV_ENUM_UMASKS:
+    /* Iterate :device= qualifiers across all set bits in device_map. */
     papi_errno = amds_evt_id_to_info(*EventCode, &info);
     if (papi_errno != PAPI_OK) {
       break;
     }
-    if (info.flags == 0 && ntv_table_p->events[info.nameid].device_map != 0) {
-      uint64_t map = ntv_table_p->events[info.nameid].device_map;
-      int first_device = -1;
-      for (int d = 0; d < device_count && d < 64; ++d) {
-        if (map & (UINT64_C(1) << d)) {
-          first_device = d;
-          break;
-        }
-      }
-      if (first_device >= 0) {
-        info.flags = DEVICE_FLAG;
-        info.device = first_device;
-        papi_errno = amds_evt_id_create(&info, EventCode);
+    {
+      native_event_t *ev = &ntv_table_p->events[info.nameid];
+      uint64_t map = ev->device_map;
+      if (map == 0) {
+        papi_errno = PAPI_ENOEVNT;
         break;
       }
+      if (info.flags == 0) {
+        int d0 = first_set_bit_u64(map);
+        if (d0 < 0) {
+          papi_errno = PAPI_ENOEVNT;
+          break;
+        }
+        info.flags = DEVICE_FLAG;
+        info.device = d0;
+        papi_errno = amds_evt_id_create(&info, EventCode);
+      } else if (info.flags & DEVICE_FLAG) {
+        int dn = next_set_bit_u64(map, info.device);
+        if (dn < 0) {
+          papi_errno = PAPI_ENOEVNT;
+          break;
+        }
+        info.device = dn;
+        papi_errno = amds_evt_id_create(&info, EventCode);
+      } else {
+        papi_errno = PAPI_EINVAL;
+      }
     }
-    papi_errno = PAPI_ENOEVNT;
     break;
   default:
     papi_errno = PAPI_EINVAL;
