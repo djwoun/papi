@@ -22,15 +22,6 @@ static inline int first_set_bit_u64(uint64_t map) {
   return -1;
 }
 
-static inline int next_set_bit_u64(uint64_t map, int after) {
-  for (int d = after + 1; d < device_count && d < 64; ++d) {
-    if (map & (UINT64_C(1) << d)) {
-      return d;
-    }
-  }
-  return -1;
-}
-
 static int evt_name_to_basename(const char *name, char *base, int len);
 static int evt_name_to_device(const char *name, int *device, int *has_device);
 static void evt_build_device_list(uint64_t device_map, char *buffer, size_t len);
@@ -105,46 +96,51 @@ int amds_evt_enum(uint64_t *EventCode, int modifier)
   if (!EventCode) return PAPI_EINVAL;
   if (!ntv_table_p) return PAPI_ECMP;
 
-  switch (modifier) {
-  case PAPI_ENUM_FIRST:
-    if (ntv_table_p->count == 0) return PAPI_ENOEVNT;
-    *EventCode = 0;  /* first base event code (nameid = 0) */
-    return PAPI_OK;
+  amds_evtinfo_t info;
 
-  case PAPI_ENUM_EVENTS: {
-    int count = ntv_table_p->count;
-    if (count <= 0) return PAPI_ENOEVNT;
-    amds_evtinfo_t info;
-    int rc = amds_evt_id_to_info(*EventCode, &info);
-    if (rc != PAPI_OK) return rc;
-    if (info.nameid >= count - 1) return PAPI_ENOEVNT;
-    info.nameid += 1;
-    info.flags = 0;
+  switch (modifier) {
+  case PAPI_ENUM_FIRST: {
+    if (ntv_table_p->count == 0)
+      return PAPI_ENOEVNT;
+
+    info.nameid = 0;
+    info.flags  = 0;
     info.device = 0;
     return amds_evt_id_create(&info, EventCode);
   }
 
-  case PAPI_NTV_ENUM_UMASKS: {
-    amds_evtinfo_t info;
+  case PAPI_ENUM_EVENTS: {
     int rc = amds_evt_id_to_info(*EventCode, &info);
     if (rc != PAPI_OK) return rc;
-    native_event_t *event = &ntv_table_p->events[info.nameid];
-    uint64_t map = event->device_map;
-    if ((info.flags & DEVICE_FLAG) == 0) {
-      /* Base event: enumerate first device qualifier if available */
-      if (map == 0) return PAPI_ENOEVNT;
-      info.flags = DEVICE_FLAG;
-      info.device = first_set_bit_u64(map);
+
+    int count = ntv_table_p->count;
+    if (info.nameid + 1 < count) {
+      info.nameid++;
+      info.flags  = 0;
+      info.device = 0;
       return amds_evt_id_create(&info, EventCode);
     }
-    if (info.flags & DEVICE_FLAG) {
-      /* Device-qualified event: enumerate next device (if any) */
-      int dn = next_set_bit_u64(map, info.device);
-      if (dn >= 0) {
-        info.device = dn;
-        return amds_evt_id_create(&info, EventCode);
-      }
+    return PAPI_ENOEVNT;
+  }
+
+  case PAPI_NTV_ENUM_UMASKS: {
+    int rc = amds_evt_id_to_info(*EventCode, &info);
+    if (rc != PAPI_OK) return rc;
+
+    native_event_t *event = &ntv_table_p->events[info.nameid];
+    if (info.flags == 0) {
+      if (event->device_map == 0)
+        return PAPI_ENOEVNT;
+
+      int d0 = first_set_bit_u64(event->device_map);
+      if (d0 < 0)
+        return PAPI_ENOEVNT;
+
+      info.flags  = DEVICE_FLAG;
+      info.device = d0;
+      return amds_evt_id_create(&info, EventCode);
     }
+
     return PAPI_ENOEVNT;
   }
 
