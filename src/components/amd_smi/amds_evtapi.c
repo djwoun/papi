@@ -50,15 +50,6 @@ static int device_first(uint64_t bitmap) {
   return -1;
 }
 
-static int device_next(uint64_t bitmap, int current) {
-  int limit = device_bitmap_limit();
-  for (int d = current + 1; d < limit; ++d) {
-    if (amds_dev_check(bitmap, d))
-      return d;
-  }
-  return -1;
-}
-
 int amds_evt_id_create(amds_event_info_t *info, unsigned int *event_code) {
   if (!info || !event_code)
     return PAPI_EINVAL;
@@ -135,13 +126,8 @@ int amds_evt_enum(unsigned int *EventCode, int modifier) {
     native_event_t *event = &ntv_table_p->events[info.nameid];
     if (!event->device_map)
       return PAPI_ENOEVNT;
-    if (info.flags & AMDS_DEVICE_FLAG) {
-      int next = device_next(event->device_map, info.device);
-      if (next < 0)
-        return PAPI_ENOEVNT;
-      info.device = next;
-      return amds_evt_id_create(&info, EventCode);
-    }
+    if (info.flags & AMDS_DEVICE_FLAG)
+      return PAPI_ENOEVNT;
     int first = device_first(event->device_map);
     if (first < 0)
       return PAPI_ENOEVNT;
@@ -244,8 +230,7 @@ int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
     papi_errno = format_device_bitmap(event->device_map, devices, sizeof(devices));
     if (papi_errno != PAPI_OK)
       return papi_errno;
-    snprintf(descr, (size_t)len, "%s, masks:Mandatory device qualifier [%s]",
-             event->descr, devices);
+    snprintf(descr, (size_t)len, "Mandatory device qualifier [%s]", devices);
   } else {
     snprintf(descr, (size_t)len, "%s", event->descr);
   }
@@ -270,14 +255,17 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
       return papi_errno;
     snprintf(info->symbol, sizeof(info->symbol), ":device=%d", code_info.device);
     snprintf(info->long_descr, sizeof(info->long_descr),
-             "%s, masks:Mandatory device qualifier [%s]",
-             event->descr, devices);
+             "Mandatory device qualifier [%s]", devices);
   } else {
     snprintf(info->symbol, sizeof(info->symbol), "%s", event->name);
     snprintf(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
   }
 
-  snprintf(info->short_descr, sizeof(info->short_descr), "%s", event->descr);
+  if (code_info.flags & AMDS_DEVICE_FLAG)
+    snprintf(info->short_descr, sizeof(info->short_descr),
+             "Mandatory device qualifier [%s]", devices);
+  else
+    snprintf(info->short_descr, sizeof(info->short_descr), "%s", event->descr);
   info->event_code = EventCode;
   info->code[0] = EventCode;
   info->count = 1;
