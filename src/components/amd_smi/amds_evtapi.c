@@ -41,6 +41,15 @@ static inline int first_set_bit_u64(uint64_t map) {
   return -1;
 }
 
+static inline int next_set_bit_u64(uint64_t map, int after) {
+  for (int d = after + 1; d < device_count && d < 64; ++d) {
+    if (map & (UINT64_C(1) << d)) {
+      return d;
+    }
+  }
+  return -1;
+}
+
 static int evt_name_to_basename(const char *name, char *base, int len);
 static int evt_name_to_device(const char *name, int *device, int *has_device);
 static void evt_build_device_list(uint64_t device_map, char *buffer, size_t len);
@@ -177,6 +186,13 @@ int amds_evt_enum(uint64_t *EventCode, int modifier)
 
       info.flags  = DEVICE_FLAG;
       info.device = d0;
+      return amds_evt_id_create(&info, EventCode);
+    } else if (info.flags & DEVICE_FLAG) {
+      int dn = next_set_bit_u64(event->device_map, info.device);
+      if (dn < 0)
+        return PAPI_ENOEVNT;
+
+      info.device = dn;
       return amds_evt_id_create(&info, EventCode);
     }
 
