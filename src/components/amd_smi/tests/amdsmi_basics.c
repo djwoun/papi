@@ -60,9 +60,9 @@ int main(int argc, char *argv[]) {
   int passed = 0, warned = 0, failed = 0, skipped = 0;
 
   do {
+    int qualified_code = ev_code;
     char ev_name[PAPI_MAX_STR_LEN] = {0};
-    if (PAPI_event_code_to_name(ev_code, ev_name) != PAPI_OK) {
-      // Shouldn't happen; skip silently.
+    if (harness_select_device_qualified_event_name(cid, ev_code, &qualified_code, ev_name, sizeof(ev_name)) != PAPI_OK) {
       ++skipped;
       continue;
     }
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    papi_errno = PAPI_add_event(eventSet, ev_code);
+    papi_errno = PAPI_add_event(eventSet, qualified_code);
     if (papi_errno != PAPI_OK) {
       if (is_warning_papi_errno(papi_errno)) {
         WARNF("Could not add %-50s (%s)", ev_name,

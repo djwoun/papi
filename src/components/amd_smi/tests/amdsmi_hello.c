@@ -24,9 +24,15 @@ int main(int argc, char** argv) {
     HarnessOpts opts = parse_harness_cli(argc, argv);
 
     // Selected event: argv[1] if provided, else we'll enumerate and pick the first AMD-SMI native event.
-    char ev_auto[PAPI_MAX_STR_LEN] = {0};
+    char ev_buf[PAPI_MAX_STR_LEN] = {0};
     const char* ev = NULL;
-    if (argc > 1 && strncmp(argv[1], "--", 2) != 0) ev = argv[1];
+    if (argc > 1 && strncmp(argv[1], "--", 2) != 0) {
+        if (harness_canonicalize_event_name(argv[1], ev_buf, sizeof(ev_buf)) == PAPI_OK) {
+            ev = ev_buf;
+        } else {
+            ev = argv[1];
+        }
+    }
 
     // Check AMD-SMI root so the component can dlopen the library.
     const char* root = getenv("PAPI_AMDSMI_ROOT");
@@ -52,8 +58,11 @@ int main(int argc, char** argv) {
             }
         }
         if (cid < 0) {
-            // Can't run this on this build/platform — skip with warning.
-            SKIP("Unable to locate the amd_smi component (PAPI built without ROCm?)");
+        int qualified = 0;
+        if (harness_select_device_qualified_event_name(cid, code, &qualified,
+                                                       ev_buf, sizeof(ev_buf)) != PAPI_OK ||
+            ev_buf[0] == '\0') {
+        ev = ev_buf;
         }
 
         int code = PAPI_NATIVE_MASK;

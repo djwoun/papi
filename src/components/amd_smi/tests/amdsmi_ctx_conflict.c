@@ -129,7 +129,13 @@ int main(int argc, char** argv) {
 
     /* Optional override of the event: ./amdsmi_ctx_conflict "<event>" */
     bool have_argv_event = (argc > 1 && strncmp(argv[1], "--", 2) != 0);
-    if (have_argv_event) g_event = argv[1];
+    if (have_argv_event) {
+        if (harness_canonicalize_event_name(argv[1], g_event_auto, sizeof(g_event_auto)) == PAPI_OK) {
+            g_event = g_event_auto;
+        } else {
+            g_event = argv[1];
+        }
+    }
 
     const char* root = getenv("PAPI_AMDSMI_ROOT");
     if (!root || !*root) SKIP("PAPI_AMDSMI_ROOT not set");
@@ -151,7 +157,9 @@ int main(int argc, char** argv) {
         if (PAPI_enum_cmp_event(&code, PAPI_ENUM_FIRST, cid) != PAPI_OK)
             SKIP("No native events found for AMD-SMI component");
 
-        if (PAPI_event_code_to_name(code, g_event_auto) != PAPI_OK || g_event_auto[0] == '\0')
+        int qualified = 0;
+        if (harness_select_device_qualified_event_name(cid, code, &qualified, g_event_auto, sizeof(g_event_auto)) != PAPI_OK ||
+            g_event_auto[0] == '\0')
             SKIP("Could not obtain first AMD-SMI event name");
 
         g_event = g_event_auto;

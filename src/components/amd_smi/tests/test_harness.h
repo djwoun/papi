@@ -200,4 +200,83 @@ static inline int eval_result(HarnessOpts opts, int result_code) {
 /** Keep SKIP as a cannot-conduct success-with-warning. */
 #define SKIP(reason) EXIT_WARNING("%s", (reason))
 
+/* -------------------------- AMD SMI helpers -------------------------- */
+
+/**
+ * @brief Given a base AMD-SMI native event code, select the first available
+ *        device-qualified variant (if required) for the specified component.
+ */
+static inline int harness_select_device_qualified_event(int cid, int base_code,
+                                                        int *qualified_code) {
+    if (!qualified_code) {
+        return PAPI_EINVAL;
+    }
+
+    *qualified_code = base_code;
+
+    PAPI_event_info_t einfo;
+    int rc = PAPI_get_event_info(base_code, &einfo);
+    if (rc != PAPI_OK) {
+        return rc;
+    }
+
+    if (einfo.num_quals > 0) {
+        int tmp = base_code;
+        rc = PAPI_enum_cmp_event(&tmp, PAPI_NTV_ENUM_UMASKS, cid);
+        if (rc != PAPI_OK) {
+            return rc;
+        }
+        *qualified_code = tmp;
+    }
+
+    return PAPI_OK;
+}
+
+/**
+ * @brief Resolve the printable name associated with the qualified event code
+ *        selected by @ref harness_select_device_qualified_event.
+ */
+static inline int harness_select_device_qualified_event_name(int cid,
+                                                             int base_code,
+                                                             int *qualified_code,
+                                                             char *name,
+                                                             size_t len) {
+    int rc = harness_select_device_qualified_event(cid, base_code,
+                                                   qualified_code);
+    if (rc != PAPI_OK) {
+        return rc;
+    }
+    if (name && len > 0) {
+        rc = PAPI_event_code_to_name(*qualified_code, name);
+        if (rc != PAPI_OK) {
+            return rc;
+        }
+    }
+    return PAPI_OK;
+}
+
+/**
+ * @brief Canonicalize an event name so mandatory qualifiers are appended.
+ */
+static inline int harness_canonicalize_event_name(const char *input,
+                                                  char *output,
+                                                  size_t len) {
+    if (!input || !output || len == 0) {
+        return PAPI_EINVAL;
+    }
+
+    int code = 0;
+    int rc = PAPI_event_name_to_code((char *)input, &code);
+    if (rc != PAPI_OK) {
+        return rc;
+    }
+
+    rc = PAPI_event_code_to_name(code, output);
+    if (rc != PAPI_OK) {
+        return rc;
+    }
+
+    return PAPI_OK;
+}
+
 #endif /* TEST_HARNESS_H */

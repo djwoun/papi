@@ -160,8 +160,9 @@ static int real_main(const HarnessOpts *opts) {
     }
 
     do {
+        int qualified_code = code;
         char name[PAPI_MAX_STR_LEN] = {0};
-        if (PAPI_event_code_to_name(code, name) != PAPI_OK) {
+        if (harness_select_device_qualified_event_name(cid, code, &qualified_code, name, sizeof(name)) != PAPI_OK) {
             continue; /* couldn't resolve name; try next */
         }
 
@@ -170,12 +171,12 @@ static int real_main(const HarnessOpts *opts) {
             continue;
         }
 
-        statusFlag = PAPI_add_event(EventSet, code);
+        statusFlag = PAPI_add_event(EventSet, qualified_code);
         if (statusFlag == PAPI_OK) {
             strncpy(chosen_names[added], name, PAPI_MAX_STR_LEN - 1);
             ++added;
         } else if (statusFlag == PAPI_ENOEVNT || statusFlag == PAPI_ECNFLCT || statusFlag == PAPI_EPERM) {
-            /* Not usable (missing or HW/resource-limited) — keep enumerating. */
+            /* Not usable (missing or HW/resource-limited) â€” keep enumerating. */
             continue;
         } else {
             /* Unexpected error; keep going to try to fill five. */
