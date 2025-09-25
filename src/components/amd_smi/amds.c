@@ -929,7 +929,7 @@ static int init_event_table(void) {
     
           // Lx <type> size
           snprintf(name_buf, sizeof(name_buf),
-                   "L%u_%s_size_type%u:device=%d", level, type_str, i, d);
+                   "L%u_%s_size_type_%u:device=%d", level, type_str, i, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d L%u %s size (bytes)", d, level,
                    (strcmp(type_str, "cache") == 0 ? "cache"
@@ -942,7 +942,7 @@ static int init_event_table(void) {
           CHECK_EVENT_IDX(idx);
           // Lx <type> CU sharing
           snprintf(name_buf, sizeof(name_buf),
-                   "L%u_%s_cu_shared_type%u:device=%d", level, type_str, i, d);
+                   "L%u_%s_cu_shared_type_%u:device=%d", level, type_str, i, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d L%u %s max CUs sharing", d, level, type_str);
           if (add_event(&idx, name_buf, descr_buf, d, 1, i, PAPI_MODE_READ,
@@ -952,7 +952,7 @@ static int init_event_table(void) {
           CHECK_EVENT_IDX(idx);
           // Lx <type> instances
           snprintf(name_buf, sizeof(name_buf),
-                   "L%u_%s_instances_type%u:device=%d", level, type_str, i, d);
+                   "L%u_%s_instances_type_%u:device=%d", level, type_str, i, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d L%u %s instances", d, level, type_str);
           if (add_event(&idx, name_buf, descr_buf, d, 2, i, PAPI_MODE_READ,
@@ -1471,7 +1471,7 @@ static int init_event_table(void) {
               CHECK_EVENT_IDX(idx + 4);
 
               snprintf(name_buf, sizeof(name_buf),
-                       "volt_curve_freq_min:region=%u:device=%d", r, d);
+                       "volt_curve_freq_min_region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u frequency lower bound",
                        d, r);
@@ -1482,7 +1482,7 @@ static int init_event_table(void) {
               }
 
               snprintf(name_buf, sizeof(name_buf),
-                       "volt_curve_freq_max:region=%u:device=%d", r, d);
+                       "volt_curve_freq_max_region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u frequency upper bound",
                        d, r);
@@ -1493,7 +1493,7 @@ static int init_event_table(void) {
               }
 
               snprintf(name_buf, sizeof(name_buf),
-                       "volt_curve_volt_min:region=%u:device=%d", r, d);
+                       "volt_curve_volt_min_region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u voltage lower bound",
                        d, r);
@@ -1504,7 +1504,7 @@ static int init_event_table(void) {
               }
 
               snprintf(name_buf, sizeof(name_buf),
-                       "volt_curve_volt_max:region=%u:device=%d", r, d);
+                       "volt_curve_volt_max_region=%u:device=%d", r, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d voltage curve region %u voltage upper bound",
                        d, r);
@@ -1585,7 +1585,7 @@ static int init_event_table(void) {
         for (uint32_t p = 0; p < AMDSMI_NUM_VOLTAGE_CURVE_POINTS; ++p) {
           CHECK_EVENT_IDX(idx + 2);
           snprintf(name_buf, sizeof(name_buf),
-                   "volt_curve_point_freq:point=%u:device=%d", p, d);
+                   "volt_curve_point_freq_point=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d voltage curve point %u frequency", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 8, p, PAPI_MODE_READ,
@@ -1593,7 +1593,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
 
           snprintf(name_buf, sizeof(name_buf),
-                   "volt_curve_point_volt:point=%u:device=%d", p, d);
+                   "volt_curve_point_volt_point=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d voltage curve point %u voltage", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 9, p, PAPI_MODE_READ,
@@ -1723,7 +1723,7 @@ static int init_event_table(void) {
             != AMDSMI_STATUS_SUCCESS)
           continue; /* skip this specific metric if not supported */
     
-        snprintf(name_buf, sizeof(name_buf), "%s:sensor=%d:device=%d",
+        snprintf(name_buf, sizeof(name_buf), "%s_sensor=%d:device=%d",
                  temp_metric_names[mi], (int)temp_sensors[si], d);
         snprintf(descr_buf, sizeof(descr_buf), "Device %d %s for sensor %d", d,
                  temp_metric_names[mi], (int)temp_sensors[si]);
@@ -1746,7 +1746,7 @@ static int init_event_table(void) {
             AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count)
         return PAPI_ENOSUPP;
-      snprintf(name_buf, sizeof(name_buf), "fan_rpms:sensor=0:device=%d", d);
+      snprintf(name_buf, sizeof(name_buf), "fan_rpms_sensor=0:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf), "Device %d fan speed in RPM", d);
       if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                     access_amdsmi_fan_rpms) != PAPI_OK)
@@ -1759,7 +1759,7 @@ static int init_event_table(void) {
             AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count)
         return PAPI_ENOSUPP;
-      snprintf(name_buf, sizeof(name_buf), "fan_speed:sensor=0:device=%d", d);
+      snprintf(name_buf, sizeof(name_buf), "fan_speed_sensor=0:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf),
                "Device %d fan speed (0-255 relative)", d);
       if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
@@ -1773,7 +1773,7 @@ static int init_event_table(void) {
             AMDSMI_STATUS_SUCCESS) {
       if (idx >= MAX_EVENTS_PER_DEVICE * device_count)
         return PAPI_ENOSUPP;
-      snprintf(name_buf, sizeof(name_buf), "fan_rpms_max:sensor=0:device=%d", d);
+      snprintf(name_buf, sizeof(name_buf), "fan_rpms_max_sensor=0:device=%d", d);
       snprintf(descr_buf, sizeof(descr_buf),
                "Device %d fan maximum speed in RPM", d);
       if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
@@ -2277,7 +2277,7 @@ static int init_event_table(void) {
           for (uint32_t v = 0; v < 8; ++v) {
             CHECK_EVENT_IDX(idx);
             snprintf(name_buf, sizeof(name_buf),
-                     "process_%s:proc=%u:device=%d", pmetric_names[v], p, d);
+                     "process_%s_proc=%u:device=%d", pmetric_names[v], p, d);
             snprintf(descr_buf, sizeof(descr_buf),
                      "Device %d process %u %s", d, p, pmetric_descr[v]);
             if (add_event(&idx, name_buf, descr_buf, d, v, p, PAPI_MODE_READ,
@@ -2323,7 +2323,7 @@ static int init_event_table(void) {
             AMDSMI_STATUS_SUCCESS) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "xgmi_min_bandwidth:src=%d:dst=%d", d, r);
+                   "xgmi_min_bandwidth_src=%d_dst=%d", d, r);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Min XGMI bandwidth from device %d to %d (MB/s)", d, r);
           if (add_event(&idx, name_buf, descr_buf, d, 0, r, PAPI_MODE_READ,
@@ -2331,7 +2331,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "xgmi_max_bandwidth:src=%d:dst=%d", d, r);
+                   "xgmi_max_bandwidth_src=%d_dst=%d", d, r);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Max XGMI bandwidth from device %d to %d (MB/s)", d, r);
           if (add_event(&idx, name_buf, descr_buf, d, 1, r, PAPI_MODE_READ,
@@ -2373,7 +2373,7 @@ static int init_event_table(void) {
                  ++m) {
               CHECK_EVENT_IDX(idx);
               snprintf(name_buf, sizeof(name_buf),
-                       "xgmi_%s:link=%d:device=%d", xgmi_desc[m].suffix, link, d);
+                       "xgmi_%s_link=%d:device=%d", xgmi_desc[m].suffix, link, d);
               snprintf(descr_buf, sizeof(descr_buf),
                        "Device %d XGMI %s on link %d", d, xgmi_desc[m].suffix,
                        link);
@@ -2472,7 +2472,7 @@ static int init_event_table(void) {
         for (uint32_t p = 0; p < nump; ++p) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "bad_page_address:page=%u:device=%d", p, d);
+                   "bad_page_address_page=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d retired page %u address", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
@@ -2480,7 +2480,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "bad_page_size:page=%u:device=%d", p, d);
+                   "bad_page_size_page=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d retired page %u size", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 1, p, PAPI_MODE_READ,
@@ -2488,7 +2488,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "bad_page_status:page=%u:device=%d", p, d);
+                   "bad_page_status_page=%u:device=%d", p, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d retired page %u status", d, p);
           if (add_event(&idx, name_buf, descr_buf, d, 2, p, PAPI_MODE_READ,
@@ -2523,7 +2523,7 @@ static int init_event_table(void) {
         /* Register current socket power in Watts */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_current_watts:sensor=%u:device=%d", s, d);
+                 "power_sensor_current_watts_sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u current socket power (W)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 0, s, PAPI_MODE_READ,
@@ -2533,7 +2533,7 @@ static int init_event_table(void) {
         /* Register average socket power in Watts */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_average_watts:sensor=%u:device=%d", s, d);
+                 "power_sensor_average_watts_sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u average socket power (W)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 1, s, PAPI_MODE_READ,
@@ -2545,7 +2545,7 @@ static int init_event_table(void) {
         if (amdsmi_lib_major >= 25) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "power_sensor_socket_microwatts:sensor=%u:device=%d", s, d);
+                   "power_sensor_socket_microwatts_sensor=%u:device=%d", s, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d power sensor %u socket power (uW)", d, s);
           if (add_event(&idx, name_buf, descr_buf, d, 2, s, PAPI_MODE_READ,
@@ -2557,7 +2557,7 @@ static int init_event_table(void) {
         /* Register GFX voltage */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_gfx_voltage_mv:sensor=%u:device=%d", s, d);
+                 "power_sensor_gfx_voltage_mv_sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u GFX voltage (mV)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 3, s, PAPI_MODE_READ,
@@ -2567,7 +2567,7 @@ static int init_event_table(void) {
         /* Register SOC voltage */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_soc_voltage_mv:sensor=%u:device=%d", s, d);
+                 "power_sensor_soc_voltage_mv_sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u SOC voltage (mV)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 4, s, PAPI_MODE_READ,
@@ -2577,7 +2577,7 @@ static int init_event_table(void) {
         /* Register MEM voltage */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_mem_voltage_mv:sensor=%u:device=%d", s, d);
+                 "power_sensor_mem_voltage_mv_sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u MEM voltage (mV)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 5, s, PAPI_MODE_READ,
@@ -2587,7 +2587,7 @@ static int init_event_table(void) {
         /* Register power limit */
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "power_sensor_limit_watts:sensor=%u:device=%d", s, d);
+                 "power_sensor_limit_watts_sensor=%u:device=%d", s, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Device %d power sensor %u power limit (W)", d, s);
         if (add_event(&idx, name_buf, descr_buf, d, 6, s, PAPI_MODE_READ,
@@ -2828,7 +2828,7 @@ static int init_event_table(void) {
       uint32_t pwr;
       if (amdsmi_get_cpu_socket_power_p(device_handles[dev], &pwr) ==
           AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "power:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "power_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf), "Socket %d power (W)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_socket_power) != PAPI_OK)
@@ -2837,7 +2837,7 @@ static int init_event_table(void) {
       uint64_t sock_energy;
       if (amdsmi_get_cpu_socket_energy_p(device_handles[dev], &sock_energy) ==
           AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "energy:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "energy_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d energy consumed (uJ)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2847,13 +2847,13 @@ static int init_event_table(void) {
       uint16_t fmax, fmin;
       if (amdsmi_get_cpu_socket_freq_range_p(device_handles[dev], &fmax,
                                              &fmin) == AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "freq_max:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "freq_max_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d maximum frequency (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_socket_freq_range) != PAPI_OK)
           return PAPI_ENOMEM;
-        snprintf(name_buf, sizeof(name_buf), "freq_min:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "freq_min_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d minimum frequency (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2869,7 +2869,7 @@ static int init_event_table(void) {
       if (st_cap == AMDSMI_STATUS_SUCCESS ||
           st_capmax == AMDSMI_STATUS_SUCCESS) {
         if (st_cap == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "power_cap:socket=%d", s);
+          snprintf(name_buf, sizeof(name_buf), "power_cap_socket=%d", s);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d current power cap (W)", s);
           if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2877,7 +2877,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
         }
         if (st_capmax == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "power_cap_max:socket=%d", s);
+          snprintf(name_buf, sizeof(name_buf), "power_cap_max_socket=%d", s);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d max power cap (W)", s);
           if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
@@ -2891,7 +2891,7 @@ static int init_event_table(void) {
               device_handles[dev], &freq, &src_type) == AMDSMI_STATUS_SUCCESS) {
         if (src_type)
           free(src_type);
-        snprintf(name_buf, sizeof(name_buf), "freq_limit:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "freq_limit_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d current frequency limit (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2902,7 +2902,7 @@ static int init_event_table(void) {
       if (amdsmi_get_cpu_cclk_limit_p &&
           amdsmi_get_cpu_cclk_limit_p(device_handles[dev], &cclk) ==
               AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "cclk_limit:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "cclk_limit_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d core clock limit (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2913,13 +2913,13 @@ static int init_event_table(void) {
       if (amdsmi_get_cpu_fclk_mclk_p &&
           amdsmi_get_cpu_fclk_mclk_p(device_handles[dev], &fclk, &mclk) ==
               AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "fclk:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "fclk_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d fclk (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_fclk_mclk) != PAPI_OK)
           return PAPI_ENOMEM;
-        snprintf(name_buf, sizeof(name_buf), "mclk:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "mclk_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d mclk (MHz)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
@@ -2930,20 +2930,20 @@ static int init_event_table(void) {
       if (amdsmi_get_cpu_ddr_bw_p &&
           amdsmi_get_cpu_ddr_bw_p(device_handles[dev], &ddr_bw) ==
               AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "ddr_bw_max:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "ddr_bw_max_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d DDR max bandwidth (GB/s)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_ddr_bw) != PAPI_OK)
           return PAPI_ENOMEM;
-        snprintf(name_buf, sizeof(name_buf), "ddr_bw_utilized:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "ddr_bw_utilized_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d DDR utilized bandwidth (GB/s)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_ddr_bw) != PAPI_OK)
           return PAPI_ENOMEM;
         snprintf(name_buf, sizeof(name_buf),
-                 "ddr_bw_utilized_pct:socket=%d", s);
+                 "ddr_bw_utilized_pct_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d DDR bandwidth utilization (pct)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 2, 0, PAPI_MODE_READ,
@@ -2955,14 +2955,14 @@ static int init_event_table(void) {
           amdsmi_get_cpu_hsmp_driver_version_p(device_handles[dev], &dver) ==
               AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf),
-                 "hsmp_driver_major:socket=%d", s);
+                 "hsmp_driver_major_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d HSMP driver major version", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_cpu_hsmp_driver_version) != PAPI_OK)
           return PAPI_ENOMEM;
         snprintf(name_buf, sizeof(name_buf),
-                 "hsmp_driver_minor:socket=%d", s);
+                 "hsmp_driver_minor_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d HSMP driver minor version", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 1, 0, PAPI_MODE_READ,
@@ -2974,7 +2974,7 @@ static int init_event_table(void) {
           amdsmi_get_cpu_hsmp_proto_ver_p(device_handles[dev], &proto) ==
               AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf),
-                 "hsmp_proto_ver:socket=%d", s);
+                 "hsmp_proto_ver_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d HSMP protocol version", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2986,7 +2986,7 @@ static int init_event_table(void) {
           amdsmi_get_cpu_prochot_status_p(device_handles[dev], &prochot) ==
               AMDSMI_STATUS_SUCCESS) {
         snprintf(name_buf, sizeof(name_buf),
-                 "prochot_status:socket=%d", s);
+                 "prochot_status_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d PROCHOT status", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -2998,7 +2998,7 @@ static int init_event_table(void) {
           amdsmi_get_cpu_pwr_svi_telemetry_all_rails_p(device_handles[dev],
                                                        &svi_power) ==
               AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "svi_power:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "svi_power_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d SVI power (all rails, W)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -3008,7 +3008,7 @@ static int init_event_table(void) {
       amdsmi_smu_fw_version_t fw;
       if (amdsmi_get_cpu_smu_fw_version_p(device_handles[dev], &fw) ==
           AMDSMI_STATUS_SUCCESS) {
-        snprintf(name_buf, sizeof(name_buf), "smu_fw_version:socket=%d", s);
+        snprintf(name_buf, sizeof(name_buf), "smu_fw_version_socket=%d", s);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Socket %d SMU firmware version (encoded)", s);
         if (add_event(&idx, name_buf, descr_buf, dev, 0, 0, PAPI_MODE_READ,
@@ -3029,7 +3029,7 @@ static int init_event_table(void) {
               continue;
             CHECK_EVENT_IDX(idx);
             snprintf(name_buf, sizeof(name_buf),
-                     "io_bw_%s_%s:socket=%d", links[l], bwnames[t], s);
+                     "io_bw_%s_%s_socket=%d", links[l], bwnames[t], s);
             snprintf(descr_buf, sizeof(descr_buf),
                      "Socket %d IO link %s %s bandwidth (MB/s)", s,
                      links[l], bwnames[t]);
@@ -3054,7 +3054,7 @@ static int init_event_table(void) {
               continue;
             CHECK_EVENT_IDX(idx);
             snprintf(name_buf, sizeof(name_buf),
-                     "xgmi_bw_%s_%s:socket=%d", links[l], bwnames[t], s);
+                     "xgmi_bw_%s_%s_socket=%d", links[l], bwnames[t], s);
             snprintf(descr_buf, sizeof(descr_buf),
                      "Socket %d XGMI link %s %s bandwidth (MB/s)", s,
                      links[l], bwnames[t]);
@@ -3072,7 +3072,7 @@ static int init_event_table(void) {
         uint64_t energy;
         if (amdsmi_get_cpu_core_energy_p(cpu_core_handles[s][c], &energy) ==
             AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "energy:socket=%d:core=%d", s, c);
+          snprintf(name_buf, sizeof(name_buf), "energy_socket=%d_core=%d", s, c);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d Core %d energy (uJ)", s, c);
           if (add_event(&idx, name_buf, descr_buf, dev, 0, c, PAPI_MODE_READ,
@@ -3082,7 +3082,7 @@ static int init_event_table(void) {
         uint32_t freq;
         if (amdsmi_get_cpu_core_current_freq_limit_p(
                 cpu_core_handles[s][c], &freq) == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "freq_limit:socket=%d:core=%d",
+          snprintf(name_buf, sizeof(name_buf), "freq_limit_socket=%d_core=%d",
                    s, c);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d Core %d frequency limit (MHz)", s, c);
@@ -3093,7 +3093,7 @@ static int init_event_table(void) {
         uint32_t boost;
         if (amdsmi_get_cpu_core_boostlimit_p(cpu_core_handles[s][c], &boost) ==
             AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "boostlimit:socket=%d:core=%d",
+          snprintf(name_buf, sizeof(name_buf), "boostlimit_socket=%d_core=%d",
                    s, c);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d Core %d boost limit (MHz)", s, c);
@@ -3122,7 +3122,7 @@ static int init_event_table(void) {
             st_range != AMDSMI_STATUS_SUCCESS)
           continue;
         if (st_temp == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "dimm_temp:socket=%d:dimm=%d", s,
+          snprintf(name_buf, sizeof(name_buf), "dimm_temp_socket=%d_dimm=%d", s,
                    dimm);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d DIMM %d temperature (C)", s, dimm);
@@ -3131,7 +3131,7 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
         }
         if (st_power == AMDSMI_STATUS_SUCCESS) {
-          snprintf(name_buf, sizeof(name_buf), "dimm_power:socket=%d:dimm=%d",
+          snprintf(name_buf, sizeof(name_buf), "dimm_power_socket=%d_dimm=%d",
                    s, dimm);
           snprintf(descr_buf, sizeof(descr_buf), "Socket %d DIMM %d power (mW)",
                    s, dimm);
@@ -3141,14 +3141,14 @@ static int init_event_table(void) {
         }
         if (st_range == AMDSMI_STATUS_SUCCESS) {
           snprintf(name_buf, sizeof(name_buf),
-                   "dimm_temp_range:socket=%d:dimm=%d", s, dimm);
+                   "dimm_temp_range_socket=%d_dimm=%d", s, dimm);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d DIMM %d temperature range", s, dimm);
           if (add_event(&idx, name_buf, descr_buf, dev, 0, dimm, PAPI_MODE_READ,
                         access_amdsmi_dimm_range_refresh) != PAPI_OK)
             return PAPI_ENOMEM;
           snprintf(name_buf, sizeof(name_buf),
-                   "dimm_refresh_rate:socket=%d:dimm=%d", s, dimm);
+                   "dimm_refresh_rate_socket=%d_dimm=%d", s, dimm);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Socket %d DIMM %d refresh rate mode", s, dimm);
           if (add_event(&idx, name_buf, descr_buf, dev, 1, dimm, PAPI_MODE_READ,
@@ -3530,7 +3530,7 @@ static int init_event_table(void) {
         for (uint32_t li = 0; li < n; ++li) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
-                   "xgmi_link_status:link=%u:device=%d", li, d);
+                   "xgmi_link_status_link=%u:device=%d", li, d);
           snprintf(descr_buf, sizeof(descr_buf),
                    "Device %d XGMI link %u status", d, li);
           if (add_event(&idx, name_buf, descr_buf, d, 0, li, PAPI_MODE_READ,
@@ -3579,7 +3579,7 @@ static int init_event_table(void) {
       if (amdsmi_topo_get_link_weight_p) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "link_weight:peer=%d:device=%d", p, d);
+                 "link_weight_peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Link weight between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
@@ -3589,7 +3589,7 @@ static int init_event_table(void) {
       if (amdsmi_topo_get_link_type_p) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "link_hops:peer=%d:device=%d", p, d);
+                 "link_hops_peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "Hops between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
@@ -3597,7 +3597,7 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "link_type:peer=%d:device=%d", p, d);
+                 "link_type_peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "IO link type between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 1, p, PAPI_MODE_READ,
@@ -3615,7 +3615,7 @@ static int init_event_table(void) {
             "P2P DMA support",      "P2P bidirectional support"};
         for (int v = 0; v < 6; ++v) {
           CHECK_EVENT_IDX(idx);
-          snprintf(name_buf, sizeof(name_buf), "%s:peer=%d:device=%d",
+          snprintf(name_buf, sizeof(name_buf), "%s_peer=%d:device=%d",
                    p2p_names[v], p, d);
           snprintf(descr_buf, sizeof(descr_buf), "Device %d vs %d %s", d, p,
                    p2p_desc[v]);
@@ -3627,7 +3627,7 @@ static int init_event_table(void) {
       if (amdsmi_is_P2P_accessible_p) {
         CHECK_EVENT_IDX(idx);
         snprintf(name_buf, sizeof(name_buf),
-                 "p2p_accessible:peer=%d:device=%d", p, d);
+                 "p2p_accessible_peer=%d:device=%d", p, d);
         snprintf(descr_buf, sizeof(descr_buf),
                  "P2P accessibility between device %d and %d", d, p);
         if (add_event(&idx, name_buf, descr_buf, d, 0, p, PAPI_MODE_READ,
