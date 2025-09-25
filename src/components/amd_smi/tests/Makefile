@@ -3,7 +3,21 @@
 # Used to find AMD SMI / HIP / ROCm headers and libraries. You can override on the command line.
 PAPI_AMDSMI_ROOT ?= /opt/rocm-6.4.0
 HIP_PATH := $(PAPI_AMDSMI_ROOT)
-HIPCC := $(HIP_PATH)/bin/hipcc
+CC ?= cc
+HIPCC ?= $(HIP_PATH)/bin/hipcc
+
+# Detect a usable HIP compiler; fall back to the host C compiler when hipcc is
+# not present so the pure-C tests can still build.
+HIP_COMPILER_AVAILABLE := 1
+ifeq ($(wildcard $(HIPCC)),)
+HIPCC_ALT := $(shell command -v hipcc 2>/dev/null)
+ifeq ($(HIPCC_ALT),)
+HIP_COMPILER_AVAILABLE := 0
+HIPCC := $(CC)
+else
+HIPCC := $(HIPCC_ALT)
+endif
+endif
 
 # Toolchain / flags
 CFLAGS   ?= -DPAPI_NUM_COMP=3
@@ -28,10 +42,57 @@ EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/hsa
 EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/rocprofiler
 EFFECTIVE_INCLUDE += -I$(PAPI_AMDSMI_ROOT)/include/rocblas
 
+# Discover required development files so the build can degrade gracefully on
+# systems without ROCm or an in-tree libpapi build.
+PAPILIB_EXISTS     := $(wildcard $(PAPILIB))
+UTILOBJS_EXISTS    := $(wildcard $(UTILOBJS))
+AMDSMI_HEADER      := $(PAPI_AMDSMI_ROOT)/include/amd_smi/amdsmi.h
+AMDSMI_LIBDIR_CAND := $(PAPI_AMDSMI_ROOT)/lib $(PAPI_AMDSMI_ROOT)/lib64
+AMDSMI_LIB         := $(firstword $(foreach d,$(AMDSMI_LIBDIR_CAND),$(wildcard $(d)/libamd_smi*.so)))
+AMDSMI_LIBDIR      := $(dir $(AMDSMI_LIB))
+ROCBLAS_LIB        := $(firstword $(foreach d,$(AMDSMI_LIBDIR_CAND),$(wildcard $(d)/librocblas*.so)))
+ROCBLAS_LIBDIR     := $(dir $(ROCBLAS_LIB))
+
+BUILD_AMDSMI_TESTS := 1
+MISSING_AMDSMI_DEPS :=
+ifeq ($(PAPILIB_EXISTS),)
+BUILD_AMDSMI_TESTS := 0
+MISSING_AMDSMI_DEPS += libpapi.a
+endif
+ifeq ($(UTILOBJS_EXISTS),)
+BUILD_AMDSMI_TESTS := 0
+MISSING_AMDSMI_DEPS += libtestlib.a
+endif
+ifeq ($(wildcard $(AMDSMI_HEADER)),)
+BUILD_AMDSMI_TESTS := 0
+MISSING_AMDSMI_DEPS += AMD-SMI-headers
+endif
+ifeq ($(AMDSMI_LIB),)
+BUILD_AMDSMI_TESTS := 0
+MISSING_AMDSMI_DEPS += libamd_smi
+endif
+
+BUILD_GEMM := $(BUILD_AMDSMI_TESTS)
+MISSING_GEMM_DEPS := $(MISSING_AMDSMI_DEPS)
+ifeq ($(HIP_COMPILER_AVAILABLE),0)
+BUILD_GEMM := 0
+MISSING_GEMM_DEPS += hipcc
+endif
+ifeq ($(ROCBLAS_LIB),)
+BUILD_GEMM := 0
+MISSING_GEMM_DEPS += librocblas
+endif
+
 # Linker flags
 COMMON_LDFLAGS  = -ldl -g -lpthread
-LDFLAGS_AMDSMI  = $(UTILOBJS) $(PAPILIB) -L$(PAPI_AMDSMI_ROOT)/lib -lamd_smi $(COMMON_LDFLAGS)
-LDFLAGS_GEMM    = $(UTILOBJS) $(PAPILIB) -L$(PAPI_AMDSMI_ROOT)/lib -lrocblas $(COMMON_LDFLAGS)
+LDFLAGS_AMDSMI  = $(UTILOBJS) $(PAPILIB) $(COMMON_LDFLAGS)
+ifneq ($(AMDSMI_LIBDIR),)
+LDFLAGS_AMDSMI += -L$(AMDSMI_LIBDIR) -lamd_smi
+endif
+LDFLAGS_GEMM    = $(UTILOBJS) $(PAPILIB) $(COMMON_LDFLAGS)
+ifneq ($(ROCBLAS_LIBDIR),)
+LDFLAGS_GEMM   += -L$(ROCBLAS_LIBDIR) -lrocblas
+endif
 
 # AMD SMI tests to build with 'make tests'
 TESTS_AMDSMI := amdsmi_energy_monotonic amdsmi_ctx_conflict
@@ -51,6 +112,47 @@ all: amdsmi_hello amdsmi_basics amdsmi_gemm $(TESTS_AMDSMI)
 	@echo "INCLUDES: $(EFFECTIVE_INCLUDE)"
 	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -c $< -o $@
 
+# ------------------------
+# Link rules
+# ------------------------
+
+ifeq ($(BUILD_AMDSMI_TESTS),0)
+amdsmi_hello amdsmi_example amdsmi_basics amdsmi_energy_monotonic amdsmi_ctx_conflict:
+	@echo "Skipping $@ (missing deps: $(strip $(MISSING_AMDSMI_DEPS)))"
+	@:
+else
+# amdsmi_hello replaces the older amdsmi_example
+amdsmi_hello: amdsmi_hello.o $(UTILOBJS) $(PAPILIB)
+        @echo "Linking $@..."
+        @echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
+        $(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_hello.o $(LDFLAGS_AMDSMI)
+
+# Back-compat alias: allow 'make amdsmi_example' to build amdsmi_hello
+amdsmi_example: amdsmi_hello
+        @true
+
+amdsmi_basics: amdsmi_basics.o $(UTILOBJS) $(PAPILIB)
+        @echo "Linking $@..."
+        @echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
+        $(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_basics.o $(LDFLAGS_AMDSMI)
+
+# Tests
+amdsmi_energy_monotonic: amdsmi_energy_monotonic.o $(UTILOBJS) $(PAPILIB)
+        @echo "Linking $@..."
+        @echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
+        $(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_energy_monotonic.o $(LDFLAGS_AMDSMI)
+
+amdsmi_ctx_conflict: amdsmi_ctx_conflict.o $(UTILOBJS) $(PAPILIB)
+        @echo "Linking $@..."
+        @echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
+        $(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_ctx_conflict.o $(LDFLAGS_AMDSMI)
+endif
+
+ifeq ($(BUILD_GEMM),0)
+amdsmi_gemm amdsmi_gemm.o:
+	@echo "Skipping $@ (missing deps: $(strip $(MISSING_GEMM_DEPS)))"
+	@:
+else
 # amdsmi_gemm.c is compiled as HIP
 amdsmi_gemm.o: amdsmi_gemm.c
 	@echo "Compiling HIP source $< to $@..."
@@ -59,41 +161,12 @@ amdsmi_gemm.o: amdsmi_gemm.c
 	@echo "INCLUDES: $(EFFECTIVE_INCLUDE)"
 	$(HIPCC) $(HIPFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -x hip -c $< -o $@
 
-# ------------------------
-# Link rules
-# ------------------------
-
-# amdsmi_hello replaces the older amdsmi_example
-amdsmi_hello: amdsmi_hello.o $(UTILOBJS) $(PAPILIB)
-	@echo "Linking $@..."
-	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_hello.o $(LDFLAGS_AMDSMI)
-
-# Back-compat alias: allow 'make amdsmi_example' to build amdsmi_hello
-amdsmi_example: amdsmi_hello
-	@true
-
-amdsmi_basics: amdsmi_basics.o $(UTILOBJS) $(PAPILIB)
-	@echo "Linking $@..."
-	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_basics.o $(LDFLAGS_AMDSMI)
-
 # GEMM sample linked against rocBLAS
 amdsmi_gemm: amdsmi_gemm.o $(UTILOBJS) $(PAPILIB)
 	@echo "Linking $@..."
-	@echo "Using LDFLAGS_GEMM: $(LDFLAGS_GEMM)"
-	$(HIPCC) $(HIPFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_gemm.o $(LDFLAGS_GEMM)
-
-# Tests
-amdsmi_energy_monotonic: amdsmi_energy_monotonic.o $(UTILOBJS) $(PAPILIB)
-	@echo "Linking $@..."
-	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_energy_monotonic.o $(LDFLAGS_AMDSMI)
-
-amdsmi_ctx_conflict: amdsmi_ctx_conflict.o $(UTILOBJS) $(PAPILIB)
-	@echo "Linking $@..."
-	@echo "Using LDFLAGS_AMDSMI: $(LDFLAGS_AMDSMI)"
-	$(HIPCC) $(CFLAGS) $(CSTD) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_ctx_conflict.o $(LDFLAGS_AMDSMI)
+        @echo "Using LDFLAGS_GEMM: $(LDFLAGS_GEMM)"
+        $(HIPCC) $(HIPFLAGS) $(OPTFLAGS) $(EFFECTIVE_INCLUDE) -o $@ amdsmi_gemm.o $(LDFLAGS_GEMM)
+endif
 
 $(UTILOBJS):
 	$(MAKE) -C ../../../testlib libtestlib.a
