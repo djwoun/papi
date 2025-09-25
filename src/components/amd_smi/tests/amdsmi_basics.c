@@ -245,23 +245,24 @@ int main(int argc, char *argv[]) {
         goto advance_variant;
       }
 
-      // Skip process* events; these aren't testable in this harness.
-      if (strncmp(ev_name, "amd_smi:::process", 17) == 0 ||
-          strncmp(ev_name, "process", 7) == 0) {
-        ++stats.skipped;
-        NOTE("[%4d] Skipping %s (process events not testable)", stats.index,
-             ev_name);
-        ++stats.index;
-        goto advance_variant;
-      }
-
       PAPI_event_info_t variant_info;
       memset(&variant_info, 0, sizeof(variant_info));
       int have_info = (PAPI_get_event_info(qualified_code, &variant_info) == PAPI_OK);
 
       const char *device_tag = strstr(ev_name, ":device=");
+      bool is_process_event =
+          (strncmp(ev_name, "amd_smi:::process", 17) == 0) ||
+          (strncmp(ev_name, "process", 7) == 0);
+
       if (!device_tag) {
-        run_single_event(qualified_code, ev_name, cid, &stats, opts);
+        if (is_process_event) {
+          ++stats.skipped;
+          NOTE("[%4d] Skipping %s (process events not testable)", stats.index,
+               ev_name);
+          ++stats.index;
+        } else {
+          run_single_event(qualified_code, ev_name, cid, &stats, opts);
+        }
       } else {
         int devices[MAX_AMDSMI_DEVICES] = {0};
         int device_count = have_info
@@ -289,6 +290,17 @@ int main(int argc, char *argv[]) {
               NOTE("[%4d] Skipping %s (unable to resolve variant: %s)",
                    stats.index, variant_name, PAPI_strerror(rc));
               ++stats.skipped;
+              ++stats.index;
+              continue;
+            }
+
+            bool variant_is_process =
+                (strncmp(variant_name, "amd_smi:::process", 17) == 0) ||
+                (strncmp(variant_name, "process", 7) == 0);
+            if (variant_is_process) {
+              ++stats.skipped;
+              NOTE("[%4d] Skipping %s (process events not testable)",
+                   stats.index, variant_name);
               ++stats.index;
               continue;
             }
