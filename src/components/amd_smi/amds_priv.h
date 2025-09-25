@@ -13,6 +13,9 @@
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
 
+#define AMDS_DEVICE_SHIFT 12
+#define AMDS_DEVICE_MASK ((1U << AMDS_DEVICE_SHIFT) - 1)
+
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
@@ -39,6 +42,7 @@ typedef struct native_event {
   int (*start_func)(struct native_event *);
   int (*stop_func)(struct native_event *);
   amds_accessor_t access_func;
+  uint64_t devices;  /* bitmap of devices supporting this event */
 } native_event_t;
 
 typedef struct {

@@ -760,12 +760,41 @@ int amds_err_get_last(const char **err_string) {
 static int add_event(int *idx_ptr, const char *name, const char *descr, int device,
                      uint32_t variant, uint32_t subvariant, int mode,
                      amds_accessor_t access_func) {
+  char base_name[PAPI_MAX_STR_LEN];
+  native_event_t *existing = NULL;
+
+  /* Derive the base event name without any :device= qualifier */
+  snprintf(base_name, sizeof(base_name), "%s", name);
+  char *dev_qual = strstr(base_name, ":device=");
+  if (dev_qual) {
+    char *after = strchr(dev_qual + 1, ':');
+    if (after) {
+      memmove(dev_qual, after, strlen(after) + 1);
+    } else {
+      *dev_qual = '\0';
+    }
+  }
+
+  if (htable && htable_find(htable, base_name, (void **)&existing) == HTABLE_SUCCESS && existing) {
+    if (device >= 0 && device < 64) {
+      existing->devices |= (UINT64_C(1) << device);
+    }
+    return PAPI_OK;
+  }
+
   native_event_t *ev = &ntv_table.events[*idx_ptr];
   ev->id = *idx_ptr;
-  ev->name = strdup(name);
+  ev->name = strdup(base_name);
   ev->descr = strdup(descr);
   if (!ev->name || !ev->descr)
     return PAPI_ENOMEM;
+  if (strncmp(ev->descr, "Device ", 7) == 0) {
+    char *space = strchr(ev->descr + 7, ' ');
+    if (space) {
+      size_t skip = (size_t)(space - ev->descr + 1);
+      memmove(ev->descr, ev->descr + skip, strlen(ev->descr + skip) + 1);
+    }
+  }
   ev->device = device;
   ev->value = 0;
   ev->mode = mode;
@@ -777,6 +806,10 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
   ev->start_func = start_simple;
   ev->stop_func = stop_simple;
   ev->access_func = access_func;
+  ev->devices = 0;
+  if (device >= 0 && device < 64) {
+    ev->devices |= (UINT64_C(1) << device);
+  }
   htable_insert(htable, ev->name, ev);
   (*idx_ptr)++;
   return PAPI_OK;
