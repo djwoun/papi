@@ -203,11 +203,15 @@ static inline int eval_result(HarnessOpts opts, int result_code) {
 /* -------------------------- AMD SMI helpers -------------------------- */
 
 /**
- * @brief Given a base AMD-SMI native event code, select the first available
- *        device-qualified variant (if required) for the specified component.
+ * @brief Resolve the printable name associated with the qualified event code
+ *        corresponding to @p base_code. If the native event requires a
+ *        qualifier (e.g. :device=), the first variant is enumerated.
  */
-static inline int harness_select_device_qualified_event(int cid, int base_code,
-                                                        int *qualified_code) {
+static inline int harness_select_device_qualified_event_name(int cid,
+                                                             int base_code,
+                                                             int *qualified_code,
+                                                             char *name,
+                                                             size_t len) {
     if (!qualified_code) {
         return PAPI_EINVAL;
     }
@@ -215,41 +219,24 @@ static inline int harness_select_device_qualified_event(int cid, int base_code,
     *qualified_code = base_code;
 
     PAPI_event_info_t einfo;
-    int rc = PAPI_get_event_info(base_code, &einfo);
-    if (rc != PAPI_OK) {
-        return rc;
+    int papi_errno = PAPI_get_event_info(base_code, &einfo);
+    if (papi_errno != PAPI_OK) {
+        return papi_errno;
     }
 
     if (einfo.num_quals > 0) {
         int tmp = base_code;
-        rc = PAPI_enum_cmp_event(&tmp, PAPI_NTV_ENUM_UMASKS, cid);
-        if (rc != PAPI_OK) {
-            return rc;
+        papi_errno = PAPI_enum_cmp_event(&tmp, PAPI_NTV_ENUM_UMASKS, cid);
+        if (papi_errno != PAPI_OK) {
+            return papi_errno;
         }
         *qualified_code = tmp;
     }
 
-    return PAPI_OK;
-}
-
-/**
- * @brief Resolve the printable name associated with the qualified event code
- *        selected by @ref harness_select_device_qualified_event.
- */
-static inline int harness_select_device_qualified_event_name(int cid,
-                                                             int base_code,
-                                                             int *qualified_code,
-                                                             char *name,
-                                                             size_t len) {
-    int rc = harness_select_device_qualified_event(cid, base_code,
-                                                   qualified_code);
-    if (rc != PAPI_OK) {
-        return rc;
-    }
     if (name && len > 0) {
-        rc = PAPI_event_code_to_name(*qualified_code, name);
-        if (rc != PAPI_OK) {
-            return rc;
+        papi_errno = PAPI_event_code_to_name(*qualified_code, name);
+        if (papi_errno != PAPI_OK) {
+            return papi_errno;
         }
     }
     return PAPI_OK;
@@ -266,14 +253,14 @@ static inline int harness_canonicalize_event_name(const char *input,
     }
 
     int code = 0;
-    int rc = PAPI_event_name_to_code((char *)input, &code);
-    if (rc != PAPI_OK) {
-        return rc;
+    int papi_errno = PAPI_event_name_to_code((char *)input, &code);
+    if (papi_errno != PAPI_OK) {
+        return papi_errno;
     }
 
-    rc = PAPI_event_code_to_name(code, output);
-    if (rc != PAPI_OK) {
-        return rc;
+    papi_errno = PAPI_event_code_to_name(code, output);
+    if (papi_errno != PAPI_OK) {
+        return papi_errno;
     }
 
     return PAPI_OK;

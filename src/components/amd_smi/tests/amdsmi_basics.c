@@ -285,10 +285,10 @@ int main(int argc, char *argv[]) {
             }
 
             int variant_code = 0;
-            int rc = PAPI_event_name_to_code(variant_name, &variant_code);
-            if (rc != PAPI_OK) {
+            papi_errno = PAPI_event_name_to_code(variant_name, &variant_code);
+            if (papi_errno != PAPI_OK) {
               NOTE("[%4d] Skipping %s (unable to resolve variant: %s)",
-                   stats.index, variant_name, PAPI_strerror(rc));
+                   stats.index, variant_name, PAPI_strerror(papi_errno));
               ++stats.skipped;
               ++stats.index;
               continue;
