@@ -18,13 +18,12 @@
 #endif
 
 /* Compatibility helpers for AMD SMI API differences */
-#if defined(AMDSMI_LINK_TYPE_PCIE)
+#if AMDSMI_LIB_VERSION_MAJOR >= 26
 typedef amdsmi_link_type_t amdsmi_link_type_compat_t;
-#elif defined(AMDSMI_IOLINK_TYPE_PCIEXPRESS)
-typedef AMDSMI_IO_LINK_TYPE amdsmi_link_type_compat_t;
-#else
+#elif AMDSMI_LIB_VERSION_MAJOR <= 25
 typedef amdsmi_io_link_type_t amdsmi_link_type_compat_t;
 #endif
+
 
 #ifndef MAX_AMDSMI_NAME_LENGTH
 #ifdef AMDSMI_MAX_STRING_LENGTH
