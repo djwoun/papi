@@ -58,21 +58,22 @@ int main(int argc, char** argv) {
             }
         }
         if (cid < 0) {
-        int qualified = 0;
-        if (harness_select_device_qualified_event_name(cid, code, &qualified,
-                                                       ev_buf, sizeof(ev_buf)) != PAPI_OK ||
-            ev_buf[0] == '\0') {
-        ev = ev_buf;
+            SKIP("Unable to locate the amd_smi component (PAPI built without ROCm?)");
         }
 
-        int code = PAPI_NATIVE_MASK;
-        if (PAPI_enum_cmp_event(&code, PAPI_ENUM_FIRST, cid) != PAPI_OK) {
+        int base_code = PAPI_NATIVE_MASK;
+        if (PAPI_enum_cmp_event(&base_code, PAPI_ENUM_FIRST, cid) != PAPI_OK) {
             SKIP("No native events found for AMD-SMI component");
         }
-        if (PAPI_event_code_to_name(code, ev_auto) != PAPI_OK || ev_auto[0] == '\0') {
+
+        int qualified_code = base_code;
+        if (harness_select_device_qualified_event_name(cid, base_code, &qualified_code,
+                                                       ev_buf, sizeof(ev_buf)) != PAPI_OK ||
+            ev_buf[0] == '\0') {
             SKIP("Could not obtain first AMD-SMI event name");
         }
-        ev = ev_auto;
+
+        ev = ev_buf;
         NOTE("Defaulting to first AMD-SMI event: %s", ev);
     }
 
