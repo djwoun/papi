@@ -151,8 +151,6 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
   snprintf(info->short_descr, sizeof(info->short_descr), "%s", ev->name);
   snprintf(info->long_descr, sizeof(info->long_descr), "%s", ev->descr);
   info->component_index = _amd_smi_vector.cmp_info.CmpIdx;
-  info->unit_mul = 1;
-
   if (ev->devices) {
     info->num_quals = 1;
     unsigned int default_dev = 0;
