@@ -296,6 +296,14 @@ static int _amd_smi_ntv_code_to_name(unsigned int EventCode, char *name, int len
     return amds_evt_code_to_name(EventCode, name, len);
 }
 
+static int _amd_smi_ntv_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
+    int papi_errno = _amd_smi_check_n_initialize();
+    if (papi_errno != PAPI_OK) {
+        return papi_errno;
+    }
+    return amds_evt_code_to_info(EventCode, info);
+}
+
 static int _amd_smi_ntv_name_to_code(const char *name, unsigned int *EventCode) {
     int papi_errno = _amd_smi_check_n_initialize();
     if (papi_errno != PAPI_OK) {
@@ -351,6 +359,7 @@ papi_vector_t _amd_smi_vector = {
     .set_domain =       _amd_smi_set_domain,
     .ntv_enum_events =  _amd_smi_ntv_enum_events,
     .ntv_code_to_name = _amd_smi_ntv_code_to_name,
+    .ntv_code_to_info = _amd_smi_ntv_code_to_info,
     .ntv_name_to_code = _amd_smi_ntv_name_to_code,
     .ntv_code_to_descr = _amd_smi_ntv_code_to_descr,
 };
