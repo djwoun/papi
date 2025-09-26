@@ -13,6 +13,32 @@
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ * Event identifier encoding format:
+ * +------------------------------+-------+-----+------------------+
+ * |           unused             | device| qmsk|      nameid      |
+ * +------------------------------+-------+-----+------------------+
+ *
+ * unused : remaining bits of the unsigned int payload
+ * device : 7-bit device selector ([0 - 127] devices)
+ * qmsk   : 1-bit qualifier mask (device flag)
+ * nameid : remaining bits index into native event table
+ */
+#define AMDS_EVENTCODE_WIDTH   (sizeof(unsigned int) * 8)
+#define AMDS_DEVICE_WIDTH      7
+#define AMDS_QMASK_WIDTH       1
+#define AMDS_NAMEID_WIDTH                                                  \
+  (AMDS_EVENTCODE_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QMASK_WIDTH)
+#define AMDS_DEVICE_SHIFT      (AMDS_EVENTCODE_WIDTH - AMDS_DEVICE_WIDTH)
+#define AMDS_QMASK_SHIFT       (AMDS_DEVICE_SHIFT - AMDS_QMASK_WIDTH)
+#define AMDS_NAMEID_SHIFT      (AMDS_QMASK_SHIFT - AMDS_NAMEID_WIDTH)
+#define AMDS_DEVICE_MASK       (((1u << AMDS_DEVICE_WIDTH) - 1)               \
+                                << AMDS_DEVICE_SHIFT)
+#define AMDS_QMASK_MASK        (((1u << AMDS_QMASK_WIDTH) - 1)               \
+                                << AMDS_QMASK_SHIFT)
+#define AMDS_NAMEID_MASK       (((1u << AMDS_NAMEID_WIDTH) - 1)              \
+                                << AMDS_NAMEID_SHIFT)
+
 static int format_device_bitmap(uint64_t bitmap, char *buf, size_t len) {
   if (!buf || len == 0)
     return PAPI_EINVAL;
