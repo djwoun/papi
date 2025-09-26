@@ -175,7 +175,7 @@ int amds_evt_name_to_code(const char *name, unsigned int *EventCode) {
   char *device_pos = NULL;
   while ((device_pos = strstr(cursor, ":device=")) != NULL) {
     if (requested_device >= 0)
-      return PAPI_EINVAL; // duplicate device qualifier
+      return PAPI_ENOEVNT; // duplicate device qualifier
     char *value = device_pos + strlen(":device=");
     char *endptr = value;
     long dev = strtol(value, &endptr, 10);
