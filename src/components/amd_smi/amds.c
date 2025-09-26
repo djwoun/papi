@@ -206,7 +206,8 @@ static int access_amdsmi_gpu_counter(int mode, void *arg) {
 static void sanitize_name(const char *src, char *dst, size_t len) {
   if (len == 0) return;
   size_t j = 0;
-  for (size_t i = 0; src[i] && j < len - 1; ++i) {
+  size_t i;
+  for (i = 0; src[i] && j < len - 1; ++i) {
     char c = src[i];
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
         (c >= '0' && c <= '9'))
@@ -223,8 +224,7 @@ static int strip_device_qualifier(const char *name, char *base, size_t len) {
   size_t nlen = strlen(name);
   if (nlen >= len)
     return PAPI_EBUF;
-  strncpy(base, name, len);
-  base[len - 1] = '\0';
+  snprintf(base, len, "%s", name);
   char *qual = strstr(base, ":device=");
   if (qual) {
     char *next = strchr(qual + strlen(":device="), ':');
@@ -239,7 +239,8 @@ static int strip_device_qualifier(const char *name, char *base, size_t len) {
 static void sanitize_description_text(char *str) {
   if (!str)
     return;
-  for (size_t i = 0; str[i]; ++i) {
+  size_t i;
+  for (i = 0; str[i]; ++i) {
     unsigned char c = (unsigned char)str[i];
     if (c == '\n' || c == '\r' || c == '\t')
       str[i] = ' ';
@@ -501,7 +502,8 @@ REQ(amdsmi_get_cpu_handles_p);
 
 static int shutdown_event_table(void) {
   // Remove all events from hash table and free their names/descr
-  for (int i = 0; i < ntv_table.count; ++i) {
+  int i;
+  for (i = 0; i < ntv_table.count; ++i) {
     htable_delete(htable, ntv_table.events[i].name);
     papi_free(ntv_table.events[i].name);
     papi_free(ntv_table.events[i].descr);
@@ -523,7 +525,8 @@ static int shutdown_device_table(void) {
     device_handles = NULL;
   }
   if (cpu_core_handles) {
-    for (int s = 0; s < cpu_count; ++s) {
+    int s;
+    for (s = 0; s < cpu_count; ++s) {
       if (cpu_core_handles[s])
         papi_free(cpu_core_handles[s]);
     }
@@ -547,10 +550,11 @@ int amds_init(void) {
   int papi_errno = load_amdsmi_sym();
   if (papi_errno != PAPI_OK)
     return papi_errno;
-  // AMDSMI_INIT_AMD_CPUS
+  // AMDSMI_INIT_AMD_GPUS
   amdsmi_status_t status = amdsmi_init_p(AMDSMI_INIT_AMD_GPUS);
   if (status != AMDSMI_STATUS_SUCCESS) {
-    snprintf(error_string, sizeof(error_string), "amdsmi_init failed");
+    snprintf(error_string, sizeof(error_string),
+             "Call to amdsmi_init failed; most likely no AMD devices are present on this system.");
     return PAPI_ENOSUPP;
   }
   if (amdsmi_get_lib_version_p) {
@@ -586,7 +590,8 @@ int amds_init(void) {
   }
   device_count = 0;
   uint32_t total_gpu_count = 0;
-  for (uint32_t s = 0; s < socket_count; ++s) {
+  uint32_t s;
+  for (s = 0; s < socket_count; ++s) {
     uint32_t gpu_count_local = 0;
     processor_type_t proc_type = AMDSMI_PROCESSOR_TYPE_AMD_GPU;
     amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(
@@ -618,7 +623,7 @@ int amds_init(void) {
   }
   // Retrieve GPU processor handles for each socket - optimized to reduce
   // allocations
-  for (uint32_t s = 0; s < socket_count; ++s) {
+  for (s = 0; s < socket_count; ++s) {
     uint32_t gpu_count_local = 0;
     processor_type_t proc_type = AMDSMI_PROCESSOR_TYPE_AMD_GPU;
     status = amdsmi_get_processor_handles_by_type_p(sockets[s], proc_type, NULL,
@@ -655,7 +660,8 @@ int amds_init(void) {
     }
   }
   if (cpu_handles) {
-    for (uint32_t i = 0; i < total_cpu_count; ++i) {
+    uint32_t i;
+    for (i = 0; i < total_cpu_count; ++i) {
       device_handles[device_count++] = cpu_handles[i];
     }
     papi_free(cpu_handles);
@@ -679,7 +685,7 @@ int amds_init(void) {
         papi_free(cores_per_socket);
       goto fn_fail;
     }
-    for (uint32_t s = 0; s < cpu_count; ++s) {
+    for (s = 0; s < cpu_count; ++s) {
       uint32_t core_count = 0;
       amdsmi_status_t st = amdsmi_get_processor_handles_by_type_p(
           device_handles[gpu_count + s], AMDSMI_PROCESSOR_TYPE_AMD_CPU_CORE,
@@ -696,7 +702,8 @@ int amds_init(void) {
         snprintf(error_string, sizeof(error_string),
                  "Memory allocation error for CPU core handles on socket %u.",
                  s);
-        for (uint32_t t = 0; t < s; ++t) {
+        uint32_t t;
+        for (t = 0; t < s; ++t) {
           if (cpu_core_handles[t])
             papi_free(cpu_core_handles[t]);
         }
@@ -912,7 +919,8 @@ static int init_event_table(void) {
       amdsmi_gpu_cache_info_t cache_info;
       if (amdsmi_get_gpu_cache_info_p(device_handles[d], &cache_info) ==
           AMDSMI_STATUS_SUCCESS) {
-        for (uint32_t i = 0; i < cache_info.num_cache_types; ++i) {
+        uint32_t i;
+        for (i = 0; i < cache_info.num_cache_types; ++i) {
           CHECK_EVENT_IDX(idx);
           uint32_t level = cache_info.cache[i].cache_level;
           uint32_t prop  = cache_info.cache[i].cache_properties;
@@ -1190,7 +1198,8 @@ static int init_event_table(void) {
           return PAPI_ENOMEM;
         }
 
-        for (uint32_t i = 0; i < mcount; ++i) {
+        uint32_t i;
+        for (i = 0; i < mcount; ++i) {
           if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
             if (metrics) free(metrics);
             CHECK_EVENT_IDX(idx);
@@ -1347,7 +1356,8 @@ static int init_event_table(void) {
         amdsmi_error_count_t ec;
         if (amdsmi_get_gpu_ecc_count_p(device_handles[d], eblocks[bi], &ec) ==
             AMDSMI_STATUS_SUCCESS) {
-          for (uint32_t v = 0; v < 3; ++v) {
+          uint32_t v;
+          for (v = 0; v < 3; ++v) {
             CHECK_EVENT_IDX(idx);
             const char *suf =
                 (v == 0) ? "correctable" : (v == 1) ? "uncorrectable" : "deferred";
@@ -1407,14 +1417,16 @@ static int init_event_table(void) {
                                     "min",     "max_crit", "average",
                                     "lowest",  "highest"};
       const uint32_t max_sensors = 8;
-      for (uint32_t s = 0; s < max_sensors; ++s) {
+      uint32_t s;
+      for (s = 0; s < max_sensors; ++s) {
         int64_t dummy = 0;
         amdsmi_status_t st = amdsmi_get_gpu_volt_metric_p(
             device_handles[d], (amdsmi_voltage_type_t)s, AMDSMI_VOLT_CURRENT,
             &dummy);
         if (st != AMDSMI_STATUS_SUCCESS)
           continue;
-        for (uint32_t m = 0; m < sizeof(metrics) / sizeof(metrics[0]); ++m) {
+        uint32_t m;
+        for (m = 0; m < sizeof(metrics) / sizeof(metrics[0]); ++m) {
           st = amdsmi_get_gpu_volt_metric_p(
               device_handles[d], (amdsmi_voltage_type_t)s, metrics[m], &dummy);
           if (st != AMDSMI_STATUS_SUCCESS)
@@ -1465,7 +1477,8 @@ static int init_event_table(void) {
               return PAPI_ENOMEM;
             }
 
-            for (uint32_t r = 0; r < num_regions; ++r) {
+            uint32_t r;
+            for (r = 0; r < num_regions; ++r) {
               if (idx + 4 > MAX_EVENTS_PER_DEVICE * device_count)
                 papi_free(regs);
               CHECK_EVENT_IDX(idx + 4);
@@ -1582,7 +1595,8 @@ static int init_event_table(void) {
                       access_amdsmi_od_volt_info) != PAPI_OK)
           return PAPI_ENOMEM;
 
-        for (uint32_t p = 0; p < AMDSMI_NUM_VOLTAGE_CURVE_POINTS; ++p) {
+        uint32_t p;
+        for (p = 0; p < AMDSMI_NUM_VOLTAGE_CURVE_POINTS; ++p) {
           CHECK_EVENT_IDX(idx + 2);
           snprintf(name_buf, sizeof(name_buf),
                    "volt_curve_point_freq_point=%u:device=%d", p, d);
@@ -1678,7 +1692,8 @@ static int init_event_table(void) {
             return PAPI_ENOMEM;
           }
 
-          for (uint32_t i = 0; i < num_metrics; ++i) {
+          uint32_t i;
+          for (i = 0; i < num_metrics; ++i) {
             if (idx >= MAX_EVENTS_PER_DEVICE * device_count) {
               if (reg_metrics)
                 free(reg_metrics);
@@ -2079,7 +2094,8 @@ static int init_event_table(void) {
                     access_amdsmi_clk_freq) != PAPI_OK)
         return PAPI_ENOMEM;
       // Supported frequency levels for this domain
-      for (uint32_t fi = 0; fi < f.num_supported; ++fi) {
+      uint32_t fi;
+      for (fi = 0; fi < f.num_supported; ++fi) {
         snprintf(name_buf, sizeof(name_buf), "clk_freq_%s_level_%u:device=%d",
                  clk_names[t], fi, d);
         snprintf(descr_buf, sizeof(descr_buf),
@@ -2172,7 +2188,8 @@ static int init_event_table(void) {
         const char *bdf_descr[] = {
             "GPU PCI domain number", "GPU PCI bus number",
             "GPU PCI device number", "GPU PCI function number"};
-        for (uint32_t v = 0; v < 4; ++v) {
+        uint32_t v;
+        for (v = 0; v < 4; ++v) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf), "%s:device=%d",
                    bdf_names[v], d);
@@ -2193,7 +2210,8 @@ static int init_event_table(void) {
                                  "Device %d XGMI hive identifier",
                                  "Device %d XGMI node identifier",
                                  "Device %d XGMI link index"};
-        for (uint32_t v = 0; v < 4; ++v) {
+        uint32_t v;
+        for (v = 0; v < 4; ++v) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf), "%s:device=%d", xinames[v], d);
           snprintf(descr_buf, sizeof(descr_buf), xidescr[v], d);
@@ -2212,7 +2230,8 @@ static int init_event_table(void) {
         const char *kdescr[] = {"Device %d KFD identifier",
                                 "Device %d KFD node id",
                                 "Device %d KFD current partition id"};
-        for (uint32_t v = 0; v < 3; ++v) {
+        uint32_t v;
+        for (v = 0; v < 3; ++v) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf), "%s:device=%d", knames[v], d);
           snprintf(descr_buf, sizeof(descr_buf), kdescr[v], d);
@@ -2274,8 +2293,10 @@ static int init_event_table(void) {
             "GFX engine time (ns)", "ENC engine time (ns)",
             "GTT memory (bytes)",  "CPU memory (bytes)",
             "VRAM memory (bytes)", "Compute units utilized"};
-        for (uint32_t p = 0; p < 2; ++p) {
-          for (uint32_t v = 0; v < 8; ++v) {
+        uint32_t p;
+        for (p = 0; p < 2; ++p) {
+          uint32_t v;
+          for (v = 0; v < 8; ++v) {
             CHECK_EVENT_IDX(idx);
             snprintf(name_buf, sizeof(name_buf),
                      "process_%s_proc=%u:device=%d", pmetric_names[v], p, d);
@@ -2470,7 +2491,8 @@ static int init_event_table(void) {
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_bad_page_count) != PAPI_OK)
           return PAPI_ENOMEM;
-        for (uint32_t p = 0; p < nump; ++p) {
+        uint32_t p;
+        for (p = 0; p < nump; ++p) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
                    "bad_page_address_page=%u:device=%d", p, d);
@@ -2515,7 +2537,8 @@ static int init_event_table(void) {
 
     if (amdsmi_get_power_info_v2_p) {
       /* Probe for available power sensors. */
-      for (uint32_t s = 0; s < 2; ++s) {
+      uint32_t s;
+      for (s = 0; s < 2; ++s) {
         amdsmi_power_info_t pinfo;
         if (amdsmi_get_power_info_v2_p(device_handles[d], s, &pinfo) !=
             AMDSMI_STATUS_SUCCESS)
@@ -2611,7 +2634,8 @@ static int init_event_table(void) {
         const char *hdescr[] = {"Device %d metrics header structure size",
                                 "Device %d metrics header format revision",
                                 "Device %d metrics header content revision"};
-        for (uint32_t v = 0; v < 3; ++v) {
+        uint32_t v;
+        for (v = 0; v < 3; ++v) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf), "%s:device=%d", hnames[v], d);
           snprintf(descr_buf, sizeof(descr_buf), hdescr[v], d);
@@ -3069,7 +3093,8 @@ static int init_event_table(void) {
     // CPU core-level events
     for (int s = 0; s < cpu_count; ++s) {
       int dev = gpu_count + s;
-      for (uint32_t c = 0; c < cores_per_socket[s]; ++c) {
+      uint32_t c;
+      for (c = 0; c < cores_per_socket[s]; ++c) {
         uint64_t energy;
         if (amdsmi_get_cpu_core_energy_p(cpu_core_handles[s][c], &energy) ==
             AMDSMI_STATUS_SUCCESS) {
@@ -3425,7 +3450,8 @@ static int init_event_table(void) {
         const char *mpc_descr[] = {"Device %d memory partition capabilities",
                                    "Device %d memory partition mode",
                                    "Device %d NUMA range count"};
-        for (uint32_t v = 0; v < 3; ++v) {
+        uint32_t v;
+        for (v = 0; v < 3; ++v) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf), "%s:device=%d", mpc_names[v], d);
           snprintf(descr_buf, sizeof(descr_buf), mpc_descr[v], d);
@@ -3493,7 +3519,8 @@ static int init_event_table(void) {
           uint32_t n = lm.num_links;
           if (n > AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK)
             n = AMDSMI_MAX_NUM_XGMI_PHYSICAL_LINK;
-          for (uint32_t li = 0; li < n; ++li) {
+          uint32_t li;
+          for (li = 0; li < n; ++li) {
             if (lm.links[li].link_type == link_type) {
               present = 1;
               break;
@@ -3507,7 +3534,8 @@ static int init_event_table(void) {
                                   "write throughput (KB)",
                                   "link bit rate (Gb/s)",
                                   "max bandwidth (Gb/s)"};
-          for (uint32_t v = 0; v < 4; ++v) {
+          uint32_t v;
+          for (v = 0; v < 4; ++v) {
             CHECK_EVENT_IDX(idx);
             snprintf(name_buf, sizeof(name_buf), "%s_%s:device=%d",
                      type_names[ti], mnames[v], d);
@@ -3528,7 +3556,8 @@ static int init_event_table(void) {
         uint32_t n = st.total_links;
         if (n > AMDSMI_MAX_NUM_XGMI_LINKS)
           n = AMDSMI_MAX_NUM_XGMI_LINKS;
-        for (uint32_t li = 0; li < n; ++li) {
+        uint32_t li;
+        for (li = 0; li < n; ++li) {
           CHECK_EVENT_IDX(idx);
           snprintf(name_buf, sizeof(name_buf),
                    "xgmi_link_status_link=%u:device=%d", li, d);
