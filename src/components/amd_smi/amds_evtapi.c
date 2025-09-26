@@ -23,7 +23,8 @@ static int format_device_bitmap(uint64_t bitmap, char *buf, size_t len) {
   int limit = device_count;
   if (limit <= 0 || limit > 64)
     limit = 64;
-  for (int d = 0; d < limit; ++d) {
+  int d;
+  for (d = 0; d < limit; ++d) {
     if (!amds_dev_check(bitmap, d))
       continue;
     int written = snprintf(buf + used, len - used, "%s%d", have ? "," : "", d);
@@ -43,7 +44,8 @@ static int device_bitmap_limit(void) {
 
 static int device_first(uint64_t bitmap) {
   int limit = device_bitmap_limit();
-  for (int d = 0; d < limit; ++d) {
+  int d;
+  for (d = 0; d < limit; ++d) {
     if (amds_dev_check(bitmap, d))
       return d;
   }
@@ -184,8 +186,10 @@ int amds_evt_name_to_code(const char *name, unsigned int *EventCode) {
     requested_device = (int)dev;
     if (*endptr == ':')
       memmove(device_pos, endptr, strlen(endptr) + 1);
-    else
+    else if (*endptr == '\0')
       *device_pos = '\0';
+    else
+      return PAPI_EINVAL;
     cursor = device_pos;
   }
 
