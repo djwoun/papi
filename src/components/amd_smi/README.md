@@ -35,6 +35,44 @@ If the library is not found or is not functional at runtime, the component will
 appear as "disabled" in `papi_component_avail`, with a message describing the
 problem (e.g., library not found).
 
+### Library search order
+
+At initialization the component constructs the full path
+`${PAPI_AMDSMI_ROOT}/lib/libamd_smi.so` and hands it to `dlopen(3)`. If the file
+is missing or unreadable the component is disabled immediately. Any additional
+dependencies that `libamd_smi.so` brings in are resolved by the platform loader
+using the standard order:
+
+- entries in `LD_LIBRARY_PATH`
+- rpaths encoded in the binary or library
+- system defaults such as `/etc/ld.so.conf`, `/usr/lib64`, `/lib64`, `/usr/lib`,
+  and `/lib`
+
+Because the main shared object is loaded by absolute path, pointing
+`PAPI_AMDSMI_ROOT` at the directory tree that actually contains AMD SMI is the
+authoritative way to pick up non-standard installs. Symlinking
+`${PAPI_AMDSMI_ROOT}/lib/libamd_smi.so` to the desired copy also works.
+
+### Handling non-standard installations
+
+- **Modules or package managers** – environment modules (`module load rocm`),
+  Spack, or distro packages typically extend `PATH`, `LD_LIBRARY_PATH`, and
+  other variables for you. Set `PAPI_AMDSMI_ROOT` to the corresponding ROCm
+  prefix exported by the tool (check with `printenv` or `spack location`).
+- **Bare installs** – if AMD SMI lives elsewhere, export
+  `PAPI_AMDSMI_ROOT=/custom/prefix` so that `${PAPI_AMDSMI_ROOT}/lib` and
+  `${PAPI_AMDSMI_ROOT}/include` resolve correctly.
+- **Dependent libraries** – when a vendor build puts required runtime libraries
+  (e.g., HIP, ROCm math libs) outside the ROCm tree, append those directories to
+  `LD_LIBRARY_PATH`, for example:
+
+  ```bash
+  export LD_LIBRARY_PATH="/usr/lib64:/opt/vendor-extra/lib:${LD_LIBRARY_PATH}"
+  ```
+
+  Always append/prepend to the existing variable to avoid clobbering entries
+  added by other packages.
+
 ---
 
 ## Enabling the AMD_SMI Component
@@ -53,6 +91,8 @@ You can verify availability with the utilities in `papi/src/utils/`:
 papi_component_avail            # shows enabled/disabled components
 papi_native_avail -i amd_smi    # lists native events for this component
 ```
+
+After changing `PAPI_AMDSMI_ROOT` or related library paths, rerun make clobber && ./configure --with-components="amd_smi" before rebuilding so configure picks up the new locations.
 
 ---
 
