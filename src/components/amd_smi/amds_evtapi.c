@@ -272,6 +272,5 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
   }
   info->event_code = EventCode;
   info->code[0] = EventCode;
-  info->count = 1;
   return PAPI_OK;
 }
