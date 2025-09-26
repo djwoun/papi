@@ -17,20 +17,19 @@
 #define AMDSMI_LIB_VERSION_MAJOR 0
 #endif
 
-/* Compatibility helpers for AMD SMI API differences */
-#if AMDSMI_LIB_VERSION_MAJOR >= 26
-typedef amdsmi_link_type_t amdsmi_link_type_compat_t;
-#elif AMDSMI_LIB_VERSION_MAJOR <= 25
-typedef amdsmi_io_link_type_t amdsmi_link_type_compat_t;
-#endif
-
-
 #ifndef MAX_AMDSMI_NAME_LENGTH
 #ifdef AMDSMI_MAX_STRING_LENGTH
 #define MAX_AMDSMI_NAME_LENGTH AMDSMI_MAX_STRING_LENGTH
 #else
 #define MAX_AMDSMI_NAME_LENGTH 256
 #endif
+#endif
+
+/* Compatibility helpers for AMD SMI API differences */
+#if AMDSMI_LIB_VERSION_MAJOR >= 26
+typedef amdsmi_link_type_t amdsmi_link_type_compat_t;
+#elif AMDSMI_LIB_VERSION_MAJOR <= 25
+typedef amdsmi_io_link_type_t amdsmi_link_type_compat_t;
 #endif
 
 /* Mode enumeration used by accessors */
@@ -63,20 +62,6 @@ typedef struct {
   int count;
 } native_event_table_t;
 
-#define AMDS_EVENTCODE_WIDTH   (sizeof(unsigned int) * 8)
-#define AMDS_DEVICE_WIDTH      7
-#define AMDS_QMASK_WIDTH       1
-#define AMDS_NAMEID_WIDTH                                                  \
-  (AMDS_EVENTCODE_WIDTH - AMDS_DEVICE_WIDTH - AMDS_QMASK_WIDTH)
-#define AMDS_DEVICE_SHIFT      (AMDS_EVENTCODE_WIDTH - AMDS_DEVICE_WIDTH)
-#define AMDS_QMASK_SHIFT       (AMDS_DEVICE_SHIFT - AMDS_QMASK_WIDTH)
-#define AMDS_NAMEID_SHIFT      (AMDS_QMASK_SHIFT - AMDS_NAMEID_WIDTH)
-#define AMDS_DEVICE_MASK       (((1u << AMDS_DEVICE_WIDTH) - 1)               \
-                                << AMDS_DEVICE_SHIFT)
-#define AMDS_QMASK_MASK        (((1u << AMDS_QMASK_WIDTH) - 1)               \
-                                << AMDS_QMASK_SHIFT)
-#define AMDS_NAMEID_MASK       (((1u << AMDS_NAMEID_WIDTH) - 1)              \
-                                << AMDS_NAMEID_SHIFT)
 #define AMDS_DEVICE_FLAG       0x1
 
 typedef struct {
