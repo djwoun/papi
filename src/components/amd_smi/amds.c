@@ -50,6 +50,7 @@ static int init_event_table(void);
 static int shutdown_event_table(void);
 static native_event_table_t ntv_table;
 static native_event_table_t *ntv_table_p = NULL;
+static uint32_t counter_slot_capacity = 0;
 
 int amds_dev_set(uint64_t *bitmap, int device) {
   if (!bitmap)
@@ -80,6 +81,7 @@ uint32_t *amds_get_cores_per_socket(void) { return cores_per_socket; }
 native_event_table_t *amds_get_ntv_table(void) { return ntv_table_p; }
 void *amds_get_htable(void) { return htable; }
 uint32_t amds_get_lib_major(void) { return amdsmi_lib_major; }
+uint32_t amds_get_counter_slot_capacity(void) { return counter_slot_capacity; }
 
 #define CHECK_EVENT_IDX(i)                                                     \
   do {                                                                        \
@@ -511,6 +513,7 @@ static int shutdown_event_table(void) {
   papi_free(ntv_table.events);
   ntv_table.events = NULL;
   ntv_table.count = 0;
+  counter_slot_capacity = 0;
   return PAPI_OK;
 }
 
@@ -876,6 +879,7 @@ static int init_event_table(void) {
     return PAPI_OK; // Already initialized, skip expensive rebuild
   ntv_table.count = 0;
   int idx = 0;
+  counter_slot_capacity = 0;
   // Safety check - if no devices, return early
   if (device_count <= 0) {
     ntv_table.events = NULL;
@@ -2375,6 +2379,7 @@ static int init_event_table(void) {
                 device_handles[d], AMDSMI_EVNT_GRP_XGMI, &avail) ==
                 AMDSMI_STATUS_SUCCESS &&
             avail > 0) {
+          counter_slot_capacity += avail;
           static const struct {
             const char *suffix;
             amdsmi_event_type_t type[2];

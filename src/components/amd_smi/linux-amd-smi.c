@@ -97,8 +97,14 @@ static int _amd_smi_init_private(void) {
 
     int count = 0;
     papi_errno = evt_get_count(&count);
+    if (papi_errno != PAPI_OK) {
+        goto fn_fail;
+    }
     _amd_smi_vector.cmp_info.num_native_events = count;
-    _amd_smi_vector.cmp_info.num_cntrs = count;
+
+    uint32_t counter_slots = amds_get_counter_slot_capacity();
+
+    _amd_smi_vector.cmp_info.num_cntrs = (int)counter_slots;
     _amd_smi_vector.cmp_info.num_mpx_cntrs = count;
 
 fn_exit:
