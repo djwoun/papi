@@ -78,6 +78,15 @@ static int device_first(uint64_t bitmap) {
   return -1;
 }
 
+static int device_next(uint64_t bitmap, int after) {
+  int limit = device_bitmap_limit();
+  for (int d = after + 1; d < limit; ++d) {
+    if (amds_dev_check(bitmap, d))
+      return d;
+  }
+  return -1;
+}
+
 int amds_evt_id_create(amds_event_info_t *info, unsigned int *event_code) {
   if (!info || !event_code)
     return PAPI_EINVAL;
@@ -147,21 +156,30 @@ int amds_evt_enum(unsigned int *EventCode, int modifier) {
     info.device = 0;
     info.flags = 0;
     return amds_evt_id_create(&info, EventCode);
-  case PAPI_NTV_ENUM_UMASKS:
+  case PAPI_NTV_ENUM_UMASKS: {
     papi_errno = amds_evt_id_to_info(*EventCode, &info);
     if (papi_errno != PAPI_OK)
       return papi_errno;
+
     native_event_t *event = &ntv_table_p->events[info.nameid];
     if (!event->device_map)
       return PAPI_ENOEVNT;
-    if (info.flags & AMDS_DEVICE_FLAG)
+
+    if (!(info.flags & AMDS_DEVICE_FLAG)) {
+      int first = device_first(event->device_map);
+      if (first < 0)
+        return PAPI_ENOEVNT;
+      info.flags |= AMDS_DEVICE_FLAG;
+      info.device = first;
+      return amds_evt_id_create(&info, EventCode);
+    }
+
+    int next = device_next(event->device_map, info.device);
+    if (next < 0)
       return PAPI_ENOEVNT;
-    int first = device_first(event->device_map);
-    if (first < 0)
-      return PAPI_ENOEVNT;
-    info.flags |= AMDS_DEVICE_FLAG;
-    info.device = first;
+    info.device = next;
     return amds_evt_id_create(&info, EventCode);
+  }
   default:
     return PAPI_EINVAL;
   }
@@ -271,6 +289,7 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
   native_event_t *event = &ntv_table_p->events[code_info.nameid];
   unsigned int device_flag = code_info.flags & AMDS_DEVICE_FLAG;
   int total_qualifiers = event->device_map ? 1 : 0;
+  int quals_to_report = total_qualifiers;
   char devices[PAPI_MAX_STR_LEN] = {0};
 
   if (total_qualifiers > 0) {
@@ -282,23 +301,38 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
              "Mandatory device qualifier [%s]", devices);
   }
 
+  int canonical_device = -1;
+  if (device_flag == AMDS_DEVICE_FLAG) {
+    canonical_device = device_first(event->device_map);
+    if (canonical_device < 0)
+      return PAPI_ENOEVNT;
+  }
+
   switch (device_flag) {
     case 0:
       snprintf(info->symbol, sizeof(info->symbol), "%s", event->name);
       snprintf(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
       break;
     case AMDS_DEVICE_FLAG:
-      snprintf(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
-               code_info.device);
-      snprintf(info->long_descr, sizeof(info->long_descr),
-               "%s, masks:Mandatory device qualifier [%s]", event->descr,
-               devices);
+      if (code_info.device != canonical_device) {
+        // Suppress duplicate qualifier dumps for non-canonical variants so
+        // tools like papi_native_avail match the legacy CUDA-style output.
+        snprintf(info->symbol, sizeof(info->symbol), "%s", event->name);
+        snprintf(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+        quals_to_report = 0;
+      } else {
+        snprintf(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
+                 canonical_device);
+        snprintf(info->long_descr, sizeof(info->long_descr),
+                 "%s, masks:Mandatory device qualifier [%s]", event->descr,
+                 devices);
+      }
       break;
     default:
       return PAPI_ENOSUPP;
   }
   info->event_code = EventCode;
   info->code[0] = EventCode;
-  info->num_quals = total_qualifiers;
+  info->num_quals = quals_to_report;
   return PAPI_OK;
 }

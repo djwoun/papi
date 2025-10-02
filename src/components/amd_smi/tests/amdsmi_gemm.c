@@ -160,9 +160,18 @@ static int real_main(const HarnessOpts *opts) {
     }
 
     do {
-        int qualified_code = code;
+        char base_name[PAPI_MAX_STR_LEN] = {0};
+        if (PAPI_event_code_to_name(code, base_name) != PAPI_OK || base_name[0] == '\0') {
+            continue;
+        }
+
+        int qualified_code = 0;
+        if (PAPI_event_name_to_code(base_name, &qualified_code) != PAPI_OK) {
+            continue;
+        }
+
         char name[PAPI_MAX_STR_LEN] = {0};
-        if (harness_select_device_qualified_event_name(cid, code, &qualified_code, name, sizeof(name)) != PAPI_OK) {
+        if (PAPI_event_code_to_name(qualified_code, name) != PAPI_OK || name[0] == '\0') {
             continue; /* couldn't resolve name; try next */
         }
 

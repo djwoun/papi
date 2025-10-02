@@ -66,11 +66,18 @@ int main(int argc, char** argv) {
             SKIP("No native events found for AMD-SMI component");
         }
 
-        int qualified_code = base_code;
-        if (harness_select_device_qualified_event_name(cid, base_code, &qualified_code,
-                                                       ev_buf, sizeof(ev_buf)) != PAPI_OK ||
-            ev_buf[0] == '\0') {
-            SKIP("Could not obtain first AMD-SMI event name");
+        char base_name[PAPI_MAX_STR_LEN] = {0};
+        if (PAPI_event_code_to_name(base_code, base_name) != PAPI_OK || base_name[0] == '\0') {
+            SKIP("Could not resolve AMD-SMI event name");
+        }
+
+        int qualified_code = 0;
+        if (PAPI_event_name_to_code(base_name, &qualified_code) != PAPI_OK) {
+            SKIP("Could not canonicalize AMD-SMI event name");
+        }
+
+        if (PAPI_event_code_to_name(qualified_code, ev_buf) != PAPI_OK || ev_buf[0] == '\0') {
+            SKIP("Could not resolve canonical AMD-SMI event name");
         }
 
         ev = ev_buf;
