@@ -8,10 +8,67 @@
 #include "amds_priv.h"
 #include "papi.h"
 #include "papi_memory.h"
+#include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+
+static int amdsmi_status_to_papi_error(amdsmi_status_t status) {
+  switch (status) {
+    case AMDSMI_STATUS_SUCCESS:
+      return PAPI_OK;
+    case AMDSMI_STATUS_NOT_SUPPORTED:
+    case AMDSMI_STATUS_NOT_FOUND:
+      return PAPI_ENOSUPP;
+    case AMDSMI_STATUS_NO_PERM:
+      return PAPI_EPERM;
+    case AMDSMI_STATUS_INVAL:
+      return PAPI_EINVAL;
+    case AMDSMI_STATUS_BUSY:
+      return PAPI_ECNFLCT;
+    case AMDSMI_STATUS_OUT_OF_RESOURCES:
+    case AMDSMI_STATUS_UNKNOWN_ERROR:
+    default:
+      return PAPI_EMISC;
+  }
+}
+
+typedef struct {
+  amdsmi_dev_perf_level_t orig_level;
+  uint64_t orig_softmax;
+  int have_snapshot;
+} perf_det_state_t;
+
+static amdsmi_compute_partition_type_t compute_partition_from_string(const char *name) {
+  if (!name)
+    return AMDSMI_COMPUTE_PARTITION_INVALID;
+  if (strcmp(name, "SPX") == 0)
+    return AMDSMI_COMPUTE_PARTITION_SPX;
+  if (strcmp(name, "DPX") == 0)
+    return AMDSMI_COMPUTE_PARTITION_DPX;
+  if (strcmp(name, "TPX") == 0)
+    return AMDSMI_COMPUTE_PARTITION_TPX;
+  if (strcmp(name, "QPX") == 0)
+    return AMDSMI_COMPUTE_PARTITION_QPX;
+  if (strcmp(name, "CPX") == 0)
+    return AMDSMI_COMPUTE_PARTITION_CPX;
+  return AMDSMI_COMPUTE_PARTITION_INVALID;
+}
+
+static amdsmi_memory_partition_type_t memory_partition_from_string(const char *name) {
+  if (!name)
+    return AMDSMI_MEMORY_PARTITION_UNKNOWN;
+  if (strcmp(name, "NPS1") == 0)
+    return AMDSMI_MEMORY_PARTITION_NPS1;
+  if (strcmp(name, "NPS2") == 0)
+    return AMDSMI_MEMORY_PARTITION_NPS2;
+  if (strcmp(name, "NPS4") == 0)
+    return AMDSMI_MEMORY_PARTITION_NPS4;
+  if (strcmp(name, "NPS8") == 0)
+    return AMDSMI_MEMORY_PARTITION_NPS8;
+  return AMDSMI_MEMORY_PARTITION_UNKNOWN;
+}
 /* -------- Helpers and new accessors (GPU read-only additions) -------- */
 static uint64_t _str_to_u64_hash(const char *s) {
   /* djb2 64-bit */
@@ -857,19 +914,59 @@ int access_amdsmi_fan_rpms(int mode, void *arg) {
 }
 int access_amdsmi_fan_speed(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
-  if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ) {
-    return PAPI_ENOSUPP; // writing fan speed not supported
+  if (!amdsmi_get_gpu_fan_speed_p)
+    return PAPI_ENOSUPP;
+
+  int64_t current = 0;
+  amdsmi_status_t status =
+      amdsmi_get_gpu_fan_speed_p(device_handles[event->device], event->subvariant,
+                                 &current);
+  if (status != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(status);
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = current;
+    return PAPI_OK;
   }
-  int64_t val = 0;
-  amdsmi_status_t status = amdsmi_get_gpu_fan_speed_p(device_handles[event->device], event->subvariant, &val);
-  if (status != AMDSMI_STATUS_SUCCESS) {
-    return PAPI_EMISC;
+
+  if (mode == PAPI_MODE_WRITE) {
+    if (!amdsmi_set_gpu_fan_speed_p)
+      return PAPI_ENOSUPP;
+
+    if (event->value < 0)
+      return PAPI_EINVAL;
+
+    uint64_t new_speed = (uint64_t)event->value;
+    uint64_t max_speed = 255;
+    if (amdsmi_get_gpu_fan_speed_max_p) {
+      int64_t max_query = 0;
+      status = amdsmi_get_gpu_fan_speed_max_p(device_handles[event->device],
+                                              event->subvariant, &max_query);
+      if (status == AMDSMI_STATUS_SUCCESS && max_query > 0)
+        max_speed = (uint64_t)max_query;
+    }
+    if (new_speed > max_speed)
+      return PAPI_EINVAL;
+
+    status =
+        amdsmi_set_gpu_fan_speed_p(device_handles[event->device],
+                                   event->subvariant, new_speed);
+    if (status != AMDSMI_STATUS_SUCCESS)
+      return amdsmi_status_to_papi_error(status);
+
+    int64_t verify = 0;
+    status = amdsmi_get_gpu_fan_speed_p(device_handles[event->device],
+                                        event->subvariant, &verify);
+    event->value = (status == AMDSMI_STATUS_SUCCESS) ? verify
+                                                     : (int64_t)new_speed;
+    return PAPI_OK;
   }
-  event->value = val;
-  return PAPI_OK;
+
+  return PAPI_ENOSUPP;
 }
 int access_amdsmi_mem_total(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
@@ -1318,6 +1415,59 @@ int access_amdsmi_pci_bandwidth(int mode, void *arg) {
   return PAPI_OK;
 }
 
+int access_amdsmi_pci_bandwidth_mask(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+
+  if (!amdsmi_get_gpu_pci_bandwidth_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_pcie_bandwidth_t bw;
+  memset(&bw, 0, sizeof(bw));
+
+  amdsmi_status_t st =
+      amdsmi_get_gpu_pci_bandwidth_p(device_handles[event->device], &bw);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  uint32_t count = bw.transfer_rate.num_supported;
+  uint64_t allowed_mask = (count >= 64) ? UINT64_MAX
+                                        : ((count == 64)
+                                               ? UINT64_MAX
+                                               : ((count == 0)
+                                                      ? 0
+                                                      : ((UINT64_C(1) << count) - 1)));
+  if (count == 0)
+    allowed_mask = 0;
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (long long)allowed_mask;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE)
+    return PAPI_ENOSUPP;
+
+  if (!amdsmi_set_gpu_pci_bandwidth_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value <= 0)
+    return PAPI_EINVAL;
+
+  uint64_t mask = (uint64_t)event->value;
+  if (allowed_mask != 0 && (mask & ~allowed_mask) != 0)
+    return PAPI_EINVAL;
+
+  st = amdsmi_set_gpu_pci_bandwidth_p(device_handles[event->device], mask);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  event->value = (long long)mask;
+  return PAPI_OK;
+}
+
 
 int access_amdsmi_energy_count(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
@@ -1356,6 +1506,397 @@ int access_amdsmi_energy_count(int mode, void *arg) {
   default:
     return PAPI_EMISC;
   }
+  return PAPI_OK;
+}
+
+int access_amdsmi_clk_range(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_get_gpu_od_volt_info_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_od_volt_freq_data_t odv;
+  memset(&odv, 0, sizeof(odv));
+  amdsmi_status_t st =
+      amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  if (event->variant < 0 || event->variant > 3)
+    return PAPI_EINVAL;
+
+  amdsmi_clk_type_t type =
+      (event->variant < 2) ? AMDSMI_CLK_TYPE_SYS : AMDSMI_CLK_TYPE_MEM;
+  int is_max = event->variant & 1;
+
+  uint64_t cur_min = (type == AMDSMI_CLK_TYPE_SYS) ? odv.curr_sclk_range.lower_bound
+                                                   : odv.curr_mclk_range.lower_bound;
+  uint64_t cur_max = (type == AMDSMI_CLK_TYPE_SYS) ? odv.curr_sclk_range.upper_bound
+                                                   : odv.curr_mclk_range.upper_bound;
+  uint64_t lim_min = (type == AMDSMI_CLK_TYPE_SYS) ? odv.sclk_freq_limits.lower_bound
+                                                   : odv.mclk_freq_limits.lower_bound;
+  uint64_t lim_max = (type == AMDSMI_CLK_TYPE_SYS) ? odv.sclk_freq_limits.upper_bound
+                                                   : odv.mclk_freq_limits.upper_bound;
+  if (lim_min == 0)
+    lim_min = cur_min;
+  if (lim_max == 0)
+    lim_max = cur_max ? cur_max : UINT64_MAX;
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = is_max ? (long long)cur_max : (long long)cur_min;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE || !amdsmi_set_gpu_clk_range_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value < 0)
+    return PAPI_EINVAL;
+
+  uint64_t new_val = (uint64_t)event->value;
+  if (new_val < lim_min || new_val > lim_max)
+    return PAPI_EINVAL;
+
+  uint64_t set_min = cur_min;
+  uint64_t set_max = cur_max;
+  if (!is_max) {
+    if (new_val > cur_max)
+      return PAPI_EINVAL;
+    set_min = new_val;
+  } else {
+    if (new_val < cur_min)
+      return PAPI_EINVAL;
+    set_max = new_val;
+  }
+
+  st = amdsmi_set_gpu_clk_range_p(device_handles[event->device], set_min, set_max,
+                                  type);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  memset(&odv, 0, sizeof(odv));
+  st = amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st == AMDSMI_STATUS_SUCCESS) {
+    cur_min = (type == AMDSMI_CLK_TYPE_SYS) ? odv.curr_sclk_range.lower_bound
+                                           : odv.curr_mclk_range.lower_bound;
+    cur_max = (type == AMDSMI_CLK_TYPE_SYS) ? odv.curr_sclk_range.upper_bound
+                                           : odv.curr_mclk_range.upper_bound;
+  }
+  event->value = is_max ? (long long)cur_max : (long long)cur_min;
+  return PAPI_OK;
+}
+
+int access_amdsmi_od_clk_info_write(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_get_gpu_od_volt_info_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_od_volt_freq_data_t odv;
+  memset(&odv, 0, sizeof(odv));
+  amdsmi_status_t st =
+      amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  if (event->variant < 0 || event->variant > 3)
+    return PAPI_EINVAL;
+
+  amdsmi_clk_type_t type =
+      (event->variant < 2) ? AMDSMI_CLK_TYPE_SYS : AMDSMI_CLK_TYPE_MEM;
+  amdsmi_freq_ind_t limit =
+      (event->variant & 1) ? AMDSMI_FREQ_IND_MAX : AMDSMI_FREQ_IND_MIN;
+
+  uint64_t limit_min = (type == AMDSMI_CLK_TYPE_SYS)
+                           ? odv.sclk_freq_limits.lower_bound
+                           : odv.mclk_freq_limits.lower_bound;
+  uint64_t limit_max = (type == AMDSMI_CLK_TYPE_SYS)
+                           ? odv.sclk_freq_limits.upper_bound
+                           : odv.mclk_freq_limits.upper_bound;
+  if (limit_min == 0)
+    limit_min = (type == AMDSMI_CLK_TYPE_SYS) ? odv.curr_sclk_range.lower_bound
+                                              : odv.curr_mclk_range.lower_bound;
+  if (limit_max == 0)
+    limit_max = (type == AMDSMI_CLK_TYPE_SYS) ? odv.curr_sclk_range.upper_bound
+                                              : odv.curr_mclk_range.upper_bound;
+
+  uint64_t current_val = (type == AMDSMI_CLK_TYPE_SYS)
+                             ? ((limit == AMDSMI_FREQ_IND_MAX)
+                                    ? odv.sclk_freq_limits.upper_bound
+                                    : odv.sclk_freq_limits.lower_bound)
+                             : ((limit == AMDSMI_FREQ_IND_MAX)
+                                    ? odv.mclk_freq_limits.upper_bound
+                                    : odv.mclk_freq_limits.lower_bound);
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (long long)current_val;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE || !amdsmi_set_gpu_od_clk_info_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value < 0)
+    return PAPI_EINVAL;
+
+  uint64_t new_val = (uint64_t)event->value;
+  if (new_val < limit_min || new_val > limit_max)
+    return PAPI_EINVAL;
+
+  st = amdsmi_set_gpu_od_clk_info_p(device_handles[event->device], limit, new_val,
+                                    type);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  memset(&odv, 0, sizeof(odv));
+  st = amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st == AMDSMI_STATUS_SUCCESS) {
+    current_val = (type == AMDSMI_CLK_TYPE_SYS)
+                      ? ((limit == AMDSMI_FREQ_IND_MAX)
+                             ? odv.sclk_freq_limits.upper_bound
+                             : odv.sclk_freq_limits.lower_bound)
+                      : ((limit == AMDSMI_FREQ_IND_MAX)
+                             ? odv.mclk_freq_limits.upper_bound
+                             : odv.mclk_freq_limits.lower_bound);
+  } else {
+    current_val = new_val;
+  }
+  event->value = (long long)current_val;
+  return PAPI_OK;
+}
+
+int access_amdsmi_od_volt_point(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_get_gpu_od_volt_info_p)
+    return PAPI_ENOSUPP;
+
+  int point = event->variant / 2;
+  int attr = event->variant % 2; /* 0: frequency, 1: voltage */
+  if (point < 0 || point >= AMDSMI_NUM_VOLTAGE_CURVE_POINTS)
+    return PAPI_EINVAL;
+
+  amdsmi_od_volt_freq_data_t odv;
+  memset(&odv, 0, sizeof(odv));
+  amdsmi_status_t st =
+      amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  uint64_t current_freq = odv.curve.vc_points[point].frequency;
+  uint64_t current_volt = odv.curve.vc_points[point].voltage;
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (attr == 0) ? (long long)current_freq
+                               : (long long)current_volt;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE || !amdsmi_set_gpu_od_volt_info_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value < 0)
+    return PAPI_EINVAL;
+
+  uint64_t new_val = (uint64_t)event->value;
+  uint64_t new_freq = current_freq;
+  uint64_t new_volt = current_volt;
+  if (attr == 0)
+    new_freq = new_val;
+  else
+    new_volt = new_val;
+
+  st = amdsmi_set_gpu_od_volt_info_p(device_handles[event->device], (uint32_t)point,
+                                     new_freq, new_volt);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  memset(&odv, 0, sizeof(odv));
+  st = amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st == AMDSMI_STATUS_SUCCESS) {
+    current_freq = odv.curve.vc_points[point].frequency;
+    current_volt = odv.curve.vc_points[point].voltage;
+  } else {
+    if (attr == 0)
+      current_freq = new_freq;
+    else
+      current_volt = new_volt;
+  }
+
+  event->value = (attr == 0) ? (long long)current_freq
+                             : (long long)current_volt;
+  return PAPI_OK;
+}
+
+int access_amdsmi_compute_partition(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_get_gpu_compute_partition_p)
+    return PAPI_ENOSUPP;
+
+  char partition[16] = {0};
+  amdsmi_status_t st = amdsmi_get_gpu_compute_partition_p(
+      device_handles[event->device], partition, sizeof(partition));
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  amdsmi_compute_partition_type_t current =
+      compute_partition_from_string(partition);
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (long long)current;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE || !amdsmi_set_gpu_compute_partition_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value < 0)
+    return PAPI_EINVAL;
+
+  amdsmi_compute_partition_type_t desired =
+      (amdsmi_compute_partition_type_t)event->value;
+  if (desired <= AMDSMI_COMPUTE_PARTITION_INVALID ||
+      desired > AMDSMI_COMPUTE_PARTITION_CPX)
+    return PAPI_EINVAL;
+
+  st = amdsmi_set_gpu_compute_partition_p(device_handles[event->device], desired);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  event->value = (long long)desired;
+  return PAPI_OK;
+}
+
+int access_amdsmi_memory_partition(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_get_gpu_memory_partition_p)
+    return PAPI_ENOSUPP;
+
+  char partition[16] = {0};
+  amdsmi_status_t st = amdsmi_get_gpu_memory_partition_p(
+      device_handles[event->device], partition, sizeof(partition));
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  amdsmi_memory_partition_type_t current =
+      memory_partition_from_string(partition);
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (long long)current;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE || !amdsmi_set_gpu_memory_partition_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value < 0)
+    return PAPI_EINVAL;
+
+  amdsmi_memory_partition_type_t desired =
+      (amdsmi_memory_partition_type_t)event->value;
+  if (desired != AMDSMI_MEMORY_PARTITION_NPS1 &&
+      desired != AMDSMI_MEMORY_PARTITION_NPS2 &&
+      desired != AMDSMI_MEMORY_PARTITION_NPS4 &&
+      desired != AMDSMI_MEMORY_PARTITION_NPS8)
+    return PAPI_EINVAL;
+
+  st = amdsmi_set_gpu_memory_partition_p(device_handles[event->device], desired);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  event->value = (long long)desired;
+  return PAPI_OK;
+}
+
+int access_amdsmi_accelerator_partition_profile(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_get_gpu_accelerator_partition_profile_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_accelerator_partition_profile_t profile;
+  memset(&profile, 0, sizeof(profile));
+  uint32_t partition_ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
+
+  amdsmi_status_t st = amdsmi_get_gpu_accelerator_partition_profile_p(
+      device_handles[event->device], &profile, partition_ids);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (long long)profile.profile_index;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE || !amdsmi_set_gpu_accelerator_partition_profile_p)
+    return PAPI_ENOSUPP;
+
+  if (event->value < 0)
+    return PAPI_EINVAL;
+
+  uint32_t desired = (uint32_t)event->value;
+
+  if (amdsmi_get_gpu_accelerator_partition_profile_config_p) {
+    amdsmi_accelerator_partition_profile_config_t config;
+    memset(&config, 0, sizeof(config));
+    st = amdsmi_get_gpu_accelerator_partition_profile_config_p(
+        device_handles[event->device], &config);
+    if (st != AMDSMI_STATUS_SUCCESS)
+      return amdsmi_status_to_papi_error(st);
+    if (desired >= config.num_profiles)
+      return PAPI_EINVAL;
+  }
+
+  st = amdsmi_set_gpu_accelerator_partition_profile_p(
+      device_handles[event->device], desired);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  memset(&profile, 0, sizeof(profile));
+  st = amdsmi_get_gpu_accelerator_partition_profile_p(
+      device_handles[event->device], &profile, partition_ids);
+  if (st == AMDSMI_STATUS_SUCCESS)
+    event->value = (long long)profile.profile_index;
+  else
+    event->value = (long long)desired;
+  return PAPI_OK;
+}
+
+int access_amdsmi_reset_xgmi_error(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device])
+    return PAPI_EMISC;
+  if (!amdsmi_reset_gpu_xgmi_error_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_status_t st =
+      amdsmi_reset_gpu_xgmi_error_p(device_handles[event->device]);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  if (!amdsmi_gpu_xgmi_error_status_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_xgmi_status_t status = AMDSMI_XGMI_STATUS_NO_ERRORS;
+  st = amdsmi_gpu_xgmi_error_status_p(device_handles[event->device], &status);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+  event->value = (long long)status;
   return PAPI_OK;
 }
 
@@ -1905,17 +2446,40 @@ int access_amdsmi_overdrive_level(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
   }
-  if (mode != PAPI_MODE_READ)
-    return PAPI_ENOSUPP;
   if (!amdsmi_get_gpu_overdrive_level_p)
     return PAPI_ENOSUPP;
 
   uint32_t od = 0;
-  amdsmi_status_t st = amdsmi_get_gpu_overdrive_level_p(device_handles[event->device], &od);
+  amdsmi_status_t st =
+      amdsmi_get_gpu_overdrive_level_p(device_handles[event->device], &od);
   if (st != AMDSMI_STATUS_SUCCESS)
-    return PAPI_EMISC;
-  event->value = (uint64_t)od;
-  return PAPI_OK;
+    return amdsmi_status_to_papi_error(st);
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (uint64_t)od;
+    return PAPI_OK;
+  }
+
+  if (mode == PAPI_MODE_WRITE) {
+    if (!amdsmi_set_gpu_overdrive_level_p)
+      return PAPI_ENOSUPP;
+    if (event->value < 0)
+      return PAPI_EINVAL;
+    uint32_t new_level = (uint32_t)event->value;
+
+    st = amdsmi_set_gpu_overdrive_level_p(device_handles[event->device], new_level);
+    if (st != AMDSMI_STATUS_SUCCESS)
+      return amdsmi_status_to_papi_error(st);
+
+    st = amdsmi_get_gpu_overdrive_level_p(device_handles[event->device], &od);
+    if (st == AMDSMI_STATUS_SUCCESS)
+      event->value = (uint64_t)od;
+    else
+      event->value = (uint64_t)new_level;
+    return PAPI_OK;
+  }
+
+  return PAPI_ENOSUPP;
 }
 
 int access_amdsmi_mem_overdrive_level(int mode, void *arg) {
@@ -1933,6 +2497,99 @@ int access_amdsmi_mem_overdrive_level(int mode, void *arg) {
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
   event->value = (uint64_t)od;
+  return PAPI_OK;
+}
+
+int access_amdsmi_perf_determinism(int mode, void *arg) {
+  native_event_t *event = (native_event_t *)arg;
+  if (event->device < 0 || event->device >= device_count || !device_handles ||
+      !device_handles[event->device]) {
+    return PAPI_EMISC;
+  }
+  if (!amdsmi_get_gpu_perf_level_p)
+    return PAPI_ENOSUPP;
+
+  amdsmi_dev_perf_level_t level = AMDSMI_DEV_PERF_LEVEL_AUTO;
+  amdsmi_status_t st =
+      amdsmi_get_gpu_perf_level_p(device_handles[event->device], &level);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  amdsmi_od_volt_freq_data_t odv;
+  memset(&odv, 0, sizeof(odv));
+  st = amdsmi_get_gpu_od_volt_info_p(device_handles[event->device], &odv);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  uint64_t softmax = (level == AMDSMI_DEV_PERF_LEVEL_DETERMINISM)
+                         ? odv.curr_sclk_range.upper_bound
+                         : 0ULL;
+
+  if (mode == PAPI_MODE_READ) {
+    event->value = (long long)softmax;
+    return PAPI_OK;
+  }
+
+  if (mode != PAPI_MODE_WRITE)
+    return PAPI_ENOSUPP;
+
+  if (!amdsmi_set_gpu_perf_determinism_mode_p || !amdsmi_set_gpu_perf_level_p)
+    return PAPI_ENOSUPP;
+
+  perf_det_state_t *state = (perf_det_state_t *)event->priv;
+  if (!state) {
+    state = (perf_det_state_t *)papi_calloc(1, sizeof(*state));
+    if (!state)
+      return PAPI_ENOMEM;
+    event->priv = state;
+  }
+
+  uint64_t sclk_min = odv.sclk_freq_limits.lower_bound;
+  uint64_t sclk_max = odv.sclk_freq_limits.upper_bound;
+  if (sclk_max == 0)
+    sclk_max = odv.curr_sclk_range.upper_bound;
+
+  if (event->value < 0) {
+    if (!state->have_snapshot)
+      return PAPI_ENOEVNT;
+
+    amdsmi_status_t restore = AMDSMI_STATUS_SUCCESS;
+    if (state->orig_level == AMDSMI_DEV_PERF_LEVEL_DETERMINISM &&
+        state->orig_softmax > 0 &&
+        state->orig_softmax >= sclk_min && state->orig_softmax <= sclk_max) {
+      restore = amdsmi_set_gpu_perf_determinism_mode_p(
+          device_handles[event->device], state->orig_softmax);
+    } else {
+      restore = amdsmi_set_gpu_perf_level_p(device_handles[event->device],
+                                            state->orig_level);
+    }
+    if (restore != AMDSMI_STATUS_SUCCESS)
+      return amdsmi_status_to_papi_error(restore);
+
+    state->have_snapshot = 0;
+    event->value = (long long)state->orig_level;
+    return PAPI_OK;
+  }
+
+  if (event->value == 0)
+    return PAPI_EINVAL;
+
+  uint64_t new_softmax = (uint64_t)event->value;
+  if (new_softmax < sclk_min || new_softmax > sclk_max)
+    return PAPI_EINVAL;
+
+  if (!state->have_snapshot) {
+    state->orig_level = level;
+    state->orig_softmax = softmax;
+    state->have_snapshot = 1;
+  }
+
+  st = amdsmi_set_gpu_perf_determinism_mode_p(device_handles[event->device],
+                                              new_softmax);
+  if (st != AMDSMI_STATUS_SUCCESS)
+    return amdsmi_status_to_papi_error(st);
+
+  event->value = (long long)new_softmax;
   return PAPI_OK;
 }
 

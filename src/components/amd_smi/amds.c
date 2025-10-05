@@ -294,6 +294,7 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_fan_rpms_p = sym("amdsmi_get_gpu_fan_rpms", NULL);
   amdsmi_get_gpu_fan_speed_p = sym("amdsmi_get_gpu_fan_speed", NULL);
   amdsmi_get_gpu_fan_speed_max_p = sym("amdsmi_get_gpu_fan_speed_max", NULL);
+  amdsmi_set_gpu_fan_speed_p = sym("amdsmi_set_gpu_fan_speed", NULL);
   // Memory
   amdsmi_get_total_memory_p =
       sym("amdsmi_get_gpu_memory_total", "amdsmi_get_total_memory");
@@ -313,10 +314,15 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_pci_throughput_p = sym("amdsmi_get_gpu_pci_throughput", NULL);
   amdsmi_get_gpu_pci_replay_counter_p =
       sym("amdsmi_get_gpu_pci_replay_counter", NULL);
+  amdsmi_set_gpu_pci_bandwidth_p =
+      sym("amdsmi_set_gpu_pci_bandwidth", NULL);
   // Clocks
   amdsmi_get_clk_freq_p = sym("amdsmi_get_clk_freq", NULL);
   amdsmi_get_clock_info_p = sym("amdsmi_get_clock_info", NULL);
   amdsmi_set_clk_freq_p = sym("amdsmi_set_clk_freq", NULL);
+  amdsmi_set_gpu_clk_range_p = sym("amdsmi_set_gpu_clk_range", NULL);
+  amdsmi_set_gpu_od_clk_info_p = sym("amdsmi_set_gpu_od_clk_info", NULL);
+  amdsmi_set_gpu_od_volt_info_p = sym("amdsmi_set_gpu_od_volt_info", NULL);
   // GPU metrics
   amdsmi_get_gpu_metrics_info_p = sym("amdsmi_get_gpu_metrics_info", NULL);
   // Identification and other queries
@@ -372,8 +378,12 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_ecc_status_p = sym("amdsmi_get_gpu_ecc_status", NULL);
   amdsmi_get_gpu_compute_partition_p =
       sym("amdsmi_get_gpu_compute_partition", NULL);
+  amdsmi_set_gpu_compute_partition_p =
+      sym("amdsmi_set_gpu_compute_partition", NULL);
   amdsmi_get_gpu_memory_partition_p =
         sym("amdsmi_get_gpu_memory_partition", NULL);
+  amdsmi_set_gpu_memory_partition_p =
+        sym("amdsmi_set_gpu_memory_partition", NULL);
 #if AMDSMI_LIB_VERSION_MAJOR >= 25
     amdsmi_get_gpu_memory_partition_config_p =
         sym("amdsmi_get_gpu_memory_partition_config", NULL);
@@ -392,8 +402,13 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_xgmi_info_p = sym("amdsmi_get_xgmi_info", NULL);
   amdsmi_gpu_xgmi_error_status_p =
       sym("amdsmi_gpu_xgmi_error_status", NULL);
+  amdsmi_reset_gpu_xgmi_error_p = sym("amdsmi_reset_gpu_xgmi_error", NULL);
   amdsmi_get_gpu_accelerator_partition_profile_p =
       sym("amdsmi_get_gpu_accelerator_partition_profile", NULL);
+  amdsmi_get_gpu_accelerator_partition_profile_config_p =
+      sym("amdsmi_get_gpu_accelerator_partition_profile_config", NULL);
+  amdsmi_set_gpu_accelerator_partition_profile_p =
+      sym("amdsmi_set_gpu_accelerator_partition_profile", NULL);
   amdsmi_get_gpu_cache_info_p = sym("amdsmi_get_gpu_cache_info", NULL);
   amdsmi_get_gpu_mem_overdrive_level_p =
       sym("amdsmi_get_gpu_mem_overdrive_level", NULL);
@@ -402,7 +417,12 @@ static int load_amdsmi_sym(void) {
   amdsmi_get_gpu_od_volt_info_p = sym("amdsmi_get_gpu_od_volt_info", NULL);
   amdsmi_get_gpu_overdrive_level_p =
       sym("amdsmi_get_gpu_overdrive_level", NULL);
+  amdsmi_set_gpu_overdrive_level_p =
+      sym("amdsmi_set_gpu_overdrive_level", NULL);
   amdsmi_get_gpu_perf_level_p = sym("amdsmi_get_gpu_perf_level", NULL);
+  amdsmi_set_gpu_perf_determinism_mode_p =
+      sym("amdsmi_set_gpu_perf_determinism_mode", NULL);
+  amdsmi_set_gpu_perf_level_p = sym("amdsmi_set_gpu_perf_level", NULL);
   amdsmi_get_gpu_pm_metrics_info_p =
       sym("amdsmi_get_gpu_pm_metrics_info", NULL);
   amdsmi_is_gpu_power_management_enabled_p =
@@ -1146,7 +1166,8 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "gpu_overdrive_percent:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d GPU core clock overdrive (%%)", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
                       access_amdsmi_overdrive_level) != PAPI_OK)
           return PAPI_ENOMEM;
       }
@@ -1164,6 +1185,18 @@ static int init_event_table(void) {
                       access_amdsmi_mem_overdrive_level) != PAPI_OK)
           return PAPI_ENOMEM;
       }
+    }
+    if (amdsmi_set_gpu_perf_determinism_mode_p && amdsmi_get_gpu_od_volt_info_p &&
+        amdsmi_get_gpu_perf_level_p && amdsmi_set_gpu_perf_level_p) {
+      CHECK_EVENT_IDX(idx);
+      CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+               "perf_determinism_softmax:device=%d", d);
+      CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+               "Device %d performance determinism softmax (MHz)", d);
+      if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                    PAPI_MODE_READ | PAPI_MODE_WRITE,
+                    access_amdsmi_perf_determinism) != PAPI_OK)
+        return PAPI_ENOMEM;
     }
     // GPU performance level event
     if (amdsmi_get_gpu_perf_level_p) {
@@ -1575,30 +1608,76 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "od_sclk_limit_min:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d SCLK frequency limit lower bound", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
-                      access_amdsmi_od_volt_info) != PAPI_OK)
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_od_clk_info_write) != PAPI_OK)
           return PAPI_ENOMEM;
 
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "od_sclk_limit_max:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d SCLK frequency limit upper bound", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 5, 0, PAPI_MODE_READ,
-                      access_amdsmi_od_volt_info) != PAPI_OK)
+        if (add_event(&idx, name_buf, descr_buf, d, 1, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_od_clk_info_write) != PAPI_OK)
           return PAPI_ENOMEM;
 
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "od_mclk_limit_min:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d MCLK frequency limit lower bound", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 6, 0, PAPI_MODE_READ,
-                      access_amdsmi_od_volt_info) != PAPI_OK)
+        if (add_event(&idx, name_buf, descr_buf, d, 2, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_od_clk_info_write) != PAPI_OK)
           return PAPI_ENOMEM;
 
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "od_mclk_limit_max:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d MCLK frequency limit upper bound", d);
-        if (add_event(&idx, name_buf, descr_buf, d, 7, 0, PAPI_MODE_READ,
-                      access_amdsmi_od_volt_info) != PAPI_OK)
+        if (add_event(&idx, name_buf, descr_buf, d, 3, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_od_clk_info_write) != PAPI_OK)
           return PAPI_ENOMEM;
+
+        if (amdsmi_set_gpu_clk_range_p) {
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+                   "clk_range_sys_min:device=%d", d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d requested SCLK minimum (MHz)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_clk_range) != PAPI_OK)
+            return PAPI_ENOMEM;
+
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+                   "clk_range_sys_max:device=%d", d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d requested SCLK maximum (MHz)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 1, 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_clk_range) != PAPI_OK)
+            return PAPI_ENOMEM;
+
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+                   "clk_range_mem_min:device=%d", d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d requested MCLK minimum (MHz)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 2, 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_clk_range) != PAPI_OK)
+            return PAPI_ENOMEM;
+
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+                   "clk_range_mem_max:device=%d", d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d requested MCLK maximum (MHz)", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 3, 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_clk_range) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
 
         uint32_t p;
         for (p = 0; p < AMDSMI_NUM_VOLTAGE_CURVE_POINTS; ++p) {
@@ -1607,16 +1686,18 @@ static int init_event_table(void) {
                    "volt_curve_point_freq_point=%u:device=%d", p, d);
           CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                    "Device %d voltage curve point %u frequency", d, p);
-          if (add_event(&idx, name_buf, descr_buf, d, 8, p, PAPI_MODE_READ,
-                        access_amdsmi_od_volt_info) != PAPI_OK)
+          if (add_event(&idx, name_buf, descr_buf, d, (int)(p * 2), 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_od_volt_point) != PAPI_OK)
             return PAPI_ENOMEM;
 
           CHECK_SNPRINTF(name_buf, sizeof(name_buf),
                    "volt_curve_point_volt_point=%u:device=%d", p, d);
           CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                    "Device %d voltage curve point %u voltage", d, p);
-          if (add_event(&idx, name_buf, descr_buf, d, 9, p, PAPI_MODE_READ,
-                        access_amdsmi_od_volt_info) != PAPI_OK)
+          if (add_event(&idx, name_buf, descr_buf, d, (int)(p * 2 + 1), 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_od_volt_point) != PAPI_OK)
             return PAPI_ENOMEM;
         }
       }
@@ -1783,7 +1864,8 @@ static int init_event_table(void) {
       CHECK_SNPRINTF(name_buf, sizeof(name_buf), "fan_speed_sensor=0:device=%d", d);
       CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                "Device %d fan speed (0-255 relative)", d);
-      if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+      if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                    PAPI_MODE_READ | PAPI_MODE_WRITE,
                     access_amdsmi_fan_speed) != PAPI_OK)
         return PAPI_ENOMEM;
     }
@@ -1989,6 +2071,15 @@ static int init_event_table(void) {
                  "Device %d current PCIe lane count", d);
         if (add_event(&idx, name_buf, descr_buf, d, 2, 0, PAPI_MODE_READ,
                       access_amdsmi_pci_bandwidth) != PAPI_OK)
+          return PAPI_ENOMEM;
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+                 "pci_bandwidth_mask:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d PCIe bandwidth enable mask", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_pci_bandwidth_mask) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3423,6 +3514,14 @@ static int init_event_table(void) {
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_compute_partition_hash) != PAPI_OK)
           return PAPI_ENOMEM;
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "compute_partition:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d compute partition selector", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_compute_partition) != PAPI_OK)
+          return PAPI_ENOMEM;
       }
     }
     if (amdsmi_get_gpu_memory_partition_p) {
@@ -3440,6 +3539,31 @@ static int init_event_table(void) {
                  display_or_empty(part));
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_memory_partition_hash) != PAPI_OK)
+          return PAPI_ENOMEM;
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "memory_partition:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d memory partition selector", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_memory_partition) != PAPI_OK)
+          return PAPI_ENOMEM;
+      }
+    }
+    if (amdsmi_get_gpu_accelerator_partition_profile_p &&
+        amdsmi_set_gpu_accelerator_partition_profile_p) {
+      amdsmi_accelerator_partition_profile_t prof = {0};
+      uint32_t ids[AMDSMI_MAX_ACCELERATOR_PARTITIONS] = {0};
+      if (amdsmi_get_gpu_accelerator_partition_profile_p(
+              device_handles[d], &prof, ids) == AMDSMI_STATUS_SUCCESS) {
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf),
+                 "accelerator_partition_profile:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accelerator partition profile index", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                      PAPI_MODE_READ | PAPI_MODE_WRITE,
+                      access_amdsmi_accelerator_partition_profile) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3586,6 +3710,16 @@ static int init_event_table(void) {
         if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
                       access_amdsmi_xgmi_error_status) != PAPI_OK)
           return PAPI_ENOMEM;
+        if (amdsmi_reset_gpu_xgmi_error_p) {
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf), "xgmi_error_reset:device=%d", d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d XGMI error reset trigger", d);
+          if (add_event(&idx, name_buf, descr_buf, d, 0, 0,
+                        PAPI_MODE_READ | PAPI_MODE_WRITE,
+                        access_amdsmi_reset_xgmi_error) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
       }
     }
     if (amdsmi_get_link_topology_nearest_p) {

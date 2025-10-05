@@ -38,6 +38,8 @@
     (amdsmi_processor_handle, uint32_t, int64_t *))                            \
   _(amdsmi_get_gpu_fan_speed_max_p, amdsmi_status_t,                           \
     (amdsmi_processor_handle, uint32_t, int64_t *))                            \
+  _(amdsmi_set_gpu_fan_speed_p, amdsmi_status_t,                               \
+    (amdsmi_processor_handle, uint32_t, uint64_t))                             \
   _(amdsmi_get_total_memory_p, amdsmi_status_t,                                \
     (amdsmi_processor_handle, amdsmi_memory_type_t, uint64_t *))               \
   _(amdsmi_get_memory_usage_p, amdsmi_status_t,                                \
@@ -62,6 +64,12 @@
     (amdsmi_processor_handle, amdsmi_clk_type_t, amdsmi_clk_info_t *))         \
   _(amdsmi_set_clk_freq_p, amdsmi_status_t,                                    \
     (amdsmi_processor_handle, amdsmi_clk_type_t, uint64_t))                    \
+  _(amdsmi_set_gpu_clk_range_p, amdsmi_status_t,                               \
+    (amdsmi_processor_handle, uint64_t, uint64_t, amdsmi_clk_type_t))         \
+  _(amdsmi_set_gpu_od_clk_info_p, amdsmi_status_t,                             \
+    (amdsmi_processor_handle, amdsmi_freq_ind_t, uint64_t, amdsmi_clk_type_t)) \
+  _(amdsmi_set_gpu_od_volt_info_p, amdsmi_status_t,                            \
+    (amdsmi_processor_handle, uint32_t, uint64_t, uint64_t))                  \
   _(amdsmi_get_gpu_metrics_info_p, amdsmi_status_t,                            \
     (amdsmi_processor_handle, amdsmi_gpu_metrics_t *))                         \
   _(amdsmi_get_lib_version_p, amdsmi_status_t, (amdsmi_version_t *))           \
@@ -100,11 +108,19 @@
     (amdsmi_processor_handle, amdsmi_gpu_block_t, amdsmi_ras_err_state_t *))   \
   _(amdsmi_get_gpu_compute_partition_p, amdsmi_status_t,                       \
     (amdsmi_processor_handle, char *, uint32_t))                               \
+  _(amdsmi_set_gpu_compute_partition_p, amdsmi_status_t,                       \
+    (amdsmi_processor_handle, amdsmi_compute_partition_type_t))               \
   _(amdsmi_get_gpu_memory_partition_p, amdsmi_status_t,                        \
     (amdsmi_processor_handle, char *, uint32_t))                               \
+  _(amdsmi_set_gpu_memory_partition_p, amdsmi_status_t,                        \
+    (amdsmi_processor_handle, amdsmi_memory_partition_type_t))                \
   _(amdsmi_get_gpu_accelerator_partition_profile_p, amdsmi_status_t,           \
     (amdsmi_processor_handle, amdsmi_accelerator_partition_profile_t *,        \
      uint32_t *))                                                              \
+  _(amdsmi_get_gpu_accelerator_partition_profile_config_p, amdsmi_status_t,    \
+    (amdsmi_processor_handle, amdsmi_accelerator_partition_profile_config_t *)) \
+  _(amdsmi_set_gpu_accelerator_partition_profile_p, amdsmi_status_t,           \
+    (amdsmi_processor_handle, uint32_t))                                      \
   _(amdsmi_get_gpu_id_p, amdsmi_status_t,                                      \
     (amdsmi_processor_handle, uint16_t *))                                     \
   _(amdsmi_get_gpu_revision_p, amdsmi_status_t,                                \
@@ -117,6 +133,8 @@
     (amdsmi_processor_handle, uint16_t *))                                     \
   _(amdsmi_get_gpu_pci_bandwidth_p, amdsmi_status_t,                           \
     (amdsmi_processor_handle, amdsmi_pcie_bandwidth_t *))                      \
+  _(amdsmi_set_gpu_pci_bandwidth_p, amdsmi_status_t,                           \
+    (amdsmi_processor_handle, uint64_t))                                      \
   _(amdsmi_get_gpu_bdf_id_p, amdsmi_status_t,                                  \
     (amdsmi_processor_handle, uint64_t *))                                     \
   _(amdsmi_get_gpu_device_bdf_p, amdsmi_status_t,                              \
@@ -152,6 +170,12 @@
     (amdsmi_processor_handle, amdsmi_od_volt_freq_data_t *))                   \
   _(amdsmi_get_gpu_overdrive_level_p, amdsmi_status_t,                         \
     (amdsmi_processor_handle, uint32_t *))                                     \
+  _(amdsmi_set_gpu_overdrive_level_p, amdsmi_status_t,                         \
+    (amdsmi_processor_handle, uint32_t))                                      \
+  _(amdsmi_set_gpu_perf_determinism_mode_p, amdsmi_status_t,                   \
+    (amdsmi_processor_handle, uint64_t))                                      \
+  _(amdsmi_set_gpu_perf_level_p, amdsmi_status_t,                              \
+    (amdsmi_processor_handle, amdsmi_dev_perf_level_t))                       \
   _(amdsmi_get_gpu_perf_level_p, amdsmi_status_t,                              \
     (amdsmi_processor_handle, amdsmi_dev_perf_level_t *))                      \
   _(amdsmi_get_gpu_pm_metrics_info_p, amdsmi_status_t,                         \
@@ -216,6 +240,8 @@
     (amdsmi_processor_handle, amdsmi_xgmi_info_t *))                          \
   _(amdsmi_gpu_xgmi_error_status_p, amdsmi_status_t,                          \
     (amdsmi_processor_handle, amdsmi_xgmi_status_t *))                        \
+  _(amdsmi_reset_gpu_xgmi_error_p, amdsmi_status_t,                           \
+    (amdsmi_processor_handle))                                               \
   _(amdsmi_is_gpu_power_management_enabled_p, amdsmi_status_t,                \
     (amdsmi_processor_handle, bool *))                                        \
   _(amdsmi_gpu_validate_ras_eeprom_p, amdsmi_status_t,                        \
