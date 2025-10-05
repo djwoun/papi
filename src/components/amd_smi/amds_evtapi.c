@@ -53,10 +53,10 @@ static int format_device_bitmap(uint64_t bitmap, char *buf, size_t len) {
   for (d = 0; d < limit; ++d) {
     if (!amds_dev_check(bitmap, d))
       continue;
-    int written = snprintf(buf + used, len - used, "%s%d", have ? "," : "", d);
-    if (written < 0 || (size_t)written >= len - used)
+    int strLen = snprintf(buf + used, len - used, "%s%d", have ? "," : "", d);
+    if (strLen < 0 || (size_t)strLen >= len - used)
       return PAPI_EBUF;
-    used += (size_t)written;
+    used += (size_t)strLen;
     have = 1;
   }
   return have ? PAPI_OK : PAPI_ENOEVNT;
@@ -196,9 +196,9 @@ int amds_evt_code_to_name(unsigned int EventCode, char *name, int len) {
 
   native_event_t *event = &ntv_table_p->events[info.nameid];
   if (info.flags & AMDS_DEVICE_FLAG)
-    snprintf(name, (size_t)len, "%s:device=%d", event->name, info.device);
+    CHECK_SNPRINTF(name, (size_t)len, "%s:device=%d", event->name, info.device);
   else
-    snprintf(name, (size_t)len, "%s", event->name);
+    CHECK_SNPRINTF(name, (size_t)len, "%s", event->name);
   return PAPI_OK;
 }
 
@@ -273,7 +273,7 @@ int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
     return papi_errno;
 
   native_event_t *event = &ntv_table_p->events[info.nameid];
-  snprintf(descr, (size_t)len, "%s", event->descr);
+  CHECK_SNPRINTF(descr, (size_t)len, "%s", event->descr);
   return PAPI_OK;
 }
 
@@ -296,8 +296,8 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
     papi_errno = format_device_bitmap(event->device_map, devices, sizeof(devices));
     if (papi_errno != PAPI_OK)
       return papi_errno;
-    snprintf(info->quals[0], sizeof(info->quals[0]), ":device=");
-    snprintf(info->quals_descrs[0], sizeof(info->quals_descrs[0]),
+    CHECK_SNPRINTF(info->quals[0], sizeof(info->quals[0]), ":device=");
+    CHECK_SNPRINTF(info->quals_descrs[0], sizeof(info->quals_descrs[0]),
              "Mandatory device qualifier [%s]", devices);
   }
 
@@ -310,20 +310,20 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
 
   switch (device_flag) {
     case 0:
-      snprintf(info->symbol, sizeof(info->symbol), "%s", event->name);
-      snprintf(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+      CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);
+      CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
       break;
     case AMDS_DEVICE_FLAG:
       if (code_info.device != canonical_device) {
         // Suppress duplicate qualifier dumps for non-canonical variants so
         // tools like papi_native_avail match the legacy CUDA-style output.
-        snprintf(info->symbol, sizeof(info->symbol), "%s", event->name);
-        snprintf(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+        CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
         quals_to_report = 0;
       } else {
-        snprintf(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
+        CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
                  canonical_device);
-        snprintf(info->long_descr, sizeof(info->long_descr),
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr),
                  "%s, masks:Mandatory device qualifier [%s]", event->descr,
                  devices);
       }

@@ -12,6 +12,7 @@
 
 #include <amd_smi/amdsmi.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifndef AMDSMI_LIB_VERSION_MAJOR
 #define AMDSMI_LIB_VERSION_MAJOR 0
@@ -69,6 +70,15 @@ typedef struct {
   unsigned int flags;
   int nameid;
 } amds_event_info_t;
+
+#ifndef CHECK_SNPRINTF
+#define CHECK_SNPRINTF(buffer, size, ...)                                      \
+  do {                                                                        \
+    int strLen  = snprintf(buffer, size, __VA_ARGS__);             \
+    if (strLen  < 0 || (size_t)strLen  >= (size))       \
+      return PAPI_EBUF;                                                       \
+  } while (0)
+#endif
 
 int amds_dev_set(uint64_t *bitmap, int device);
 int amds_dev_check(uint64_t bitmap, int device);

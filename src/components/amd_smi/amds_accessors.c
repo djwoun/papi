@@ -109,9 +109,9 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
       st = amdsmi_get_gpu_driver_info_p(device_handles[event->device], &dinfo);
       if (st == AMDSMI_STATUS_SUCCESS) {
         if (event->variant == 3)
-          snprintf(buf, sizeof(buf), "%s", dinfo.driver_name);
+          CHECK_SNPRINTF(buf, sizeof(buf), "%s", dinfo.driver_name);
         else
-          snprintf(buf, sizeof(buf), "%s", dinfo.driver_date);
+          CHECK_SNPRINTF(buf, sizeof(buf), "%s", dinfo.driver_date);
       }
     }
     break;
@@ -126,11 +126,11 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
       st = amdsmi_get_gpu_vbios_info_p(device_handles[event->device], &vb);
       if (st == AMDSMI_STATUS_SUCCESS) {
         if (event->variant == 5)
-          snprintf(buf, sizeof(buf), "%s", vb.version);
+          CHECK_SNPRINTF(buf, sizeof(buf), "%s", vb.version);
         else if (event->variant == 6)
-          snprintf(buf, sizeof(buf), "%s", vb.part_number);
+          CHECK_SNPRINTF(buf, sizeof(buf), "%s", vb.part_number);
         else
-          snprintf(buf, sizeof(buf), "%s", vb.build_date);
+          CHECK_SNPRINTF(buf, sizeof(buf), "%s", vb.build_date);
       }
     }
     break;
