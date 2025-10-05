@@ -906,6 +906,9 @@ int access_amdsmi_power_cap(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count || !device_handles || !device_handles[event->device]) {
     return PAPI_EMISC;
   }
+  if (!amdsmi_get_power_cap_info_p) {
+    return PAPI_ENOSUPP;
+  }
   if (mode == PAPI_MODE_READ) {
     // Read current power cap
     amdsmi_power_cap_info_t info;
@@ -918,9 +921,21 @@ int access_amdsmi_power_cap(int mode, void *arg) {
     return PAPI_OK;
   } else if (mode == PAPI_MODE_WRITE) {
     // Set new power cap (value expected in microWatts if API uses uW)
+    amdsmi_power_cap_info_t limits;
+    memset(&limits, 0, sizeof(limits));
+    if (amdsmi_get_power_cap_info_p(device_handles[event->device], 0, &limits) != AMDSMI_STATUS_SUCCESS) {
+      return PAPI_EMISC;
+    }
     uint64_t new_cap = (uint64_t)event->value;
+    if (limits.min_power_cap && new_cap < limits.min_power_cap)
+      return PAPI_EINVAL;
+    if (limits.max_power_cap && new_cap > limits.max_power_cap)
+      return PAPI_EINVAL;
     amdsmi_status_t status = amdsmi_set_power_cap_p(device_handles[event->device], 0, new_cap);
-    return (status == AMDSMI_STATUS_SUCCESS ? PAPI_OK : PAPI_EMISC);
+    if (status != AMDSMI_STATUS_SUCCESS)
+      return PAPI_EMISC;
+    event->value = (int64_t)new_cap;
+    return PAPI_OK;
   }
   return PAPI_ENOSUPP;
 }
