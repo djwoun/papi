@@ -87,11 +87,13 @@ static int _amd_smi_init_private(void) {
     papi_errno = amds_init();  // initialize AMD SMI library and events
     if (papi_errno != PAPI_OK) {
         _amd_smi_vector.cmp_info.disabled = papi_errno;
-        const char *error_str;
+        const char *error_str = NULL;
         amds_err_get_last(&error_str);
+        if (!error_str || !error_str[0])
+            error_str = "AMD SMI component initialization failed";
         CHECK_SNPRINTF(_amd_smi_vector.cmp_info.disabled_reason,
                  sizeof _amd_smi_vector.cmp_info.disabled_reason, "%s",
-                 error_str ? error_str : "Unknown error");
+                 error_str);
         goto fn_fail;
     }
 
@@ -108,7 +110,7 @@ static int _amd_smi_init_private(void) {
     _amd_smi_vector.cmp_info.num_mpx_cntrs = count;
 
 fn_exit:
-    _amd_smi_vector.cmp_info.initialized = 1;
+    _amd_smi_vector.cmp_info.initialized = (papi_errno == PAPI_OK);
     _amd_smi_vector.cmp_info.disabled = papi_errno;
     PAPI_unlock(COMPONENT_LOCK);
     return papi_errno;
@@ -142,7 +144,8 @@ static int update_native_events(amdsmi_control_t *ctl, NativeInfo_t *ntvInfo, in
         return PAPI_ENOMEM;
     }
 
-    for (int i = 0; i < ntvCount; ++i) {
+    int i;
+    for (i = 0; i < ntvCount; ++i) {
         events[i] = ntvInfo[i].ni_event;
         ntvInfo[i].ni_position = i;
     }
