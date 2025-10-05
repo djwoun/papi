@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "papi.h"       /* for PAPI_* error codes used by helper macros */
 #include "papi_test.h"  /* PAPI test utilities (test_pass/test_fail/etc.) */
@@ -31,6 +32,10 @@ typedef struct HarnessOpts {
 
 /** Global harness state used by macros. */
 static HarnessOpts harness_opts;
+
+static inline void test_mark_warning(void) {
+    harness_opts.had_warning = 1;
+}
 
 /**
  * @brief Accept and normalize the positional quiet token.
@@ -122,6 +127,31 @@ static inline HarnessOpts parse_harness_cli(int argc, char **argv) {
     return harness_opts;
 }
 
+static inline int harness_use_color(void) {
+    const char *val = getenv("TESTS_COLOR");
+    if (val) {
+        if (val[0] == 'y' || val[0] == 'Y')
+            return 1;
+        if (val[0] == 'n' || val[0] == 'N')
+            return 0;
+    }
+    return isatty(fileno(stdout)) ? 1 : 0;
+}
+
+static inline void harness_exit_warning(void) {
+    if (harness_opts.print) {
+        if (harness_use_color())
+            printf("\033[1;33mPASSED with WARNING\033[0m\n");
+        else
+            printf("PASSED with WARNING\n");
+    }
+    fflush(stdout);
+    if (PAPI_is_initialized()) {
+        PAPI_shutdown();
+    }
+    exit(0);
+}
+
 /**
  * @brief Evaluate the test result and print a final status line.
  *
@@ -139,21 +169,19 @@ static inline int harness_eval_result(const char *file, int line, HarnessOpts op
     if (harness_opts.had_warning)
         opts.had_warning = harness_opts.had_warning;
 
-    if (opts.had_warning)
-        test_mark_warning();
-
     bool passed = opts.expect_fail ? (result_code != 0) : (result_code == 0);
     if (passed) {
-        test_pass(file);
+        if (opts.had_warning) {
+            harness_exit_warning();
+        } else {
+            test_pass(file);
+        }
     }
 
     const char *reason = opts.expect_fail ?
         "Expected failure but test passed" : "Test reported failure";
 
     int retval = (result_code == 0 ? 1 : result_code);
-    if (retval == 0)
-        retval = 1;
-
     test_fail(file, line, reason, retval);
     return passed ? 0 : 1; /* Unreachable, appease compilers */
 }
@@ -170,7 +198,6 @@ static inline int harness_eval_result(const char *file, int line, HarnessOpts op
 
 /** Mark a warning (does not exit). */
 #define WARNF(...) do { \
-    harness_opts.had_warning = 1; \
     test_mark_warning(); \
     if (harness_opts.print) { fprintf(stdout, "WARNING: "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); } \
 } while (0)
@@ -183,10 +210,9 @@ static inline int harness_eval_result(const char *file, int line, HarnessOpts op
  * Prints an optional formatted warning message when output is enabled.
  */
 #define EXIT_WARNING(...) do { \
-    harness_opts.had_warning = 1; \
     test_mark_warning(); \
     if (harness_opts.print && *#__VA_ARGS__) { fprintf(stdout, "WARNING: "); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); } \
-    test_pass(__FILE__); \
+    harness_exit_warning(); \
 } while (0)
 
 /**
@@ -216,10 +242,9 @@ static inline int harness_eval_result(const char *file, int line, HarnessOpts op
 
 /** Keep SKIP as a cannot-conduct success-with-warning. */
 #define SKIP(reason) do { \
-    harness_opts.had_warning = 1; \
     test_mark_warning(); \
     if (harness_opts.print) { fprintf(stdout, "SKIP: %s\n", (reason)); } \
-    test_pass(__FILE__); \
+    harness_exit_warning(); \
 } while (0)
 
 /* -------------------------- AMD SMI helpers -------------------------- */
