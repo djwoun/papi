@@ -262,7 +262,7 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   /* Always produce a fully defined buffer */
   int i;
   for (i = 0; i < ctx->num_events; ++i) {
-    ctx->counters[i] = 0;  /* default if read fails */
+    ctx->counters[i] = 0;  /* overwritten below */
   }
 
   /* Optional: track first error, but don't bail early */
@@ -281,8 +281,11 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
 
     if (papi_errno_access == PAPI_OK) {
       ctx->counters[i] = (long long)ev->value;
-    } else if (papi_errno == PAPI_OK) {
-      papi_errno = papi_errno_access;  /* remember, but keep going */
+    } else {
+      ctx->counters[i] = (long long)papi_errno_access;  /* surface failure per-event */
+      if (papi_errno == PAPI_OK) {
+        papi_errno = papi_errno_access;  /* remember, but keep going */
+      }
     }
   }
 
