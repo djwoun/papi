@@ -23,6 +23,19 @@ typedef struct {
   native_event_t event;
 } ctx_event_t;
 
+static int first_device_from_map(uint64_t map) {
+  if (!map)
+    return -1;
+  int limit = amds_get_device_count();
+  if (limit <= 0 || limit > 64)
+    limit = 64;
+  for (int d = 0; d < limit; ++d) {
+    if (amds_dev_check(map, d))
+      return d;
+  }
+  return -1;
+}
+
 static int acquire_devices(ctx_event_t *events, int num_events, uint64_t *bitmask) {
   if (!bitmask) return PAPI_EINVAL;
   if (num_events < 0) return PAPI_EINVAL;
@@ -114,8 +127,20 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
     new_ctx->events[i].event = *base;
     new_ctx->events[i].event.priv = NULL;
     new_ctx->events[i].event.value = 0;
-    if (new_ctx->events[i].info.flags & AMDS_DEVICE_FLAG)
+    if (new_ctx->events[i].info.flags & AMDS_DEVICE_FLAG) {
       new_ctx->events[i].event.device = new_ctx->events[i].info.device;
+    } else if (base->device_map) {
+      int dev = new_ctx->events[i].info.device;
+      if (!amds_dev_check(base->device_map, dev))
+        dev = first_device_from_map(base->device_map);
+      if (dev < 0) {
+        papi_errno = PAPI_ENOEVNT;
+        goto fail;
+      }
+      new_ctx->events[i].info.flags |= AMDS_DEVICE_FLAG;
+      new_ctx->events[i].info.device = dev;
+      new_ctx->events[i].event.device = dev;
+    }
   }
 
   papi_errno = acquire_devices(new_ctx->events, num_events, &new_ctx->device_mask);
