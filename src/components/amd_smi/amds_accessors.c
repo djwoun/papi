@@ -24,6 +24,7 @@ static uint64_t _str_to_u64_hash(const char *s) {
   }
   return hash;
 }
+
 int access_amdsmi_lib_version(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
@@ -58,7 +59,7 @@ int access_amdsmi_uuid_hash(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
-  char buf[128] = {0};
+  char buf[PAPI_MAX_STR_LEN] = {0};
   unsigned int len = sizeof(buf);
   amdsmi_status_t st = amdsmi_get_gpu_device_uuid_p(device_handles[event->device], &len, buf);
   if (st != AMDSMI_STATUS_SUCCESS)
@@ -81,7 +82,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
     return PAPI_EMISC;
-  char buf[256] = {0};
+  char buf[PAPI_2MAX_STR_LEN] = {0};
   amdsmi_status_t st = AMDSMI_STATUS_NOT_SUPPORTED;
   switch (event->variant) {
   case 0: /* vendor name */
@@ -146,7 +147,7 @@ int access_amdsmi_gpu_string_hash(int mode, void *arg) {
 int access_amdsmi_enumeration_info(int mode, void *arg) {
   if (mode != PAPI_MODE_READ)
     return PAPI_ENOSUPP;
-  if (amdsmi_lib_major < 25 || !amdsmi_get_gpu_enumeration_info_p)
+  if (!amdsmi_get_gpu_enumeration_info_p)
     return PAPI_ENOSUPP;
   native_event_t *event = (native_event_t *)arg;
   if (event->device < 0 || event->device >= device_count || !device_handles[event->device])
@@ -212,6 +213,32 @@ int access_amdsmi_asic_info(int mode, void *arg) {
   }
   return PAPI_OK;
 }
+
+static int link_metrics_variant_value(const amdsmi_link_metrics_t *lm, uint32_t index,
+                                      int variant, uint64_t *out)
+{
+  if (!lm || !out)
+    return PAPI_EINVAL;
+
+  switch (variant) {
+  case 0:
+    *out = lm->links[index].read; /* KB */
+    break;
+  case 1:
+    *out = lm->links[index].write; /* KB */
+    break;
+  case 2:
+    *out = lm->links[index].bit_rate; /* Gb/s */
+    break;
+  case 3:
+    *out = lm->links[index].max_bandwidth; /* Gb/s */
+    break;
+  default:
+    return PAPI_ENOSUPP;
+  }
+  return PAPI_OK;
+}
+
 int access_amdsmi_link_metrics(int mode, void *arg) {
   if (mode != PAPI_MODE_READ || !amdsmi_get_link_metrics_p)
     return PAPI_ENOSUPP;
@@ -236,47 +263,24 @@ int access_amdsmi_link_metrics(int mode, void *arg) {
 
   uint64_t total = 0;
   if (link_index == 0xFFFF) {
-    for (uint32_t i = 0; i < count; ++i) {
+    uint32_t i;
+    for (i = 0; i < count; ++i) {
+      uint64_t value = 0;
       if (link_type && lm.links[i].link_type != link_type)
         continue;
-      switch (event->variant) {
-      case 0:
-        total += lm.links[i].read; /* KB */
-        break;
-      case 1:
-        total += lm.links[i].write; /* KB */
-        break;
-      case 2:
-        total += lm.links[i].bit_rate; /* Gb/s */
-        break;
-      case 3:
-        total += lm.links[i].max_bandwidth; /* Gb/s */
-        break;
-      default:
+      if (link_metrics_variant_value(&lm, i, event->variant, &value) != PAPI_OK)
         return PAPI_ENOSUPP;
-      }
+      total += value;
     }
   } else {
+    uint64_t value = 0;
     if (link_index >= count)
       return PAPI_EMISC;
     if (link_type && lm.links[link_index].link_type != link_type)
       return PAPI_EMISC;
-    switch (event->variant) {
-    case 0:
-      total = lm.links[link_index].read; /* KB */
-      break;
-    case 1:
-      total = lm.links[link_index].write; /* KB */
-      break;
-    case 2:
-      total = lm.links[link_index].bit_rate; /* Gb/s */
-      break;
-    case 3:
-      total = lm.links[link_index].max_bandwidth; /* Gb/s */
-      break;
-    default:
+    if (link_metrics_variant_value(&lm, link_index, event->variant, &value) != PAPI_OK)
       return PAPI_ENOSUPP;
-    }
+    total = value;
   }
 
   if (total > (uint64_t)INT64_MAX)
@@ -699,8 +703,6 @@ int access_amdsmi_ecc_status(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count ||
       !device_handles[event->device])
     return PAPI_EMISC;
-  if (event->variant != 0)
-    return PAPI_ENOSUPP;
 
   amdsmi_ras_err_state_t st;
   if (amdsmi_get_gpu_ecc_status_p(device_handles[event->device],
@@ -732,7 +734,7 @@ int access_amdsmi_compute_partition_hash(int mode, void *arg) {
   if (event->device < 0 || event->device >= device_count ||
       !device_handles[event->device])
     return PAPI_EMISC;
-  char buf[128] = {0};
+  char buf[PAPI_MAX_STR_LEN] = {0};
   if (amdsmi_get_gpu_compute_partition_p(device_handles[event->device], buf,
                                          sizeof(buf)) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -754,7 +756,7 @@ int access_amdsmi_memory_partition_hash(int mode, void *arg) {
         !supported)
       return PAPI_ENOSUPP;
   }
-  char buf[128] = {0};
+  char buf[PAPI_MAX_STR_LEN] = {0};
   if (amdsmi_get_gpu_memory_partition_p(device_handles[event->device], buf,
                                         sizeof(buf)) != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
@@ -1025,8 +1027,7 @@ int access_amdsmi_clk_freq(int mode, void *arg) {
   amdsmi_status_t status =
       amdsmi_get_clk_freq_p(device_handles[event->device], clk_type, &freq_info);
   if (status != AMDSMI_STATUS_SUCCESS) {
-    event->value = 0;
-    return PAPI_OK;
+    return PAPI_EMISC;
   }
 
   if (event->subvariant == 0) {
@@ -1065,8 +1066,7 @@ int access_amdsmi_clock_info(int mode, void *arg) {
       amdsmi_get_clock_info_p(device_handles[event->device],
                               clk_types[event->variant], &info);
   if (status != AMDSMI_STATUS_SUCCESS) {
-    event->value = 0;
-    return PAPI_OK;
+    return PAPI_EMISC;
   }
 
   switch (event->subvariant) {
@@ -1285,10 +1285,8 @@ int access_amdsmi_pci_bandwidth(int mode, void *arg) {
   memset(&bw, 0, sizeof(bw));  /* critical */
 
   if (amdsmi_get_gpu_pci_bandwidth_p(device_handles[event->device], &bw) !=
-      AMDSMI_STATUS_SUCCESS) {
-    event->value = 0;
-    return PAPI_OK;
-  }
+      AMDSMI_STATUS_SUCCESS)
+    return PAPI_EMISC;
 
   uint32_t cur = bw.transfer_rate.current;
   if (cur >= bw.transfer_rate.num_supported) {
@@ -1790,7 +1788,7 @@ int access_amdsmi_dimm_range_refresh(int mode, void *arg) {
   return PAPI_OK;
 }
 int access_amdsmi_threads_per_core(int mode, void *arg) {
-  (void)arg;
+  native_event_t *event = (native_event_t *)arg;
   if (mode != PAPI_MODE_READ) {
     return PAPI_ENOSUPP;
   }
@@ -1799,11 +1797,11 @@ int access_amdsmi_threads_per_core(int mode, void *arg) {
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
   }
-  ((native_event_t *)arg)->value = threads;
+  event->value = threads;
   return PAPI_OK;
 }
 int access_amdsmi_cpu_family(int mode, void *arg) {
-  (void)arg;
+  native_event_t *event = (native_event_t *)arg;
   if (mode != PAPI_MODE_READ) {
     return PAPI_ENOSUPP;
   }
@@ -1812,11 +1810,11 @@ int access_amdsmi_cpu_family(int mode, void *arg) {
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
   }
-  ((native_event_t *)arg)->value = family;
+  event->value = family;
   return PAPI_OK;
 }
 int access_amdsmi_cpu_model(int mode, void *arg) {
-  (void)arg;
+  native_event_t *event = (native_event_t *)arg;
   if (mode != PAPI_MODE_READ) {
     return PAPI_ENOSUPP;
   }
@@ -1825,7 +1823,7 @@ int access_amdsmi_cpu_model(int mode, void *arg) {
   if (status != AMDSMI_STATUS_SUCCESS) {
     return PAPI_EMISC;
   }
-  ((native_event_t *)arg)->value = model;
+  event->value = model;
   return PAPI_OK;
 }
 int access_amdsmi_smu_fw_version(int mode, void *arg) {
@@ -2173,7 +2171,13 @@ int access_amdsmi_ras_eeprom_validate(int mode, void *arg) {
     return PAPI_EMISC;
   amdsmi_status_t st =
       amdsmi_gpu_validate_ras_eeprom_p(device_handles[event->device]);
-  event->value = (int64_t)st;
+  if (st == AMDSMI_STATUS_SUCCESS) {
+    event->value = 0;              /* checksum OK */
+  } else if (st == AMDSMI_STATUS_CORRUPTED_EEPROM) {
+    event->value = 1;              /* EEPROM corrupted */
+  } else {
+    event->value = 2;              /* unexpected failure */
+  }
   return PAPI_OK;
 }
 
@@ -2237,7 +2241,7 @@ int access_amdsmi_reg_value(int mode, void *arg) {
       free(regs);
     return PAPI_EMISC;
   }
-  event->value = (int64_t)regs[event->subvariant].value;
+  event->value = regs[event->subvariant].value;
   free(regs);
   return PAPI_OK;
 }
@@ -2356,10 +2360,8 @@ int access_amdsmi_vram_usage(int mode, void *arg) {
     amdsmi_vram_info_t vinf;
     memset(&vinf, 0, sizeof(vinf));
     if (amdsmi_get_gpu_vram_info_p(device_handles[event->device], &vinf)
-        != AMDSMI_STATUS_SUCCESS) {
-      event->value = 0;   /* deterministic, not UB */
-      return PAPI_OK;
-    }
+        != AMDSMI_STATUS_SUCCESS)
+      return PAPI_EMISC;
     /* vinf.vram_size is reported in MB by AMD SMI */
     event->value = (uint64_t)vinf.vram_size;
     return PAPI_OK;
@@ -2480,7 +2482,7 @@ int access_amdsmi_xcd_counter(int mode, void *arg) {
   amdsmi_status_t st = amdsmi_get_gpu_xcd_counter_p(device_handles[event->device], &cnt);
   if (st != AMDSMI_STATUS_SUCCESS)
     return PAPI_EMISC;
-  event->value = (int64_t)cnt;
+  event->value = cnt;
   return PAPI_OK;
 }
 

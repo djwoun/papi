@@ -29,7 +29,8 @@ static int first_device_from_map(uint64_t map) {
   int limit = amds_get_device_count();
   if (limit <= 0 || limit > 64)
     limit = 64;
-  for (int d = 0; d < limit; ++d) {
+  int d;
+  for (d = 0; d < limit; ++d) {
     if (amds_dev_check(map, d))
       return d;
   }
@@ -42,7 +43,8 @@ static int acquire_devices(ctx_event_t *events, int num_events, uint64_t *bitmas
   if (num_events > 0 && !events) return PAPI_EINVAL;
 
   uint64_t mask_acq = 0;
-  for (int i = 0; i < num_events; ++i) {
+  int i;
+  for (i = 0; i < num_events; ++i) {
     if (!(events[i].info.flags & AMDS_DEVICE_FLAG))
       continue;
     int dev_id = events[i].info.device;
@@ -110,7 +112,7 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
 
   if (num_events > 0) {
     new_ctx->events = (ctx_event_t *)papi_calloc((size_t)num_events, sizeof(ctx_event_t));
-    if (!new_ctx->events) {
+    if (new_ctx->events == NULL) {
       papi_free(new_ctx->counters);
       papi_free(new_ctx);
       return PAPI_ENOMEM;
@@ -118,7 +120,8 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
   }
 
   int papi_errno = PAPI_OK;
-  for (int i = 0; i < num_events; ++i) {
+  int i;
+  for (i = 0; i < num_events; ++i) {
     new_ctx->events[i].code = event_ids[i];
     papi_errno = amds_evt_id_to_info(event_ids[i], &new_ctx->events[i].info);
     if (papi_errno != PAPI_OK)
@@ -147,12 +150,13 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
   if (papi_errno != PAPI_OK)
     goto fail;
 
-  for (int i = 0; i < num_events; ++i) {
+  for (i = 0; i < num_events; ++i) {
     native_event_t *ev = &new_ctx->events[i].event;
     if (ev->open_func) {
       papi_errno = ev->open_func(ev);
       if (papi_errno != PAPI_OK) {
-        for (int j = 0; j < i; ++j) {
+        int j;
+        for (j = 0; j < i; ++j) {
           native_event_t *prev = &new_ctx->events[j].event;
           if (prev->close_func)
             prev->close_func(prev);
@@ -168,7 +172,7 @@ int amds_ctx_open(unsigned int *event_ids, int num_events, amds_ctx_t *ctx) {
 
 fail:
   if (new_ctx->events) {
-    for (int i = 0; i < num_events; ++i) {
+    for (i = 0; i < num_events; ++i) {
       new_ctx->events[i].event.priv = NULL;
     }
     papi_free(new_ctx->events);
@@ -190,9 +194,11 @@ int amds_ctx_close(amds_ctx_t ctx) {
     papi_free(ctx);
     return PAPI_OK;
   }
-  for (int i = 0; i < ctx->num_events; ++i) {
-    if (!ctx->events)
-      break;
+  int i;
+  if (!ctx->events)
+    return PAPI_EMISC;
+
+  for (i = 0; i < ctx->num_events; ++i) {
     native_event_t *ev = &ctx->events[i].event;
     if (ev->close_func)
       ev->close_func(ev);
@@ -211,7 +217,8 @@ int amds_ctx_start(amds_ctx_t ctx) {
   if (!ntv_table_p) return PAPI_ECMP;
 
   int papi_errno = PAPI_OK;
-  for (int i = 0; i < ctx->num_events; ++i) {
+  int i;
+  for (i = 0; i < ctx->num_events; ++i) {
     if (!ctx->events)
       break;
     native_event_t *ev = &ctx->events[i].event;
@@ -231,11 +238,12 @@ int amds_ctx_stop(amds_ctx_t ctx) {
     return PAPI_OK;
   }
   if (!ntv_table_p) return PAPI_ECMP;
+  if (!ctx->events)
+    return PAPI_EMISC;
 
   int papi_errno = PAPI_OK;
-  for (int i = 0; i < ctx->num_events; ++i) {
-    if (!ctx->events)
-      break;
+  int i;
+  for (i = 0; i < ctx->num_events; ++i) {
     native_event_t *ev = &ctx->events[i].event;
     if (ev->stop_func) {
       int papi_errno_stop = ev->stop_func(ev);
@@ -252,14 +260,15 @@ int amds_ctx_read(amds_ctx_t ctx, long long **counts) {
   if (!ntv_table_p) return PAPI_ECMP;
 
   /* Always produce a fully defined buffer */
-  for (int i = 0; i < ctx->num_events; ++i) {
+  int i;
+  for (i = 0; i < ctx->num_events; ++i) {
     ctx->counters[i] = 0;  /* default if read fails */
   }
 
   /* Optional: track first error, but don't bail early */
   int papi_errno = PAPI_OK;
 
-  for (int i = 0; i < ctx->num_events; ++i) {
+  for (i = 0; i < ctx->num_events; ++i) {
     if (!ctx->events)
       break;
     native_event_t *ev = &ctx->events[i].event;
@@ -287,7 +296,8 @@ int amds_ctx_write(amds_ctx_t ctx, long long *counts) {
   if (!ntv_table_p) return PAPI_ECMP;
 
   int papi_errno = PAPI_OK;
-  for (int i = 0; i < ctx->num_events; ++i) {
+  int i;
+  for (i = 0; i < ctx->num_events; ++i) {
     if (!ctx->events)
       break;
     native_event_t *ev = &ctx->events[i].event;
@@ -305,7 +315,8 @@ int amds_ctx_reset(amds_ctx_t ctx) {
   if (!ctx) return PAPI_EINVAL;
   if (!ntv_table_p) return PAPI_ECMP;
 
-  for (int i = 0; i < ctx->num_events; ++i) {
+  int i;
+  for (i = 0; i < ctx->num_events; ++i) {
     if (!ctx->events)
       break;
     native_event_t *ev = &ctx->events[i].event;

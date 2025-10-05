@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <inttypes.h>
 #include <string.h>
 #include <stdbool.h>
