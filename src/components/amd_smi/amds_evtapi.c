@@ -87,6 +87,25 @@ static int device_next(uint64_t bitmap, int after) {
   return -1;
 }
 
+static const char *event_descr_for_device(const native_event_t *event, int device) {
+  if (!event)
+    return "";
+
+  const char *fallback = event->descr ? event->descr : "";
+  if (!(event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR))
+    return fallback;
+
+  const amds_per_device_descr_t *pd = (const amds_per_device_descr_t *)event->priv;
+  if (!pd || !pd->descrs || pd->limit <= 0)
+    return fallback;
+  if (device < 0 || device >= pd->limit)
+    return fallback;
+  if (!pd->descrs[device])
+    return fallback;
+
+  return pd->descrs[device];
+}
+
 int amds_evt_id_create(amds_event_info_t *info, unsigned int *event_code) {
   if (!info || !event_code)
     return PAPI_EINVAL;
@@ -273,7 +292,10 @@ int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
     return papi_errno;
 
   native_event_t *event = &ntv_table_p->events[info.nameid];
-  CHECK_SNPRINTF(descr, (size_t)len, "%s", event->descr);
+  const char *src_descr = event->descr;
+  if (info.flags & AMDS_DEVICE_FLAG)
+    src_descr = event_descr_for_device(event, info.device);
+  CHECK_SNPRINTF(descr, (size_t)len, "%s", src_descr ? src_descr : "");
   return PAPI_OK;
 }
 
@@ -314,17 +336,25 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
       CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
       break;
     case AMDS_DEVICE_FLAG:
-      if (code_info.device != canonical_device) {
+      if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) {
+        CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
+                 code_info.device);
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "masks:%s",
+                 event_descr_for_device(event, code_info.device));
+        quals_to_report = 0;
+      } else if (code_info.device != canonical_device) {
         // Suppress duplicate qualifier dumps for non-canonical variants so
         // tools like papi_native_avail match the legacy CUDA-style output.
         CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);
-        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s",
+                       event_descr_for_device(event, code_info.device));
         quals_to_report = 0;
       } else {
         CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
                  canonical_device);
         CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr),
-                 "%s, masks:Mandatory device qualifier [%s]", event->descr,
+                 "%s, masks:Mandatory device qualifier [%s]",
+                 event_descr_for_device(event, canonical_device),
                  devices);
       }
       break;

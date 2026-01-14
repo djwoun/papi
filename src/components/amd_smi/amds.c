@@ -648,6 +648,20 @@ static int shutdown_event_table(void) {
   int i;
   for (i = 0; i < ntv_table.count; ++i) {
     htable_delete(htable, ntv_table.events[i].name);
+    if ((ntv_table.events[i].evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR) &&
+        ntv_table.events[i].priv) {
+      amds_per_device_descr_t *pd =
+          (amds_per_device_descr_t *)ntv_table.events[i].priv;
+      if (pd->descrs) {
+        for (int d = 0; d < pd->limit; ++d) {
+          if (pd->descrs[d])
+            papi_free(pd->descrs[d]);
+        }
+        papi_free(pd->descrs);
+      }
+      papi_free(pd);
+      ntv_table.events[i].priv = NULL;
+    }
     papi_free(ntv_table.events[i].name);
     papi_free(ntv_table.events[i].descr);
   }
@@ -981,6 +995,7 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
   ev->mode = mode;
   ev->variant = variant;
   ev->subvariant = subvariant;
+  ev->evtinfo_flags = 0;
   ev->priv = NULL;
   ev->open_func = open_simple;
   ev->close_func = close_simple;
@@ -989,6 +1004,63 @@ static int add_event(int *idx_ptr, const char *name, const char *descr, int devi
   ev->access_func = access_func;
   htable_insert(htable, ev->name, ev);
   (*idx_ptr)++;
+  return PAPI_OK;
+}
+
+static int add_event_with_perdev_descr(int *idx_ptr, const char *name,
+                                       const char *descr, int device,
+                                       uint32_t variant, uint32_t subvariant,
+                                       int mode, amds_accessor_t access_func,
+                                       uint32_t evtinfo_flags) {
+  if (!idx_ptr || !name || !descr)
+    return PAPI_EINVAL;
+
+  char base_name[PAPI_MAX_STR_LEN];
+  int papi_errno = strip_device_qualifier(name, base_name, sizeof(base_name));
+  if (papi_errno != PAPI_OK)
+    return papi_errno;
+
+  /* Create or expand the base event entry using the existing add_event(). */
+  papi_errno = add_event(idx_ptr, name, descr, device, variant, subvariant, mode,
+                         access_func);
+  if (papi_errno != PAPI_OK)
+    return papi_errno;
+
+  native_event_t *ev = NULL;
+  int hret = htable_find(htable, base_name, (void **)&ev);
+  if (hret != HTABLE_SUCCESS || !ev)
+    return PAPI_ECMP;
+
+  ev->evtinfo_flags |= evtinfo_flags;
+
+  if (!(ev->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR))
+    return PAPI_OK;
+
+  amds_per_device_descr_t *pd = (amds_per_device_descr_t *)ev->priv;
+  if (!pd) {
+    pd = (amds_per_device_descr_t *)papi_calloc(1, sizeof(*pd));
+    if (!pd)
+      return PAPI_ENOMEM;
+    int limit = device_count;
+    if (limit <= 0 || limit > 64)
+      limit = 64;
+    pd->limit = limit;
+    pd->descrs = (char **)papi_calloc((size_t)limit, sizeof(*pd->descrs));
+    if (!pd->descrs) {
+      papi_free(pd);
+      return PAPI_ENOMEM;
+    }
+    ev->priv = pd;
+  }
+
+  if (device >= 0 && device < pd->limit) {
+    if (pd->descrs[device])
+      papi_free(pd->descrs[device]);
+    pd->descrs[device] = strdup(descr);
+    if (!pd->descrs[device])
+      return PAPI_ENOMEM;
+  }
+
   return PAPI_OK;
 }
 
@@ -2688,8 +2760,11 @@ static int init_event_table(void) {
                    board_fields[bf].event_name, d);
           CHECK_SNPRINTF(descr_buf, sizeof(descr_buf), board_fields[bf].descr_fmt, d,
                    display_or_empty(board_fields[bf].value));
-          if (add_event(&idx, name_buf, descr_buf, d, board_fields[bf].variant, 0,
-                        PAPI_MODE_READ, access_amdsmi_board_info_hash) != PAPI_OK)
+          if (add_event_with_perdev_descr(
+                  &idx, name_buf, descr_buf, d, board_fields[bf].variant, 0,
+                  PAPI_MODE_READ, access_amdsmi_board_info_hash,
+                  AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                      AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
             return PAPI_ENOMEM;
         }
       }
@@ -3513,8 +3588,11 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "uuid_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d UUID hash of '%s'", d, display_or_empty(uuid_buf));
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_uuid_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(&idx, name_buf, descr_buf, d, 0, 0,
+                                        PAPI_MODE_READ, access_amdsmi_uuid_hash,
+                                        AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                                            AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) !=
+            PAPI_OK)
           return PAPI_ENOMEM;
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "uuid_length:device=%d", d);
@@ -3535,8 +3613,11 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d vendor name hash of '%s'", d,
                  display_or_empty(tmp));
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_gpu_string_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                access_amdsmi_gpu_string_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3552,8 +3633,11 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d VRAM vendor hash of '%s'", d,
                  display_or_empty(tmp));
-        if (add_event(&idx, name_buf, descr_buf, d, 1, 0, PAPI_MODE_READ,
-                      access_amdsmi_gpu_string_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 1, 0, PAPI_MODE_READ,
+                access_amdsmi_gpu_string_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3568,8 +3652,11 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d subsystem name hash of '%s'", d,
                  display_or_empty(tmp));
-        if (add_event(&idx, name_buf, descr_buf, d, 2, 0, PAPI_MODE_READ,
-                      access_amdsmi_gpu_string_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 2, 0, PAPI_MODE_READ,
+                access_amdsmi_gpu_string_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3671,8 +3758,11 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d compute partition hash of '%s'", d,
                  display_or_empty(part));
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_compute_partition_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                access_amdsmi_compute_partition_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3689,8 +3779,11 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d memory partition hash of '%s'", d,
                  display_or_empty(part));
-        if (add_event(&idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
-                      access_amdsmi_memory_partition_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
+                access_amdsmi_memory_partition_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
@@ -3749,24 +3842,33 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d driver name hash of '%s'", d,
                  display_or_empty(dinfo.driver_name));
-        if (add_event(&idx, name_buf, descr_buf, d, 3, 0, PAPI_MODE_READ,
-                      access_amdsmi_gpu_string_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 3, 0, PAPI_MODE_READ,
+                access_amdsmi_gpu_string_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "driver_date_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d driver date hash of '%s'", d,
                  display_or_empty(dinfo.driver_date));
-        if (add_event(&idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
-                      access_amdsmi_gpu_string_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
+                access_amdsmi_gpu_string_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "driver_version_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
                  "Device %d driver version hash of '%s'", d,
                  display_or_empty(dinfo.driver_version));
-        if (add_event(&idx, name_buf, descr_buf, d, 8, 0, PAPI_MODE_READ,
-                      access_amdsmi_gpu_string_hash) != PAPI_OK)
+        if (add_event_with_perdev_descr(
+                &idx, name_buf, descr_buf, d, 8, 0, PAPI_MODE_READ,
+                access_amdsmi_gpu_string_hash,
+                AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR |
+                    AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) != PAPI_OK)
           return PAPI_ENOMEM;
       }
     }
