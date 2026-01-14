@@ -106,6 +106,65 @@ static const char *event_descr_for_device(const native_event_t *event, int devic
   return pd->descrs[device];
 }
 
+static void event_descr_for_all_devices(const native_event_t *event, char *buf,
+                                        size_t len) {
+  if (!buf || len == 0)
+    return;
+  buf[0] = '\0';
+
+  if (!event)
+    return;
+
+  if (!(event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR) ||
+      !event->device_map) {
+    snprintf(buf, len, "%s", event->descr ? event->descr : "");
+    return;
+  }
+
+  size_t used = 0;
+  const size_t line_width = 80 - 12 - 2;
+
+  for (int dev = device_first(event->device_map); dev >= 0;) {
+    int next = device_next(event->device_map, dev);
+    const char *line = event_descr_for_device(event, dev);
+    if (!line)
+      line = "";
+
+    int strLen = snprintf(buf + used, len - used, "%s", line);
+    if (strLen < 0) {
+      buf[used] = '\0';
+      break;
+    }
+    if ((size_t)strLen >= len - used) {
+      buf[len - 1] = '\0';
+      break;
+    }
+    used += (size_t)strLen;
+
+    if (next < 0)
+      break;
+
+    if (line_width > 0) {
+      size_t rem = used % line_width;
+      if (rem != 0) {
+        size_t pad = line_width - rem;
+        if (pad >= len - used)
+          pad = (len - used) - 1;
+        memset(buf + used, ' ', pad);
+        used += pad;
+        buf[used] = '\0';
+        if (pad != line_width - rem)
+          break;
+      }
+    }
+
+    dev = next;
+  }
+
+  if (buf[0] == '\0')
+    snprintf(buf, len, "%s", event->descr ? event->descr : "");
+}
+
 int amds_evt_id_create(amds_event_info_t *info, unsigned int *event_code) {
   if (!info || !event_code)
     return PAPI_EINVAL;
@@ -292,10 +351,15 @@ int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
     return papi_errno;
 
   native_event_t *event = &ntv_table_p->events[info.nameid];
-  const char *src_descr = event->descr;
-  if (info.flags & AMDS_DEVICE_FLAG)
-    src_descr = event_descr_for_device(event, info.device);
-  CHECK_SNPRINTF(descr, (size_t)len, "%s", src_descr ? src_descr : "");
+  if (info.flags & AMDS_DEVICE_FLAG) {
+    const char *src_descr = event_descr_for_device(event, info.device);
+    CHECK_SNPRINTF(descr, (size_t)len, "%s", src_descr ? src_descr : "");
+  } else if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR) {
+    event_descr_for_all_devices(event, descr, (size_t)len);
+  } else {
+    const char *src_descr = event->descr;
+    CHECK_SNPRINTF(descr, (size_t)len, "%s", src_descr ? src_descr : "");
+  }
   return PAPI_OK;
 }
 
@@ -333,7 +397,11 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
   switch (device_flag) {
     case 0:
       CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);
-      CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+      if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR)
+        event_descr_for_all_devices(event, info->long_descr,
+                                    sizeof(info->long_descr));
+      else
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
       break;
     case AMDS_DEVICE_FLAG:
       if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) {
