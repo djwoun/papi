@@ -2740,15 +2740,15 @@ static int init_event_table(void) {
           uint32_t variant;
         } board_fields[] = {
             {binfo.product_serial, "board_serial_hash",
-             "Device %d board serial number hash of '%s'", 0},
+             "Hash of Device %d board serial number string '%s'", 0},
             {binfo.model_number, "board_model_number_hash",
-             "Device %d board model number hash of '%s'", 1},
+             "Hash of Device %d board model number string '%s'", 1},
             {binfo.fru_id, "board_fru_id_hash",
-             "Device %d board FRU id hash of '%s'", 2},
+             "Hash of Device %d board FRU id string '%s'", 2},
             {binfo.product_name, "board_product_name_hash",
-             "Device %d board product name hash of '%s'", 3},
+             "Hash of Device %d board product name string '%s'", 3},
             {binfo.manufacturer_name, "board_manufacturer_hash",
-             "Device %d board manufacturer hash of '%s'", 4},
+             "Hash of Device %d board manufacturer string '%s'", 4},
         };
 
         for (size_t bf = 0; bf < sizeof(board_fields) / sizeof(board_fields[0]);
@@ -3586,7 +3586,8 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "uuid_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d UUID hash of '%s'", d, display_or_empty(uuid_buf));
+                 "Hash of Device %d UUID string '%s'", d,
+                 display_or_empty(uuid_buf));
         if (add_event_with_perdev_descr(&idx, name_buf, descr_buf, d, 0, 0,
                                         PAPI_MODE_READ, access_amdsmi_uuid_hash,
                                         AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR) !=
@@ -3609,7 +3610,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "vendor_name_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d vendor name hash of '%s'", d,
+                 "Hash of Device %d vendor name string '%s'", d,
                  display_or_empty(tmp));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
@@ -3628,7 +3629,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "vram_vendor_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d VRAM vendor hash of '%s'", d,
+                 "Hash of Device %d VRAM vendor string '%s'", d,
                  display_or_empty(tmp));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 1, 0, PAPI_MODE_READ,
@@ -3646,7 +3647,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "subsystem_name_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d subsystem name hash of '%s'", d,
+                 "Hash of Device %d subsystem name string '%s'", d,
                  display_or_empty(tmp));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 2, 0, PAPI_MODE_READ,
@@ -3751,7 +3752,7 @@ static int init_event_table(void) {
         CHECK_SNPRINTF(name_buf, sizeof(name_buf),
                  "compute_partition_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d compute partition hash of '%s'", d,
+                 "Hash of Device %d compute partition string '%s'", d,
                  display_or_empty(part));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
@@ -3771,7 +3772,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "memory_partition_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d memory partition hash of '%s'", d,
+                 "Hash of Device %d memory partition string '%s'", d,
                  display_or_empty(part));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 0, 0, PAPI_MODE_READ,
@@ -3833,7 +3834,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "driver_name_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d driver name hash of '%s'", d,
+                 "Hash of Device %d driver name string '%s'", d,
                  display_or_empty(dinfo.driver_name));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 3, 0, PAPI_MODE_READ,
@@ -3843,7 +3844,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "driver_date_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d driver date hash of '%s'", d,
+                 "Hash of Device %d driver date string '%s'", d,
                  display_or_empty(dinfo.driver_date));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 4, 0, PAPI_MODE_READ,
@@ -3853,7 +3854,7 @@ static int init_event_table(void) {
         CHECK_EVENT_IDX(idx);
         CHECK_SNPRINTF(name_buf, sizeof(name_buf), "driver_version_hash:device=%d", d);
         CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
-                 "Device %d driver version hash of '%s'", d,
+                 "Hash of Device %d driver version string '%s'", d,
                  display_or_empty(dinfo.driver_version));
         if (add_event_with_perdev_descr(
                 &idx, name_buf, descr_buf, d, 8, 0, PAPI_MODE_READ,
