@@ -87,6 +87,84 @@ static int device_next(uint64_t bitmap, int after) {
   return -1;
 }
 
+static const char *event_descr_for_device(const native_event_t *event, int device) {
+  if (!event)
+    return "";
+
+  const char *fallback = event->descr ? event->descr : "";
+  if (!(event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR))
+    return fallback;
+
+  const amds_per_device_descr_t *pd = (const amds_per_device_descr_t *)event->priv;
+  if (!pd || !pd->descrs || pd->limit <= 0)
+    return fallback;
+  if (device < 0 || device >= pd->limit)
+    return fallback;
+  if (!pd->descrs[device])
+    return fallback;
+
+  return pd->descrs[device];
+}
+
+static void event_descr_for_all_devices(const native_event_t *event, char *buf,
+                                        size_t len) {
+  if (!buf || len == 0)
+    return;
+  buf[0] = '\0';
+
+  if (!event)
+    return;
+
+  if (!(event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR) ||
+      !event->device_map) {
+    snprintf(buf, len, "%s", event->descr ? event->descr : "");
+    return;
+  }
+
+  size_t used = 0;
+  const size_t line_width = 80 - 12 - 2;
+
+  for (int dev = device_first(event->device_map); dev >= 0;) {
+    int next = device_next(event->device_map, dev);
+    const char *line = event_descr_for_device(event, dev);
+    if (!line)
+      line = "";
+
+    int strLen = snprintf(buf + used, len - used, "%s", line);
+    if (strLen < 0) {
+      buf[used] = '\0';
+      break;
+    }
+    if ((size_t)strLen >= len - used) {
+      buf[len - 1] = '\0';
+      break;
+    }
+    used += (size_t)strLen;
+
+    if (next < 0)
+      break;
+
+    if (line_width > 0) {
+      size_t rem = used % line_width;
+      if (rem != 0) {
+        size_t pad = line_width - rem;
+        if (pad >= len - used)
+          pad = (len - used) - 1;
+        memset(buf + used, ' ', pad);
+        used += pad;
+        buf[used] = '\0';
+        if (pad != line_width - rem)
+          break;
+      }
+    }
+
+    dev = next;
+  }
+
+  if (buf[0] == '\0')
+    snprintf(buf, len, "%s", event->descr ? event->descr : "");
+}
+
 int amds_evt_id_create(amds_event_info_t *info, unsigned int *event_code) {
   if (!info || !event_code)
     return PAPI_EINVAL;
@@ -273,7 +351,15 @@ int amds_evt_code_to_descr(unsigned int EventCode, char *descr, int len) {
     return papi_errno;
 
   native_event_t *event = &ntv_table_p->events[info.nameid];
-  CHECK_SNPRINTF(descr, (size_t)len, "%s", event->descr);
+  if (info.flags & AMDS_DEVICE_FLAG) {
+    const char *src_descr = event_descr_for_device(event, info.device);
+    CHECK_SNPRINTF(descr, (size_t)len, "%s", src_descr ? src_descr : "");
+  } else if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR) {
+    event_descr_for_all_devices(event, descr, (size_t)len);
+  } else {
+    const char *src_descr = event->descr;
+    CHECK_SNPRINTF(descr, (size_t)len, "%s", src_descr ? src_descr : "");
+  }
   return PAPI_OK;
 }
 
@@ -311,20 +397,32 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
   switch (device_flag) {
     case 0:
       CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);
-      CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+      if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR)
+        event_descr_for_all_devices(event, info->long_descr,
+                                    sizeof(info->long_descr));
+      else
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
       break;
     case AMDS_DEVICE_FLAG:
-      if (code_info.device != canonical_device) {
+      if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) {
+        CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
+                 code_info.device);
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "masks:%s",
+                 event_descr_for_device(event, code_info.device));
+        quals_to_report = 0;
+      } else if (code_info.device != canonical_device) {
         // Suppress duplicate qualifier dumps for non-canonical variants so
         // tools like papi_native_avail match the legacy CUDA-style output.
         CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);
-        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
+        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s",
+                       event_descr_for_device(event, code_info.device));
         quals_to_report = 0;
       } else {
         CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
                  canonical_device);
         CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr),
-                 "%s, masks:Mandatory device qualifier [%s]", event->descr,
+                 "%s, masks:Mandatory device qualifier [%s]",
+                 event_descr_for_device(event, canonical_device),
                  devices);
       }
       break;
