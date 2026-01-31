@@ -44,10 +44,9 @@ typedef int (*amds_accessor_t)(int mode, void *arg);
 
 /* Native event descriptor metadata flags (native_event_t::evtinfo_flags) */
 #define AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR   0x1u  /* descr differs by device */
-#define AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL 0x2u  /* report name:device=N for non-canonical variants */
 
 typedef struct {
-  int limit;     /* <= 64 */
+  int num_devices; /* <= 64 */
   char **descrs; /* descrs[device] */
 } amds_per_device_descr_t;
 

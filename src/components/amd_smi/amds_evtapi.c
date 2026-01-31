@@ -96,9 +96,9 @@ static const char *event_descr_for_device(const native_event_t *event, int devic
     return fallback;
 
   const amds_per_device_descr_t *pd = (const amds_per_device_descr_t *)event->priv;
-  if (!pd || !pd->descrs || pd->limit <= 0)
+  if (!pd || !pd->descrs || pd->num_devices <= 0)
     return fallback;
-  if (device < 0 || device >= pd->limit)
+  if (device < 0 || device >= pd->num_devices)
     return fallback;
   if (!pd->descrs[device])
     return fallback;
@@ -122,6 +122,7 @@ static void event_descr_for_all_devices(const native_event_t *event, char *buf,
   }
 
   size_t used = 0;
+  // Keep in sync with papi_native_avail's fixed-width folding (EVT_LINE - 12 - 2).
   const size_t line_width = 80 - 12 - 2;
 
   for (int dev = device_first(event->device_map); dev >= 0;) {
@@ -404,13 +405,7 @@ int amds_evt_code_to_info(unsigned int EventCode, PAPI_event_info_t *info) {
         CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "%s", event->descr);
       break;
     case AMDS_DEVICE_FLAG:
-      if (event->evtinfo_flags & AMDS_EVTINFO_FLAG_KEEP_DEVICE_SYMBOL) {
-        CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s:device=%d", event->name,
-                 code_info.device);
-        CHECK_SNPRINTF(info->long_descr, sizeof(info->long_descr), "masks:%s",
-                 event_descr_for_device(event, code_info.device));
-        quals_to_report = 0;
-      } else if (code_info.device != canonical_device) {
+      if (code_info.device != canonical_device) {
         // Suppress duplicate qualifier dumps for non-canonical variants so
         // tools like papi_native_avail match the legacy CUDA-style output.
         CHECK_SNPRINTF(info->symbol, sizeof(info->symbol), "%s", event->name);

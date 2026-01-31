@@ -653,7 +653,7 @@ static int shutdown_event_table(void) {
       amds_per_device_descr_t *pd =
           (amds_per_device_descr_t *)ntv_table.events[i].priv;
       if (pd->descrs) {
-        for (int d = 0; d < pd->limit; ++d) {
+        for (int d = 0; d < pd->num_devices; ++d) {
           if (pd->descrs[d])
             papi_free(pd->descrs[d]);
         }
@@ -1044,7 +1044,7 @@ static int add_event_with_perdev_descr(int *idx_ptr, const char *name,
     int limit = device_count;
     if (limit <= 0 || limit > 64)
       limit = 64;
-    pd->limit = limit;
+    pd->num_devices = limit;
     pd->descrs = (char **)papi_calloc((size_t)limit, sizeof(*pd->descrs));
     if (!pd->descrs) {
       papi_free(pd);
@@ -1053,7 +1053,7 @@ static int add_event_with_perdev_descr(int *idx_ptr, const char *name,
     ev->priv = pd;
   }
 
-  if (device >= 0 && device < pd->limit) {
+  if (device >= 0 && device < pd->num_devices) {
     if (pd->descrs[device])
       papi_free(pd->descrs[device]);
     pd->descrs[device] = strdup(descr);
