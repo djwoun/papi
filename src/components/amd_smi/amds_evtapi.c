@@ -9,6 +9,7 @@
 #include "amds_priv.h"
 #include "htable.h"
 #include "papi.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -87,6 +88,169 @@ static int device_next(uint64_t bitmap, int after) {
   return -1;
 }
 
+static const char *find_device_token_span(const char *str,
+                                          const char **digits_start,
+                                          const char **digits_end) {
+  if (digits_start)
+    *digits_start = NULL;
+  if (digits_end)
+    *digits_end = NULL;
+  if (!str)
+    return NULL;
+
+  const char *p = str;
+  while ((p = strstr(p, "Device ")) != NULL) {
+    const char *dstart = p + strlen("Device ");
+    if (!isdigit((unsigned char)*dstart)) {
+      p = dstart;
+      continue;
+    }
+    const char *dend = dstart;
+    while (isdigit((unsigned char)*dend))
+      dend++;
+    if (digits_start)
+      *digits_start = dstart;
+    if (digits_end)
+      *digits_end = dend;
+    return p;
+  }
+
+  return NULL;
+}
+
+static void normalize_descr_ignore_device_numbers(const char *src, char *dst,
+                                                  size_t len,
+                                                  int *found_any) {
+  if (found_any)
+    *found_any = 0;
+  if (!dst || len == 0)
+    return;
+  dst[0] = '\0';
+  if (!src)
+    return;
+
+  size_t used = 0;
+  const char *p = src;
+  while (*p && used < len - 1) {
+    const char *tok = strstr(p, "Device ");
+    if (!tok) {
+      size_t chunk = strlen(p);
+      if (chunk >= len - used)
+        chunk = (len - used) - 1;
+      memcpy(dst + used, p, chunk);
+      used += chunk;
+      break;
+    }
+
+    size_t chunk = (size_t)(tok - p);
+    if (chunk >= len - used)
+      chunk = (len - used) - 1;
+    memcpy(dst + used, p, chunk);
+    used += chunk;
+    if (used >= len - 1)
+      break;
+
+    const char *after = tok + strlen("Device ");
+    size_t toklen = strlen("Device ");
+    if (toklen >= len - used)
+      toklen = (len - used) - 1;
+    memcpy(dst + used, tok, toklen);
+    used += toklen;
+    if (used >= len - 1)
+      break;
+
+    if (isdigit((unsigned char)*after)) {
+      if (found_any)
+        *found_any = 1;
+      const char *d = after;
+      while (isdigit((unsigned char)*d))
+        d++;
+      dst[used++] = 'X';
+      p = d;
+    } else {
+      p = after;
+    }
+  }
+
+  dst[used] = '\0';
+}
+
+static const char *event_descr_for_device(const native_event_t *event,
+                                          const amds_per_device_descr_t *pd,
+                                          int device,
+                                          const char *fallback) {
+  const char *src = fallback;
+  if (event && (event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR)) {
+    if (pd && pd->descrs && pd->num_devices > 0 && device >= 0 &&
+        device < pd->num_devices && pd->descrs[device]) {
+      src = pd->descrs[device];
+    }
+  }
+  return src;
+}
+
+static int try_collapse_base_device_descriptions(const native_event_t *event,
+                                                 const char *fallback,
+                                                 char *buf, size_t len) {
+  if (!event || !buf || len == 0)
+    return 0;
+  if (!(event->evtinfo_flags & AMDS_EVTINFO_FLAG_PER_DEVICE_DESCR))
+    return 0;
+  if (!event->device_map)
+    return 0;
+
+  int first = device_first(event->device_map);
+  if (first < 0)
+    return 0;
+  int second = device_next(event->device_map, first);
+  if (second < 0)
+    return 0; // only one device -> nothing to collapse
+
+  const amds_per_device_descr_t *pd = event->per_device_descr;
+  const char *ref_line = event_descr_for_device(event, pd, first, fallback);
+
+  char ref_norm[PAPI_MAX_STR_LEN];
+  int found_ref = 0;
+  normalize_descr_ignore_device_numbers(ref_line, ref_norm, sizeof(ref_norm),
+                                       &found_ref);
+  if (!found_ref)
+    return 0;
+
+  for (int dev = second; dev >= 0; dev = device_next(event->device_map, dev)) {
+    const char *line = event_descr_for_device(event, pd, dev, fallback);
+    char norm[PAPI_MAX_STR_LEN];
+    int found = 0;
+    normalize_descr_ignore_device_numbers(line, norm, sizeof(norm), &found);
+    if (!found)
+      return 0;
+    if (strcmp(norm, ref_norm) != 0)
+      return 0;
+  }
+
+  char devices[PAPI_MAX_STR_LEN];
+  if (format_device_bitmap(event->device_map, devices, sizeof(devices)) !=
+      PAPI_OK)
+    return 0;
+
+  const char *digits_start = NULL;
+  const char *digits_end = NULL;
+  const char *tok = find_device_token_span(ref_line, &digits_start, &digits_end);
+  if (!tok || !digits_start || !digits_end)
+    return 0;
+  // Only collapse strings that contain exactly one "Device <n>" token.
+  if (find_device_token_span(digits_end, NULL, NULL))
+    return 0;
+
+  int prefix_len = (int)(tok - ref_line);
+  int strLen =
+      snprintf(buf, len, "%.*sDevices %s%s", prefix_len, ref_line, devices,
+               digits_end);
+  if (strLen < 0 || (size_t)strLen >= len)
+    return 0;
+
+  return 1;
+}
+
 static int fill_event_description(const native_event_t *event, int device,
                                   char *buf, size_t len) {
   if (!buf || len == 0)
@@ -126,6 +290,9 @@ static int fill_event_description(const native_event_t *event, int device,
     snprintf(buf, len, "%s", fallback);
     return PAPI_OK;
   }
+
+  if (try_collapse_base_device_descriptions(event, fallback, buf, len))
+    return PAPI_OK;
 
   size_t used = 0;
   // Keep in sync with papi_native_avail's fixed-width folding (EVT_LINE - 12 - 2).
