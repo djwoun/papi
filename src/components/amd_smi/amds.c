@@ -2996,6 +2996,106 @@ static int init_event_table(void) {
         if (add_event(&idx, name_buf, descr_buf, d, 10, 0, PAPI_MODE_READ,
                       access_amdsmi_gpu_metrics) != PAPI_OK)
           return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "accumulation_counter:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulation cycle counter", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 11, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "prochot_residency_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated PROCHOT thermal residency", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 12, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "ppt_residency_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated package power tracking residency", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 13, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "socket_thm_residency_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated socket thermal violation residency", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 14, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "vr_thm_residency_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated voltage regulator thermal residency", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 15, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "hbm_thm_residency_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated high bandwidth memory thermal residency", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 16, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "gfx_activity_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated graphics activity", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 17, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "mem_activity_acc:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d accumulated memory activity counter", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 18, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        CHECK_EVENT_IDX(idx);
+        CHECK_SNPRINTF(name_buf, sizeof(name_buf), "num_partition:device=%d", d);
+        CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                 "Device %d number of current partitions", d);
+        if (add_event(&idx, name_buf, descr_buf, d, 19, 0, PAPI_MODE_READ,
+                      access_amdsmi_gpu_metrics) != PAPI_OK)
+          return PAPI_ENOMEM;
+
+        uint32_t gfxclk_idx;
+        uint32_t gfxclk_count = sizeof(metrics.current_gfxclks) / sizeof(metrics.current_gfxclks[0]);
+        for (gfxclk_idx = 0; gfxclk_idx < gfxclk_count; ++gfxclk_idx) {
+          if (metrics.current_gfxclks[gfxclk_idx] == UINT16_MAX)
+            continue;
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf), "current_gfxclks_clk=%u:device=%d", gfxclk_idx, d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d current graphics clock value at instance %u", d, gfxclk_idx);
+          if (add_event(&idx, name_buf, descr_buf, d, 20, gfxclk_idx, PAPI_MODE_READ,
+                        access_amdsmi_gpu_metrics) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
+
+        uint32_t socclk_idx;
+        uint32_t socclk_count = sizeof(metrics.current_socclks) / sizeof(metrics.current_socclks[0]);
+        for (socclk_idx = 0; socclk_idx < socclk_count; ++socclk_idx) {
+          if (metrics.current_socclks[socclk_idx] == UINT16_MAX)
+            continue;
+          CHECK_EVENT_IDX(idx);
+          CHECK_SNPRINTF(name_buf, sizeof(name_buf), "current_socclks_clk=%u:device=%d", socclk_idx, d);
+          CHECK_SNPRINTF(descr_buf, sizeof(descr_buf),
+                   "Device %d current system-on-chip clock value at instance %u", d, socclk_idx);
+          if (add_event(&idx, name_buf, descr_buf, d, 21, socclk_idx, PAPI_MODE_READ,
+                        access_amdsmi_gpu_metrics) != PAPI_OK)
+            return PAPI_ENOMEM;
+        }
       }
     }
 
